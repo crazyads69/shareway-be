@@ -1,0 +1,15 @@
+info:
+  contact: {}
+paths:
+  /protected/:
+    get:
+      consumes:
+      - application/json
+      description: test protected endpoint desc
+      produces:
+      - application/json
+      responses: {}
+      summary: test protected endpoint
+      tags:
+      - Protected branch
+swagger: "2.0"
