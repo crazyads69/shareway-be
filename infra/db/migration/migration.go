@@ -6,37 +6,44 @@ import (
 	"gorm.io/gorm"
 )
 
-// Define function to migrate tables
-
+// Migrate creates all necessary tables in the database
 func Migrate(db *gorm.DB) error {
-	err := db.AutoMigrate(&User{}, &Admin{}, &OTP{}, &PasetoToken{})
-	if err != nil {
-		return err
-	}
-	return nil
+	// AutoMigrate will create tables, foreign key constraints, and missing columns/indexes
+	return db.AutoMigrate(&User{}, &Admin{}, &OTP{}, &PasetoToken{})
 }
 
-// Define function to drop tables
-func Drop(db *gorm.DB) error {
-	err := db.Migrator().DropTable(&User{}, &Admin{}, &OTP{}, &PasetoToken{})
-	if err != nil {
-		return err
-	}
-	return nil
+// DropAllTables removes all tables from the database
+func DropAllTables(db *gorm.DB) error {
+	// Drop tables in reverse order of dependencies to avoid foreign key constraint issues
+	return db.Migrator().DropTable(&PasetoToken{}, &OTP{}, &Admin{}, &User{})
 }
 
-// Define function to seed Admin table
+// SeedAdmin creates an admin user if it doesn't already exist
 func SeedAdmin(db *gorm.DB) error {
+	// Check if admin already exists
+	var count int64
+	if err := db.Model(&Admin{}).Where("username = ?", "admin").Count(&count).Error; err != nil {
+		return err
+	}
+
+	// If admin exists, no need to create
+	if count > 0 {
+		return nil
+	}
+
+	// Generate hashed password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 
+	// Create new admin
 	admin := &Admin{
 		ID:       uuid.New(),
 		Username: "admin",
 		Password: string(hashedPassword),
 	}
 
-	return db.FirstOrCreate(&admin, Admin{Username: "admin"}).Error
+	// Insert admin into database
+	return db.Create(admin).Error
 }

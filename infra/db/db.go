@@ -1,39 +1,33 @@
 package db
 
-// Import GORM and Postgres driver
 import (
 	"fmt"
+	"time"
+
 	"shareride/infra/db/migration"
 	"shareride/util"
-	"time"
 
 	"github.com/rs/zerolog/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-// Create DB connection instance and return it
-
-func NewDataBaseInstance(cfg util.Config) *gorm.DB {
-	// Define connection string
+// NewDatabaseInstance creates and configures a new database connection
+func NewDatabaseInstance(cfg util.Config) *gorm.DB {
+	// Construct the PostgreSQL connection string
 	psqlconn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
-		cfg.DatabaseHost,
-		cfg.DatabaseUsername,
-		cfg.DatabasePassword,
-		cfg.DatabaseName,
-		cfg.DatabasePort,
-	)
+		cfg.DatabaseHost, cfg.DatabaseUsername, cfg.DatabasePassword, cfg.DatabaseName, cfg.DatabasePort)
 
-	// Connect to DB
+	// Open a connection to the database
 	db, err := gorm.Open(postgres.Open(psqlconn), &gorm.Config{})
 	if err != nil {
-		log.Fatal().Err(err).Msg("Could not connect to DB")
+		log.Fatal().Err(err).Msg("Failed to connect to database")
 	}
 
-	// Connection pool settings
+	// Configure connection pool settings
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Could not connect to DB")
+		log.Fatal().Err(err).Msg("Failed to get database instance")
 	}
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
@@ -44,14 +38,21 @@ func NewDataBaseInstance(cfg util.Config) *gorm.DB {
 		log.Fatal().Err(err).Msg("Failed to create UUID extension")
 	}
 
-	// Start migration
+	// Uncomment the following block to drop all tables before migration (use with caution)
+	/*
+	   if err := migration.DropAllTables(db); err != nil {
+	       log.Fatal().Err(err).Msg("Failed to drop tables")
+	   }
+	*/
+
+	// Perform database migration
 	if err := migration.Migrate(db); err != nil {
-		log.Fatal().Err(err).Msg("Failed to migrate tables")
+		log.Fatal().Err(err).Msg("Failed to migrate database")
 	}
 
-	// Seed admin
+	// Seed admin user
 	if err := migration.SeedAdmin(db); err != nil {
-		log.Fatal().Err(err).Msg("Failed to seed admin")
+		log.Fatal().Err(err).Msg("Failed to seed admin user")
 	}
 
 	return db

@@ -7,9 +7,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// Define User struct
+// User represents a user in the system
 type User struct {
-	gorm.Model
 	ID          uuid.UUID `gorm:"type:uuid;primary_key;"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
@@ -18,13 +17,12 @@ type User struct {
 	Email       string         `gorm:"uniqueIndex"`
 	FirstName   string
 	LastName    string
-	Password    string
 	IsVerified  bool `gorm:"default:false"`
 	VerifiedAt  time.Time
 	Role        string `gorm:"default:'user'"`
 }
 
-// Define Admin struct
+// Admin represents an administrator in the system
 type Admin struct {
 	ID        uuid.UUID `gorm:"type:uuid;primary_key;"`
 	CreatedAt time.Time
@@ -34,7 +32,7 @@ type Admin struct {
 	Password  string         `gorm:"not null"`
 }
 
-// Define OTP struct
+// OTP represents a one-time password for user verification
 type OTP struct {
 	ID          uuid.UUID `gorm:"type:uuid;primary_key;"`
 	CreatedAt   time.Time
@@ -45,8 +43,7 @@ type OTP struct {
 	ExpiresAt   time.Time
 }
 
-// Define Paseto struct
-
+// PasetoToken represents a PASETO token for user authentication
 type PasetoToken struct {
 	ID           uuid.UUID `gorm:"type:uuid;primary_key;"`
 	CreatedAt    time.Time

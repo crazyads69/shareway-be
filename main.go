@@ -30,7 +30,7 @@ func main() {
 	server.SetupSwagger(cfg.SwaggerURL)
 
 	// Initialize DB
-	db := db.NewDataBaseInstance(cfg)
+	db := db.NewDatabaseInstance(cfg)
 
 	log.Printf("%+v\n", db)
 
