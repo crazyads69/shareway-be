@@ -1,12 +1,9 @@
 package controller
 
 import (
-	"net/http"
-	"shareway/helper"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog/log"
 )
 
 type AuthController struct{}
@@ -25,27 +22,4 @@ type loginResponse struct {
 }
 
 func (ctrl *AuthController) Login(ctx *gin.Context) {
-	log.Info().Msg("Login request received")
-
-	var req loginRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, helper.ErrorResponse(err))
-		return
-	}
-
-	if req.Username != "admin" || req.Password != "admin123" {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"message": "Username or password is incorrect",
-		})
-		return
-	}
-
-	resp := loginResponse{
-		AccessToken:           "1234",
-		RefreshToken:          "1234",
-		AccessTokenExpiresAt:  time.Now(),
-		RefreshTokenExpiresAt: time.Now(),
-	}
-
-	ctx.JSON(http.StatusOK, resp)
 }

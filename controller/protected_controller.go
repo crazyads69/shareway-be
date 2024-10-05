@@ -36,7 +36,7 @@ func NewProtectedController(maker *token.PasetoMaker, cfg util.Config, db *gorm.
 // @Security BearerAuth
 // @Success 200 {object} map[string]interface{} "Successfully authenticated"
 // @Failure 401 {object} map[string]string "Unauthorized"
-// @Router /protected [get]
+// @Router /protected/test [get]
 func (ctrl *ProtectedController) ProtectedEndpoint(ctx *gin.Context) {
 	payload := ctx.MustGet(middleware.AuthorizationPayloadKey)
 

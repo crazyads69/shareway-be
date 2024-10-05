@@ -1,15 +1,28 @@
 info:
   contact: {}
 paths:
-  /protected/:
+  /protected/test:
     get:
       consumes:
       - application/json
-      description: test protected endpoint desc
+      description: This endpoint tests the authentication middleware
       produces:
       - application/json
-      responses: {}
-      summary: test protected endpoint
+      responses:
+        "200":
+          description: Successfully authenticated
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Test protected endpoint
       tags:
-      - Protected branch
+      - Protected
 swagger: "2.0"

@@ -15,9 +15,14 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/protected/": {
+        "/protected/test": {
             "get": {
-                "description": "test protected endpoint desc",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint tests the authentication middleware",
                 "consumes": [
                     "application/json"
                 ],
@@ -25,10 +30,27 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Protected branch"
+                    "Protected"
                 ],
-                "summary": "test protected endpoint",
-                "responses": {}
+                "summary": "Test protected endpoint",
+                "responses": {
+                    "200": {
+                        "description": "Successfully authenticated",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
             }
         }
     }

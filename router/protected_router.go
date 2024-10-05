@@ -12,6 +12,5 @@ import (
 // SetupProtectedRouter configures the protected routes
 func SetupProtectedRouter(group *gin.RouterGroup, maker *token.PasetoMaker, cfg util.Config, db *gorm.DB) {
 	protectedController := controller.NewProtectedController(maker, cfg, db)
-
-	group.GET("/protected", protectedController.ProtectedEndpoint)
+	group.GET("/test", protectedController.ProtectedEndpoint)
 }
