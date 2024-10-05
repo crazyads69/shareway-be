@@ -7,48 +7,74 @@ import (
 	"strings"
 
 	"shareway/helper"
+	"shareway/util/token"
 
 	"github.com/gin-gonic/gin"
 )
 
 const (
-	AuthorizationHeaderKey  = "authorization"
-	AuthorizationTypeBearer = "bearer"
-	AuthorizationPayloadKey = "authorization_payload"
+	authorizationHeaderKey  = "authorization"
+	authorizationTypeBearer = "bearer"
+	authorizationPayloadKey = "authorization_payload"
 )
 
-func AuthMiddleware() gin.HandlerFunc {
+var (
+	ErrAuthHeaderMissing   = errors.New("authorization header is missing")
+	ErrInvalidAuthFormat   = errors.New("invalid authorization header format")
+	ErrUnsupportedAuthType = errors.New("unsupported authorization type")
+)
+
+// abortWithError is a helper function to abort the request with an error response
+func abortWithError(ctx *gin.Context, status int, err error, messageEN, messageVI string) {
+	response := helper.ErrorResponseWithMessage(err, messageEN, messageVI)
+	ctx.AbortWithStatusJSON(status, response)
+}
+
+// AuthMiddleware creates a Gin middleware for authentication using PASETO tokens
+func AuthMiddleware(maker token.PasetoMaker) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		authorizationHeader := ctx.GetHeader(AuthorizationHeaderKey)
-		if len(authorizationHeader) == 0 {
-			err := errors.New("authorization is not provided")
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, helper.ErrorResponse(err))
+		// Extract the authorization header
+		authHeader := ctx.GetHeader(authorizationHeaderKey)
+		if authHeader == "" {
+			abortWithError(ctx, http.StatusUnauthorized, ErrAuthHeaderMissing,
+				"Authorization header is missing",
+				"Thiếu header xác thực")
 			return
 		}
 
-		fields := strings.Fields(authorizationHeader)
+		// Split the header into fields
+		fields := strings.Fields(authHeader)
 		if len(fields) < 2 {
-			err := errors.New("invalid authorization header format")
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, helper.ErrorResponse(err))
+			abortWithError(ctx, http.StatusUnauthorized, ErrInvalidAuthFormat,
+				"Invalid authorization header format",
+				"Định dạng header xác thực không hợp lệ")
 			return
 		}
 
-		authorizationHeaderType := strings.ToLower(fields[0])
-		if authorizationHeaderType != AuthorizationTypeBearer {
-			err := fmt.Errorf("unsupported authorization type %s", authorizationHeaderType)
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, helper.ErrorResponse(err))
+		// Check the authorization type
+		authType := strings.ToLower(fields[0])
+		if authType != authorizationTypeBearer {
+			abortWithError(ctx, http.StatusUnauthorized,
+				fmt.Errorf("%w: %s", ErrUnsupportedAuthType, authType),
+				fmt.Sprintf("Unsupported authorization type: %s", authType),
+				fmt.Sprintf("Loại xác thực không được hỗ trợ: %s", authType))
 			return
 		}
 
-		token := fields[1]
-		// Do some verification logic to get payload
-		// payload, err := tokenMaker.VerifyToken(token)
-		// if err != nil {
-		// 	ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
-		// 	return
-		// }
+		// Extract the token
+		tokenString := fields[1]
 
-		ctx.Set(AuthorizationPayloadKey, token) // TODO: replace with payload
+		// Verify the token
+		payload, err := maker.VerifyToken(tokenString)
+		if err != nil {
+			abortWithError(ctx, http.StatusUnauthorized, err,
+				"Invalid or expired token",
+				"Token không hợp lệ hoặc đã hết hạn")
+			return
+		}
+
+		// Set the verified payload in the context
+		ctx.Set(authorizationPayloadKey, payload)
 		ctx.Next()
 	}
 }

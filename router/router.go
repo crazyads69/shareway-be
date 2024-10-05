@@ -2,6 +2,7 @@ package router
 
 import (
 	"shareway/middleware"
+	"shareway/util/token"
 
 	"github.com/gin-gonic/gin"
 
@@ -13,6 +14,7 @@ import (
 
 type APIServer struct {
 	router *gin.Engine
+	maker  token.PasetoMaker
 }
 
 func NewAPIServer() (*APIServer, error) {
@@ -44,7 +46,9 @@ func (server *APIServer) Start(address string) error {
 
 func (server *APIServer) SetupRouter() {
 	SetupAuthRouter(server.router.Group("/auth"))
-	SetupProtectedRouter(server.router.Group("/protected", middleware.AuthMiddleware()))
+	SetupProtectedRouter(server.router.Group("/protected", middleware.AuthMiddleware(
+		server.maker,
+	)))
 }
 
 func (server *APIServer) SetupSwagger(swaggerUrl string) {

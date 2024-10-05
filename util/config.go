@@ -10,16 +10,18 @@ type Config struct {
 
 	SwaggerURL string `mapstructure:"SWAGGER_URL"`
 
-	LogFilename      string `mapstructure:"LOG_FILENAME"`
-	LogMaxSize       int    `mapstructure:"LOG_MAX_SIZE"` // in megabytes
-	LogMaxBackups    int    `mapstructure:"LOG_MAX_BACKUPS"`
-	LogMaxAge        int    `mapstructure:"LOG_MAX_AGE"`
-	LogCompress      bool   `mapstructure:"LOG_COMPRESS"`
-	DatabaseUsername string `mapstructure:"DB_USER"`
-	DatabasePassword string `mapstructure:"DB_PASSWORD"`
-	DatabaseName     string `mapstructure:"DB_NAME"`
-	DatabaseHost     string `mapstructure:"DB_HOST"`
-	DatabasePort     int    `mapstructure:"DB_PORT"`
+	LogFilename           string `mapstructure:"LOG_FILENAME"`
+	LogMaxSize            int    `mapstructure:"LOG_MAX_SIZE"` // in megabytes
+	LogMaxBackups         int    `mapstructure:"LOG_MAX_BACKUPS"`
+	LogMaxAge             int    `mapstructure:"LOG_MAX_AGE"`
+	LogCompress           bool   `mapstructure:"LOG_COMPRESS"`
+	DatabaseUsername      string `mapstructure:"DB_USER"`
+	DatabasePassword      string `mapstructure:"DB_PASSWORD"`
+	DatabaseName          string `mapstructure:"DB_NAME"`
+	DatabaseHost          string `mapstructure:"DB_HOST"`
+	DatabasePort          int    `mapstructure:"DB_PORT"`
+	PasetoSercetKey       string `mapstructure:"PASETO_SECRET_KEY"`
+	PasetoExpiredDuration int    `mapstructure:"PASETO_EXPIRED_DURATION"`
 }
 
 func LoadConfig(path string) (config Config, err error) {
