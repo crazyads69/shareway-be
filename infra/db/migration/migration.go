@@ -9,13 +9,45 @@ import (
 // Migrate creates all necessary tables in the database
 func Migrate(db *gorm.DB) error {
 	// AutoMigrate will create tables, foreign key constraints, and missing columns/indexes
-	return db.AutoMigrate(&User{}, &Admin{}, &OTP{}, &PasetoToken{})
+	return db.AutoMigrate(
+		&User{},
+		&Admin{},
+		&OTP{},
+		&PasetoToken{},
+		&Transaction{},
+		&Vehicle{},
+		&RideRequest{},
+		&RideOffer{},
+		&Waypoint{},
+		&Ride{},
+		&Rating{},
+		&Notification{},
+		&Chat{},
+		&FavoriteLocation{},
+		&FuelPrice{},
+		&VehicleType{},
+	)
 }
 
 // DropAllTables removes all tables from the database
 func DropAllTables(db *gorm.DB) error {
 	// Drop tables in reverse order of dependencies to avoid foreign key constraint issues
-	return db.Migrator().DropTable(&PasetoToken{}, &OTP{}, &Admin{}, &User{})
+	return db.Migrator().DropTable(&User{},
+		&Admin{},
+		&OTP{},
+		&PasetoToken{},
+		&Transaction{},
+		&Vehicle{},
+		&RideRequest{},
+		&RideOffer{},
+		&Waypoint{},
+		&Ride{},
+		&Rating{},
+		&Notification{},
+		&Chat{},
+		&FavoriteLocation{},
+		&FuelPrice{},
+		&VehicleType{})
 }
 
 // SeedAdmin creates an admin user if it doesn't already exist
