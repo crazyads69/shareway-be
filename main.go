@@ -1,9 +1,9 @@
 package main
 
 import (
-	"shareride/infra/db"
-	"shareride/router"
-	"shareride/util"
+	"shareway/infra/db"
+	"shareway/router"
+	"shareway/util"
 
 	"github.com/rs/zerolog/log"
 )

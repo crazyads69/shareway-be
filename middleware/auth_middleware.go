@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"shareride/helper"
+	"shareway/helper"
 
 	"github.com/gin-gonic/gin"
 )

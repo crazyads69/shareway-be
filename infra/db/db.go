@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"shareride/infra/db/migration"
-	"shareride/util"
+	"shareway/infra/db/migration"
+	"shareway/util"
 
 	"github.com/rs/zerolog/log"
 	"gorm.io/driver/postgres"

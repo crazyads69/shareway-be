@@ -2,7 +2,7 @@ package controller
 
 import (
 	"net/http"
-	"shareride/helper"
+	"shareway/helper"
 	"time"
 
 	"github.com/gin-gonic/gin"

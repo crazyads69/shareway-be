@@ -1,11 +1,11 @@
 package router
 
 import (
-	"shareride/middleware"
+	"shareway/middleware"
 
 	"github.com/gin-gonic/gin"
 
-	docs "shareride/docs"
+	docs "shareway/docs"
 
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"

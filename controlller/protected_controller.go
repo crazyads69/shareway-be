@@ -3,7 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
-	"shareride/middleware"
+	"shareway/middleware"
 
 	"github.com/gin-gonic/gin"
 )
