@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"golang_template/helper"
 	"net/http"
+	"shareride/helper"
 	"time"
 
 	"github.com/gin-gonic/gin"

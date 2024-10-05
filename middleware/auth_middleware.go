@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"golang_template/helper"
+	"shareride/helper"
 
 	"github.com/gin-gonic/gin"
 )

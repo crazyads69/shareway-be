@@ -1,7 +1,7 @@
 package router
 
 import (
-	controller "golang_template/controlller"
+	controller "shareride/controlller"
 
 	"github.com/gin-gonic/gin"
 )

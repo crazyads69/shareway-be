@@ -1,8 +1,9 @@
 package main
 
 import (
-	"golang_template/router"
-	"golang_template/util"
+	"shareride/infra/db"
+	"shareride/router"
+	"shareride/util"
 
 	"github.com/rs/zerolog/log"
 )
@@ -27,6 +28,11 @@ func main() {
 	// Setup router and swagger
 	server.SetupRouter()
 	server.SetupSwagger(cfg.SwaggerURL)
+
+	// Initialize DB
+	db := db.NewDataBaseInstance(cfg)
+
+	log.Printf("%+v\n", db)
 
 	// Start server on specified address
 	err = server.Start(cfg.HTTPServerAddress)

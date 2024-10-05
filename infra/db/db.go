@@ -3,7 +3,8 @@ package db
 // Import GORM and Postgres driver
 import (
 	"fmt"
-	"golang_template/util"
+	"shareride/infra/db/migration"
+	"shareride/util"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -41,6 +42,16 @@ func NewDataBaseInstance(cfg util.Config) *gorm.DB {
 	// Enable UUID extension
 	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";").Error; err != nil {
 		log.Fatal().Err(err).Msg("Failed to create UUID extension")
+	}
+
+	// Start migration
+	if err := migration.Migrate(db); err != nil {
+		log.Fatal().Err(err).Msg("Failed to migrate tables")
+	}
+
+	// Seed admin
+	if err := migration.SeedAdmin(db); err != nil {
+		log.Fatal().Err(err).Msg("Failed to seed admin")
 	}
 
 	return db

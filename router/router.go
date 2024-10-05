@@ -1,11 +1,11 @@
 package router
 
 import (
-	"golang_template/middleware"
+	"shareride/middleware"
 
 	"github.com/gin-gonic/gin"
 
-	docs "golang_template/docs"
+	docs "shareride/docs"
 
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"

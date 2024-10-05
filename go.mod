@@ -1,4 +1,4 @@
-module golang_template
+module shareride
 
 go 1.21.3
 

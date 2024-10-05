@@ -2,8 +2,8 @@ package controller
 
 import (
 	"fmt"
-	"golang_template/middleware"
 	"net/http"
+	"shareride/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,6 +13,7 @@ type ProtectedController struct{}
 //	@BasePath	/protected
 
 // Protected Need header godoc
+//
 //	@Summary	test protected endpoint
 //	@Schemes
 //	@Description	test protected endpoint desc
