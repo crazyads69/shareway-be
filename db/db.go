@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"shareway/infra/db/migration"
+	"shareway/db/migration"
 	"shareway/util"
 
 	"github.com/rs/zerolog/log"
