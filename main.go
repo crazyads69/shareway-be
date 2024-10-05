@@ -1,9 +1,10 @@
 package main
 
 import (
-	"shareway/infra/db"
+	"shareway/db"
 	"shareway/router"
 	"shareway/util"
+	"shareway/util/token"
 
 	"github.com/rs/zerolog/log"
 )
@@ -18,8 +19,16 @@ func main() {
 	// Set logger configuration
 	util.ConfigLogger(cfg)
 
+	// Create new Paseto token maker
+	maker, _ := token.NewPasetoMaker(cfg.PasetoSercetKey)
+	// Initialize DB
+	db := db.NewDatabaseInstance(cfg)
 	// Create new API server
-	server, err := router.NewAPIServer()
+	server, err := router.NewAPIServer(
+		maker,
+		cfg,
+		db,
+	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Could not create router")
 		return
@@ -28,9 +37,6 @@ func main() {
 	// Setup router and swagger
 	server.SetupRouter()
 	server.SetupSwagger(cfg.SwaggerURL)
-
-	// Initialize DB
-	db := db.NewDatabaseInstance(cfg)
 
 	log.Printf("%+v\n", db)
 

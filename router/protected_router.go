@@ -1,12 +1,17 @@
 package router
 
 import (
-	controller "shareway/controlller"
+	"shareway/controller"
+	"shareway/util"
+	"shareway/util/token"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func SetupProtectedRouter(group *gin.RouterGroup) {
-	protected_router := controller.ProtectedController{}
-	group.GET("/protected", protected_router.Protected_endpoint)
+// SetupProtectedRouter configures the protected routes
+func SetupProtectedRouter(group *gin.RouterGroup, maker *token.PasetoMaker, cfg util.Config, db *gorm.DB) {
+	protectedController := controller.NewProtectedController(maker, cfg, db)
+
+	group.GET("/protected", protectedController.ProtectedEndpoint)
 }

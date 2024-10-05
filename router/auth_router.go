@@ -1,7 +1,7 @@
 package router
 
 import (
-	controller "shareway/controlller"
+	controller "shareway/controller"
 
 	"github.com/gin-gonic/gin"
 )

@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	authorizationHeaderKey  = "authorization"
-	authorizationTypeBearer = "bearer"
-	authorizationPayloadKey = "authorization_payload"
+	AuthorizationHeaderKey  = "authorization"
+	AuthorizationTypeBearer = "bearer"
+	AuthorizationPayloadKey = "authorization_payload"
 )
 
 var (
@@ -31,10 +31,10 @@ func abortWithError(ctx *gin.Context, status int, err error, messageEN, messageV
 }
 
 // AuthMiddleware creates a Gin middleware for authentication using PASETO tokens
-func AuthMiddleware(maker token.PasetoMaker) gin.HandlerFunc {
+func AuthMiddleware(maker *token.PasetoMaker) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// Extract the authorization header
-		authHeader := ctx.GetHeader(authorizationHeaderKey)
+		authHeader := ctx.GetHeader(AuthorizationHeaderKey)
 		if authHeader == "" {
 			abortWithError(ctx, http.StatusUnauthorized, ErrAuthHeaderMissing,
 				"Authorization header is missing",
@@ -53,7 +53,7 @@ func AuthMiddleware(maker token.PasetoMaker) gin.HandlerFunc {
 
 		// Check the authorization type
 		authType := strings.ToLower(fields[0])
-		if authType != authorizationTypeBearer {
+		if authType != AuthorizationTypeBearer {
 			abortWithError(ctx, http.StatusUnauthorized,
 				fmt.Errorf("%w: %s", ErrUnsupportedAuthType, authType),
 				fmt.Sprintf("Unsupported authorization type: %s", authType),
@@ -74,7 +74,7 @@ func AuthMiddleware(maker token.PasetoMaker) gin.HandlerFunc {
 		}
 
 		// Set the verified payload in the context
-		ctx.Set(authorizationPayloadKey, payload)
+		ctx.Set(AuthorizationPayloadKey, payload)
 		ctx.Next()
 	}
 }

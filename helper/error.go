@@ -1,6 +1,8 @@
 package helper
 
 import (
+	"shareway/schemas"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -53,4 +55,10 @@ func ErrorResponseWithMessage(err error, messageEN, messageVI string) Response {
 // GinResponse is a helper function to send a JSON response using gin.Context
 func GinResponse(c *gin.Context, statusCode int, response Response) {
 	c.JSON(statusCode, response)
+}
+
+// ConvertToPayload attempts to convert an interface{} to a *schemas.Payload
+func ConvertToPayload(data interface{}) (*schemas.Payload, bool) {
+	payload, ok := data.(*schemas.Payload)
+	return payload, ok
 }
