@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"shareway/infra/otp"
-	"shareway/repository"
 	"shareway/util"
 
 	"github.com/twilio/twilio-go"
@@ -12,7 +11,6 @@ import (
 
 // OtpService handles OTP-related operations
 type OtpService struct {
-	repo         repository.IOTPRepository
 	twilioClient *twilio.RestClient
 	cfg          util.Config
 }
@@ -24,10 +22,9 @@ type IOTPService interface {
 }
 
 // NewOTPService creates a new OTPService instance
-func NewOTPService(cfg util.Config, repo repository.IOTPRepository) IOTPService {
+func NewOTPService(cfg util.Config) *OtpService {
 	client := otp.NewOTPClient(cfg)
 	return &OtpService{
-		repo:         repo,
 		twilioClient: client,
 		cfg:          cfg,
 	}
@@ -35,8 +32,10 @@ func NewOTPService(cfg util.Config, repo repository.IOTPRepository) IOTPService 
 
 // SendOTP sends an OTP to the specified phone number
 func (s *OtpService) SendOTP(phoneNumber string) (string, error) {
+	// Convert the phone number to E.164 format
+	newPhoneNumber := "+84" + phoneNumber
 	params := &twilioApi.CreateVerificationParams{}
-	params.SetTo(phoneNumber)
+	params.SetTo(newPhoneNumber)
 	params.SetChannel("sms")
 
 	resp, err := s.twilioClient.VerifyV2.CreateVerification(s.cfg.TwilioServiceSID, params)
@@ -53,8 +52,10 @@ func (s *OtpService) SendOTP(phoneNumber string) (string, error) {
 
 // VerifyOTP verifies the OTP for the given phone number
 func (s *OtpService) VerifyOTP(phoneNumber, code string) error {
+	// Convert the phone number to E.164 format
+	newPhoneNumber := "+84" + phoneNumber
 	params := &twilioApi.CreateVerificationCheckParams{}
-	params.SetTo(phoneNumber)
+	params.SetTo(newPhoneNumber)
 	params.SetCode(code)
 
 	resp, err := s.twilioClient.VerifyV2.CreateVerificationCheck(s.cfg.TwilioServiceSID, params)

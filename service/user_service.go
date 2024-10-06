@@ -1,40 +1,30 @@
 package service
 
-type UsersResponse struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
+import (
+	"shareway/repository"
+
+	"github.com/google/uuid"
+)
+
+type UsersService struct {
+	repo repository.IAuthRepository
 }
 
 type IUsersService interface {
-	List() []UsersResponse
-	Get() UsersResponse
-	Create() UsersResponse
-	Update() UsersResponse
-	Delete() UsersResponse
+	UserExistsByPhone(phoneNumber string) (bool, error)
+	CreateUserByPhone(phoneNumber string) (uuid.UUID, error)
 }
 
-type UsersService struct{}
-
-func UsersServiceImpl() IUsersService {
-	return &UsersService{}
+func NewUsersService(repo repository.IAuthRepository) *UsersService {
+	return &UsersService{
+		repo: repo,
+	}
 }
 
-func (u *UsersService) List() []UsersResponse {
-	return []UsersResponse{}
+func (s *UsersService) UserExistsByPhone(phoneNumber string) (bool, error) {
+	return s.repo.UserExistsByPhone(phoneNumber)
 }
 
-func (u *UsersService) Get() UsersResponse {
-	return UsersResponse{}
-}
-
-func (u *UsersService) Create() UsersResponse {
-	return UsersResponse{}
-}
-
-func (u *UsersService) Update() UsersResponse {
-	return UsersResponse{}
-}
-
-func (u *UsersService) Delete() UsersResponse {
-	return UsersResponse{}
+func (s *UsersService) CreateUserByPhone(phoneNumber string) (uuid.UUID, error) {
+	return s.repo.CreateUserByPhone(phoneNumber)
 }

@@ -2,6 +2,7 @@ package router
 
 import (
 	"shareway/middleware"
+	"shareway/service"
 	"shareway/util"
 	"shareway/util/token"
 
@@ -16,24 +17,26 @@ import (
 
 // APIServer represents the API server structure
 type APIServer struct {
-	router *gin.Engine
-	Maker  *token.PasetoMaker
-	Cfg    util.Config
-	DB     *gorm.DB
+	router  *gin.Engine
+	Maker   *token.PasetoMaker
+	Cfg     util.Config
+	DB      *gorm.DB
+	Service *service.Service
 }
 
 // NewAPIServer creates and initializes a new APIServer instance
-func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, db *gorm.DB) (*APIServer, error) {
+func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, db *gorm.DB, service *service.Service) (*APIServer, error) {
 	r := gin.Default()
 
 	// Set up basic routes
 	setupBasicRoutes(r)
 
 	return &APIServer{
-		router: r,
-		Maker:  maker,
-		Cfg:    cfg,
-		DB:     db,
+		router:  r,
+		Maker:   maker,
+		Cfg:     cfg,
+		DB:      db,
+		Service: service,
 	}, nil
 }
 
@@ -61,7 +64,7 @@ func (server *APIServer) Start(address string) error {
 
 // SetupRouter configures the main routes for the API server
 func (server *APIServer) SetupRouter() {
-	SetupAuthRouter(server.router.Group("/auth"))
+	SetupAuthRouter(server.router.Group("/auth"), server)
 	SetupProtectedRouter(server.router.Group("/protected", middleware.AuthMiddleware(server.Maker)), server.Maker, server.Cfg, server.DB)
 }
 

@@ -3,6 +3,7 @@ package main
 import (
 	"shareway/infra/db"
 	"shareway/router"
+	"shareway/service"
 	"shareway/util"
 	"shareway/util/token"
 
@@ -23,11 +24,16 @@ func main() {
 	maker, _ := token.NewPasetoMaker(cfg.PasetoSercetKey)
 	// Initialize DB
 	db := db.NewDatabaseInstance(cfg)
+
+	// Initialize services
+	newService := service.NewService(db, cfg)
+
 	// Create new API server
 	server, err := router.NewAPIServer(
 		maker,
 		cfg,
 		db,
+		newService,
 	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Could not create router")
@@ -37,8 +43,6 @@ func main() {
 	// Setup router and swagger
 	server.SetupRouter()
 	server.SetupSwagger(cfg.SwaggerURL)
-
-	log.Printf("%+v\n", db)
 
 	// Start server on specified address
 	err = server.Start(cfg.HTTPServerAddress)

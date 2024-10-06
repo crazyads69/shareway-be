@@ -18,9 +18,17 @@ import (
 
 // @externalDocs.description	OpenAPI
 // @externalDocs.url			https://swagger.io/resources/open-api/
-func SetupAuthRouter(group *gin.RouterGroup) {
-	auth_controller := controller.AuthController{}
-	group.POST("/login", auth_controller.Login)
-	group.POST("/register", auth_controller.Login)
-	group.POST("/refresh", auth_controller.Login)
+func SetupAuthRouter(group *gin.RouterGroup, server *APIServer) {
+	auth_controller := controller.NewAuthController(
+		server.Cfg,
+		server.DB,
+		server.Service.OtpService,
+		server.Service.UserService,
+		server.Maker,
+	)
+	// FirstRegisterUserRequest
+	group.POST("/init-register", auth_controller.InitiateRegistration)
+	// group.POST("/login", auth_controller.Login)
+	// group.POST("/register", auth_controller.Login)
+	// group.POST("/refresh", auth_controller.Login)
 }

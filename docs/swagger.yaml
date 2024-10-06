@@ -1,6 +1,84 @@
+definitions:
+  helper.Response:
+    properties:
+      data: {}
+      error:
+        type: string
+      message_en:
+        type: string
+      message_vi:
+        type: string
+      success:
+        type: boolean
+    type: object
+  schemas.FirstRegisterUserRequest:
+    properties:
+      phone_number:
+        maxLength: 11
+        minLength: 9
+        type: string
+    required:
+    - phone_number
+    type: object
+  schemas.FirstRegisterUserResponse:
+    properties:
+      otp:
+        maxLength: 6
+        minLength: 6
+        type: string
+      phone_number:
+        maxLength: 11
+        minLength: 9
+        type: string
+      user_id:
+        type: string
+    required:
+    - otp
+    - phone_number
+    - user_id
+    type: object
 info:
   contact: {}
 paths:
+  /auth/init-register:
+    post:
+      consumes:
+      - application/json
+      description: Starts the registration process by sending an OTP
+      parameters:
+      - description: Registration request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.FirstRegisterUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP sent successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.FirstRegisterUserResponse'
+              type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "409":
+          description: User already exists
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      summary: Initiate user registration
+      tags:
+      - auth
   /protected/test:
     get:
       consumes:
