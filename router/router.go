@@ -21,11 +21,11 @@ type APIServer struct {
 	Maker   *token.PasetoMaker
 	Cfg     util.Config
 	DB      *gorm.DB
-	Service *service.Service
+	Service *service.ServiceContainer
 }
 
 // NewAPIServer creates and initializes a new APIServer instance
-func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, db *gorm.DB, service *service.Service) (*APIServer, error) {
+func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, db *gorm.DB, service *service.ServiceContainer) (*APIServer, error) {
 	r := gin.Default()
 
 	// Set up basic routes

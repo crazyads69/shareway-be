@@ -11,7 +11,7 @@ definitions:
       success:
         type: boolean
     type: object
-  schemas.FirstRegisterUserRequest:
+  schemas.GenerateOTPRequest:
     properties:
       phone_number:
         maxLength: 11
@@ -20,7 +20,50 @@ definitions:
     required:
     - phone_number
     type: object
-  schemas.FirstRegisterUserResponse:
+  schemas.GenerateOTPResponse:
+    properties:
+      phone_number:
+        maxLength: 11
+        minLength: 9
+        type: string
+      user_id:
+        type: string
+    required:
+    - phone_number
+    - user_id
+    type: object
+  schemas.RegisterUserRequest:
+    properties:
+      full_name:
+        maxLength: 256
+        minLength: 3
+        type: string
+      phone_number:
+        maxLength: 11
+        minLength: 9
+        type: string
+    required:
+    - full_name
+    - phone_number
+    type: object
+  schemas.RegisterUserResponse:
+    properties:
+      full_name:
+        maxLength: 256
+        minLength: 3
+        type: string
+      phone_number:
+        maxLength: 11
+        minLength: 9
+        type: string
+      user_id:
+        type: string
+    required:
+    - full_name
+    - phone_number
+    - user_id
+    type: object
+  schemas.VerifyRegisterOTPRequest:
     properties:
       otp:
         maxLength: 6
@@ -37,32 +80,53 @@ definitions:
     - phone_number
     - user_id
     type: object
+  schemas.VerifyRegisterOTPResponse:
+    properties:
+      full_name:
+        maxLength: 256
+        minLength: 3
+        type: string
+      is_activated:
+        type: boolean
+      phone_number:
+        maxLength: 11
+        minLength: 9
+        type: string
+      user_id:
+        type: string
+    required:
+    - full_name
+    - is_activated
+    - phone_number
+    - user_id
+    type: object
 info:
   contact: {}
 paths:
-  /auth/init-register:
+  /auth/register:
     post:
       consumes:
       - application/json
-      description: Starts the registration process by sending an OTP
+      description: Starts the registration process by sending an OTP and creating
+        a user account
       parameters:
-      - description: Registration request
+      - description: Registration request containing phone number and full name
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/schemas.FirstRegisterUserRequest'
+          $ref: '#/definitions/schemas.RegisterUserRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: OTP sent successfully
+          description: User created and OTP sent successfully
           schema:
             allOf:
             - $ref: '#/definitions/helper.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/schemas.FirstRegisterUserResponse'
+                  $ref: '#/definitions/schemas.RegisterUserResponse'
               type: object
         "400":
           description: Invalid request body
@@ -77,6 +141,77 @@ paths:
           schema:
             $ref: '#/definitions/helper.Response'
       summary: Initiate user registration
+      tags:
+      - auth
+  /auth/resend-otp:
+    post:
+      consumes:
+      - application/json
+      description: Resends the OTP to the provided phone number
+      parameters:
+      - description: OTP resend request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.GenerateOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP sent successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GenerateOTPResponse'
+              type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      summary: Resend OTP
+      tags:
+      - auth
+  /auth/verify-register-otp:
+    post:
+      consumes:
+      - application/json
+      description: Verifies the OTP sent during registration and activates the user
+        account
+      parameters:
+      - description: OTP verification request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.VerifyRegisterOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP verified and user activated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.VerifyRegisterOTPResponse'
+              type: object
+        "400":
+          description: Invalid request body or OTP verification failed
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      summary: Verify registration OTP
       tags:
       - auth
   /protected/test:

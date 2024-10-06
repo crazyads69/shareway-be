@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"errors"
 	"net/http"
 
 	"shareway/helper"
@@ -18,13 +17,13 @@ import (
 type AuthController struct {
 	cfg         util.Config
 	db          *gorm.DB
-	OTPService  *service.OtpService
-	UserService *service.UsersService
+	OTPService  service.IOTPService
+	UserService service.IUsersService
 	token       *token.PasetoMaker
 }
 
 // NewAuthController creates a new AuthController instance
-func NewAuthController(cfg util.Config, db *gorm.DB, otpService *service.OtpService, userService *service.UsersService, tokenMaker *token.PasetoMaker) *AuthController {
+func NewAuthController(cfg util.Config, db *gorm.DB, otpService service.IOTPService, userService service.IUsersService, tokenMaker *token.PasetoMaker) *AuthController {
 	return &AuthController{
 		cfg:         cfg,
 		db:          db,
@@ -37,22 +36,22 @@ func NewAuthController(cfg util.Config, db *gorm.DB, otpService *service.OtpServ
 // InitiateRegistration starts the registration process by sending an OTP
 // InitiateRegistration godoc
 // @Summary Initiate user registration
-// @Description Starts the registration process by sending an OTP
+// @Description Starts the registration process by sending an OTP and creating a user account
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param request body schemas.FirstRegisterUserRequest true "Registration request"
-// @Success 200 {object} helper.Response{data=schemas.FirstRegisterUserResponse} "OTP sent successfully"
+// @Param request body schemas.RegisterUserRequest true "Registration request containing phone number and full name"
+// @Success 200 {object} helper.Response{data=schemas.RegisterUserResponse} "User created and OTP sent successfully"
 // @Failure 400 {object} helper.Response "Invalid request body"
 // @Failure 409 {object} helper.Response "User already exists"
 // @Failure 500 {object} helper.Response "Internal server error"
-// @Router /auth/init-register [post]
-func (ctrl *AuthController) InitiateRegistration(ctx *gin.Context) {
-	var req schemas.FirstRegisterUserRequest
+// @Router /auth/register [post]
+func (ctrl *AuthController) Register(ctx *gin.Context) {
+	var req schemas.RegisterUserRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response := helper.ErrorResponseWithMessage(
-			errors.New("Invalid request body"),
+			err,
 			"Invalid request body",
 			"Số điện thoại không hợp lệ",
 		)
@@ -74,7 +73,7 @@ func (ctrl *AuthController) InitiateRegistration(ctx *gin.Context) {
 	}
 	if exists {
 		response := helper.ErrorResponseWithMessage(
-			errors.New("User already exists"),
+			err,
 			"User already exists",
 			"Người dùng đã tồn tại",
 		)
@@ -96,9 +95,9 @@ func (ctrl *AuthController) InitiateRegistration(ctx *gin.Context) {
 	}
 
 	// Generate OTP and return to the user
-	var res schemas.FirstRegisterUserResponse
+	var res schemas.RegisterUserResponse
 	// Add phone number to db and return user_id
-	userID, err := ctrl.UserService.CreateUserByPhone(req.PhoneNumber)
+	userID, fullName, err := ctrl.UserService.CreateUserByPhone(req.PhoneNumber, req.FullName)
 	if err != nil {
 		// ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 		response := helper.ErrorResponseWithMessage(
@@ -111,77 +110,179 @@ func (ctrl *AuthController) InitiateRegistration(ctx *gin.Context) {
 	}
 	res.UserID = userID
 	res.PhoneNumber = req.PhoneNumber
+	res.FullName = fullName
 
 	response := helper.SuccessResponse(res, "OTP sent successfully", "Mã OTP đã được gửi thành công")
 	helper.GinResponse(ctx, http.StatusOK, response)
 }
 
 // ResendOTP resends the OTP, optionally via voice call
+// ResendOTP godoc
+// @Summary Resend OTP
+// @Description Resends the OTP to the provided phone number
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body schemas.GenerateOTPRequest true "OTP resend request"
+// @Success 200 {object} helper.Response{data=schemas.GenerateOTPResponse} "OTP sent successfully"
+// @Failure 400 {object} helper.Response "Invalid request body"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /auth/resend-otp [post]
 func (ctrl *AuthController) ResendOTP(ctx *gin.Context) {
-	var req struct {
-		PhoneNumber string `json:"phone_number" binding:"required,e164"`
-		ViaVoice    bool   `json:"via_voice"`
-	}
+
+	var req schemas.GenerateOTPRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid request body",
+			"Yêu cầu không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
 		return
 	}
-
-	// Implement logic to check if we should allow resending (e.g., rate limiting)
 
 	// Send OTP via Twilio (you might need to modify OTPService to support voice calls)
-	sid, err := ctrl.OTPService.SendOTP(req.PhoneNumber) // Add voice parameter if supported
+	_, err := ctrl.OTPService.SendOTP(req.PhoneNumber) // Add voice parameter if supported
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to resend OTP"})
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to send OTP",
+			"Không thể gửi mã OTP",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "OTP resent successfully", "sid": sid})
+	// Get user_id
+	userID, err := ctrl.UserService.GetUserIDByPhone(req.PhoneNumber)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get user_id",
+			"Không thể lấy user_id",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	var res schemas.GenerateOTPResponse
+	res.PhoneNumber = req.PhoneNumber
+	res.UserID = userID
+
+	response := helper.SuccessResponse(res, "OTP sent successfully", "Mã OTP đã được gửi thành công")
+	helper.GinResponse(ctx, http.StatusOK, response)
 }
 
-// // VerifyOTPAndRegister verifies the OTP and completes the registration process
-// func (ctrl *AuthController) VerifyOTPAndRegister(ctx *gin.Context) {
-// 	var req struct {
-// 		PhoneNumber string `json:"phone_number" binding:"required,e164"`
-// 		OTP         string `json:"otp" binding:"required,len=6"`
-// 		Name        string `json:"name" binding:"required"`
-// 		Email       string `json:"email" binding:"required,email"`
-// 	}
+// VerifyRegisterOTP verifies the OTP and activates the user account
+// VerifyRegisterOTP godoc
+// @Summary Verify registration OTP
+// @Description Verifies the OTP sent during registration and activates the user account
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body schemas.VerifyRegisterOTPRequest true "OTP verification request"
+// @Success 200 {object} helper.Response{data=schemas.VerifyRegisterOTPResponse} "OTP verified and user activated successfully"
+// @Failure 400 {object} helper.Response "Invalid request body or OTP verification failed"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /auth/verify-register-otp [post]
+func (ctrl *AuthController) VerifyRegisterOTP(ctx *gin.Context) {
+	var req schemas.VerifyRegisterOTPRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid request body",
+			"Yêu cầu không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Verify the OTP
+	err := ctrl.OTPService.VerifyOTP(req.PhoneNumber, req.OTP)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"OTP verification failed",
+			"Xác minh OTP thất bại",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Update user status to activated (is_activated = true)
+	err = ctrl.UserService.ActivateUser(req.PhoneNumber)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to activate user account",
+			"Không thể kích hoạt người dùng",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	// Update user status
+	err = ctrl.UserService.ActivateUser(req.PhoneNumber)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to update user status",
+			"Không thể cập nhật trạng thái người dùng",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	// Get user info
+	user, err := ctrl.UserService.GetUserByPhone(req.PhoneNumber)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get user_id",
+			"Không thể lấy user_id",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	var res schemas.VerifyRegisterOTPResponse
+	res.UserID = user.ID
+	res.FullName = user.FullName
+	res.PhoneNumber = req.PhoneNumber
+	res.IsActivated = true
+
+	response := helper.SuccessResponse(res, "OTP verified successfully", "OTP đã được xác minh thành công")
+	helper.GinResponse(ctx, http.StatusOK, response)
+}
+
+// // VerifyCCCD verifies the CCCD of the user
+// func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
+// 	var req schemas.VerifyCCCDRequest
 
 // 	if err := ctx.ShouldBindJSON(&req); err != nil {
-// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+// 		response := helper.ErrorResponseWithMessage(
+// 			err,
+// 			"Invalid request body",
+// 			"Yêu cầu không hợp lệ",
+// 		)
+// 		helper.GinResponse(ctx, http.StatusBadRequest, response)
 // 		return
 // 	}
 
-// 	// Verify OTP with Twilio
-// 	err := ctrl.OTPService.VerifyOTP(req.PhoneNumber, req.OTP)
+// 	// Verify the CCCD
+// 	err := ctrl.UserService.VerifyCCCD(req.UserID, req.CCCD)
 // 	if err != nil {
-// 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid OTP"})
+// 		response := helper.ErrorResponseWithMessage(
+// 			err,
+// 			"CCCD verification failed",
+// 			"Xác minh CCCD thất bại",
+// 		)
+// 		helper.GinResponse(ctx, http.StatusBadRequest, response)
 // 		return
 // 	}
 
-// 	// Create user in the database
-// 	user, err := ctrl.UserService.CreateUser(req.Name, req.Email, req.PhoneNumber)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
-// 		return
-// 	}
-
-// 	// Generate token for the new user
-// 	token, payload, err := ctrl.token.CreateToken(user.ID, ctrl.cfg.AccessTokenDuration)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
-// 		return
-// 	}
-
-// 	ctx.JSON(http.StatusOK, gin.H{
-// 		"user":         user,
-// 		"access_token": token,
-// 		"expires_at":   payload.ExpiredAt,
-// 	})
-// }
-
-// func (ctrl *AuthController) Login(ctx *gin.Context) {
-// 	// Implement login logic here
+// 	response := helper.SuccessResponse(nil, "CCCD verified successfully", "CCCD đã được xác minh thành công")
+// 	helper.GinResponse(ctx, http.StatusOK, response)
 // }

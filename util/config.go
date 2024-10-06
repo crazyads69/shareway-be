@@ -25,6 +25,12 @@ type Config struct {
 	TwilioAccountSID      string `mapstructure:"TWILIO_ACCOUNT_SID"`
 	TwilioAuthToken       string `mapstructure:"TWILIO_AUTH_TOKEN"`
 	TwilioServiceSID      string `mapstructure:"TWILIO_SERVICE_SID"`
+	RedisHost             string `mapstructure:"REDIS_HOST"`
+	RedisPort             int    `mapstructure:"REDIS_PORT"`
+	RedisPassword         string `mapstructure:"REDIS_PASSWORD"`
+	RedisDB               int    `mapstructure:"REDIS_DB"`
+	RedisExpiredDuration  int    `mapstructure:"REDIS_EXPIRED_DURATION"`
+	RedisProotocol        int    `mapstructure:"REDIS_PROTOCOL"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

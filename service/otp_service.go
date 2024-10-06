@@ -9,10 +9,9 @@ import (
 	twilioApi "github.com/twilio/twilio-go/rest/verify/v2"
 )
 
-// OtpService handles OTP-related operations
-type OtpService struct {
-	twilioClient *twilio.RestClient
-	cfg          util.Config
+// formatPhoneNumber converts the phone number to E.164 format
+func formatPhoneNumber(phoneNumber string) string {
+	return "+84" + phoneNumber
 }
 
 // IOTPService defines the interface for OTP operations
@@ -21,21 +20,25 @@ type IOTPService interface {
 	VerifyOTP(phoneNumber, code string) error
 }
 
+// OTPService implements IOTPService and handles OTP-related operations
+type OTPService struct {
+	twilioClient *twilio.RestClient
+	cfg          util.Config
+}
+
 // NewOTPService creates a new OTPService instance
-func NewOTPService(cfg util.Config) *OtpService {
+func NewOTPService(cfg util.Config) IOTPService {
 	client := otp.NewOTPClient(cfg)
-	return &OtpService{
+	return &OTPService{
 		twilioClient: client,
 		cfg:          cfg,
 	}
 }
 
 // SendOTP sends an OTP to the specified phone number
-func (s *OtpService) SendOTP(phoneNumber string) (string, error) {
-	// Convert the phone number to E.164 format
-	newPhoneNumber := "+84" + phoneNumber
+func (s *OTPService) SendOTP(phoneNumber string) (string, error) {
 	params := &twilioApi.CreateVerificationParams{}
-	params.SetTo(newPhoneNumber)
+	params.SetTo(formatPhoneNumber(phoneNumber))
 	params.SetChannel("sms")
 
 	resp, err := s.twilioClient.VerifyV2.CreateVerification(s.cfg.TwilioServiceSID, params)
@@ -51,11 +54,9 @@ func (s *OtpService) SendOTP(phoneNumber string) (string, error) {
 }
 
 // VerifyOTP verifies the OTP for the given phone number
-func (s *OtpService) VerifyOTP(phoneNumber, code string) error {
-	// Convert the phone number to E.164 format
-	newPhoneNumber := "+84" + phoneNumber
+func (s *OTPService) VerifyOTP(phoneNumber, code string) error {
 	params := &twilioApi.CreateVerificationCheckParams{}
-	params.SetTo(newPhoneNumber)
+	params.SetTo(formatPhoneNumber(phoneNumber))
 	params.SetCode(code)
 
 	resp, err := s.twilioClient.VerifyV2.CreateVerificationCheck(s.cfg.TwilioServiceSID, params)
@@ -73,3 +74,6 @@ func (s *OtpService) VerifyOTP(phoneNumber, code string) error {
 
 	return nil
 }
+
+// Ensure OTPService implements IOTPService
+var _ IOTPService = (*OTPService)(nil)

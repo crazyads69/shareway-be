@@ -25,15 +25,16 @@ func main() {
 	// Initialize DB
 	db := db.NewDatabaseInstance(cfg)
 
-	// Initialize services
-	newService := service.NewService(db, cfg)
+	// Initialize services using the service factory pattern (dependency injection also included repository pattern)
+	serviceFactory := service.NewServiceFactory(db, cfg)
+	services := serviceFactory.CreateServices()
 
 	// Create new API server
 	server, err := router.NewAPIServer(
 		maker,
 		cfg,
 		db,
-		newService,
+		services,
 	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Could not create router")

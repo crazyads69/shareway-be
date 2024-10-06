@@ -4,9 +4,9 @@
         "contact": {}
     },
     "paths": {
-        "/auth/init-register": {
+        "/auth/register": {
             "post": {
-                "description": "Starts the registration process by sending an OTP",
+                "description": "Starts the registration process by sending an OTP and creating a user account",
                 "consumes": [
                     "application/json"
                 ],
@@ -19,12 +19,76 @@
                 "summary": "Initiate user registration",
                 "parameters": [
                     {
-                        "description": "Registration request",
+                        "description": "Registration request containing phone number and full name",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/schemas.FirstRegisterUserRequest"
+                            "$ref": "#/definitions/schemas.RegisterUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User created and OTP sent successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.RegisterUserResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "409": {
+                        "description": "User already exists",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/resend-otp": {
+            "post": {
+                "description": "Resends the OTP to the provided phone number",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Resend OTP",
+                "parameters": [
+                    {
+                        "description": "OTP resend request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.GenerateOTPRequest"
                         }
                     }
                 ],
@@ -40,7 +104,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/schemas.FirstRegisterUserResponse"
+                                            "$ref": "#/definitions/schemas.GenerateOTPResponse"
                                         }
                                     }
                                 }
@@ -53,8 +117,60 @@
                             "$ref": "#/definitions/helper.Response"
                         }
                     },
-                    "409": {
-                        "description": "User already exists",
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/verify-register-otp": {
+            "post": {
+                "description": "Verifies the OTP sent during registration and activates the user account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify registration OTP",
+                "parameters": [
+                    {
+                        "description": "OTP verification request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.VerifyRegisterOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OTP verified and user activated successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.VerifyRegisterOTPResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or OTP verification failed",
                         "schema": {
                             "$ref": "#/definitions/helper.Response"
                         }
@@ -126,7 +242,7 @@
                 }
             }
         },
-        "schemas.FirstRegisterUserRequest": {
+        "schemas.GenerateOTPRequest": {
             "type": "object",
             "required": [
                 "phone_number"
@@ -139,7 +255,66 @@
                 }
             }
         },
-        "schemas.FirstRegisterUserResponse": {
+        "schemas.GenerateOTPResponse": {
+            "type": "object",
+            "required": [
+                "phone_number",
+                "user_id"
+            ],
+            "properties": {
+                "phone_number": {
+                    "type": "string",
+                    "maxLength": 11,
+                    "minLength": 9
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.RegisterUserRequest": {
+            "type": "object",
+            "required": [
+                "full_name",
+                "phone_number"
+            ],
+            "properties": {
+                "full_name": {
+                    "type": "string",
+                    "maxLength": 256,
+                    "minLength": 3
+                },
+                "phone_number": {
+                    "type": "string",
+                    "maxLength": 11,
+                    "minLength": 9
+                }
+            }
+        },
+        "schemas.RegisterUserResponse": {
+            "type": "object",
+            "required": [
+                "full_name",
+                "phone_number",
+                "user_id"
+            ],
+            "properties": {
+                "full_name": {
+                    "type": "string",
+                    "maxLength": 256,
+                    "minLength": 3
+                },
+                "phone_number": {
+                    "type": "string",
+                    "maxLength": 11,
+                    "minLength": 9
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.VerifyRegisterOTPRequest": {
             "type": "object",
             "required": [
                 "otp",
@@ -151,6 +326,33 @@
                     "type": "string",
                     "maxLength": 6,
                     "minLength": 6
+                },
+                "phone_number": {
+                    "type": "string",
+                    "maxLength": 11,
+                    "minLength": 9
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.VerifyRegisterOTPResponse": {
+            "type": "object",
+            "required": [
+                "full_name",
+                "is_activated",
+                "phone_number",
+                "user_id"
+            ],
+            "properties": {
+                "full_name": {
+                    "type": "string",
+                    "maxLength": 256,
+                    "minLength": 3
+                },
+                "is_activated": {
+                    "type": "boolean"
                 },
                 "phone_number": {
                     "type": "string",

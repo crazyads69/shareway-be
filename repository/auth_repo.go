@@ -2,6 +2,7 @@ package repository
 
 import (
 	"shareway/infra/db/migration"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -10,7 +11,10 @@ import (
 // IAuthRepository defines the interface for authentication-related database operations
 type IAuthRepository interface {
 	UserExistsByPhone(phoneNumber string) (bool, error)
-	CreateUserByPhone(phoneNumber string) (uuid.UUID, error)
+	CreateUserByPhone(phoneNumber, fullName string) (uuid.UUID, string, error)
+	GetUserIDByPhone(phoneNumber string) (uuid.UUID, error)
+	ActivateUser(phoneNumber string) error
+	GetUserByPhone(phoneNumber string) (migration.User, error)
 }
 
 // AuthRepository implements IAuthRepository
@@ -25,31 +29,55 @@ func NewAuthRepository(db *gorm.DB) IAuthRepository {
 
 // UserExistsByPhone checks if a user exists with the given phone number
 func (r *AuthRepository) UserExistsByPhone(phoneNumber string) (bool, error) {
-	var exists bool
+	var count int64
 	err := r.db.Model(&migration.User{}).
-		Select("1").
 		Where("phone_number = ?", phoneNumber).
-		Limit(1).
-		Find(&exists).
+		Count(&count).
 		Error
 
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
+	return count > 0, err
 }
 
-// CreateUserByPhone creates a new user with the given phone number
-func (r *AuthRepository) CreateUserByPhone(phoneNumber string) (uuid.UUID, error) {
+// CreateUserByPhone creates a new user with the given phone number and full name
+func (r *AuthRepository) CreateUserByPhone(phoneNumber, fullName string) (uuid.UUID, string, error) {
 	user := migration.User{
 		ID:          uuid.New(),
 		PhoneNumber: phoneNumber,
+		FullName:    fullName,
+		CreatedAt:   time.Now(),
 	}
 	err := r.db.Create(&user).Error
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, "", err
 	}
-	return user.ID, nil
+	return user.ID, user.FullName, nil
+}
+
+// GetUserIDByPhone retrieves the user ID associated with the given phone number
+func (r *AuthRepository) GetUserIDByPhone(phoneNumber string) (uuid.UUID, error) {
+	var userID uuid.UUID
+	err := r.db.Model(&migration.User{}).
+		Select("id").
+		Where("phone_number = ?", phoneNumber).
+		First(&userID).
+		Error
+
+	return userID, err
+}
+
+// ActivateUser updates the user status to activated
+func (r *AuthRepository) ActivateUser(phoneNumber string) error {
+	return r.db.Model(&migration.User{}).
+		Where("phone_number = ?", phoneNumber).
+		Update("is_activated", true).
+		Error
+}
+
+// GetUserByPhone retrieves the user associated with the given phone number
+func (r *AuthRepository) GetUserByPhone(phoneNumber string) (migration.User, error) {
+	var user migration.User
+	err := r.db.Where("phone_number = ?", phoneNumber).First(&user).Error
+	return user, err
 }
 
 // Ensure AuthRepository implements IAuthRepository

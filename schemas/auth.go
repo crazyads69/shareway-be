@@ -22,31 +22,36 @@ type GenerateOTPRequest struct {
 
 // Define GenerateOTPResponse struct
 type GenerateOTPResponse struct {
-	OTP string `json:"otp" binding:"required,numeric,min=6,max=6"`
+	PhoneNumber string    `json:"phone_number" binding:"required,numeric,min=9,max=11"`
+	UserID      uuid.UUID `json:"user_id" binding:"required"`
 }
 
 // Define struct to first register a user
-type FirstRegisterUserRequest struct {
+type RegisterUserRequest struct {
 	PhoneNumber string `json:"phone_number" binding:"required,numeric,min=9,max=11"`
+	FullName    string `json:"full_name" binding:"required,min=3,max=256"`
 }
 
 // Define struct to first register a user response
-type FirstRegisterUserResponse struct {
+type RegisterUserResponse struct {
 	UserID      uuid.UUID `json:"user_id" binding:"required"`
+	FullName    string    `json:"full_name" binding:"required,min=3,max=256"`
 	PhoneNumber string    `json:"phone_number" binding:"required,numeric,min=9,max=11"`
 }
 
 // Define struct to verify the OTP
-type VerifyRegisterTPRequest struct {
+type VerifyRegisterOTPRequest struct {
 	PhoneNumber string    `json:"phone_number" binding:"required,numeric,min=9,max=11"`
 	UserID      uuid.UUID `json:"user_id" binding:"required"`
+	OTP         string    `json:"otp" binding:"required,numeric,min=6,max=6"`
 }
 
 // Define struct to verify the OTP response
 type VerifyRegisterOTPResponse struct {
 	UserID      uuid.UUID `json:"user_id" binding:"required"`
 	PhoneNumber string    `json:"phone_number" binding:"required,numeric,min=9,max=11"`
-	IsVerified  bool      `json:"is_verified" binding:"required"`
+	FullName    string    `json:"full_name" binding:"required,min=3,max=256"`
+	IsActivated bool      `json:"is_activated" binding:"required"`
 }
 
 // Define struct to login a user

@@ -14,10 +14,10 @@ type User struct {
 	UpdatedAt         time.Time
 	DeletedAt         gorm.DeletedAt `gorm:"index"`
 	PhoneNumber       string         `gorm:"uniqueIndex;not null"`
-	Email             string         `gorm:"uniqueIndex"`
-	FirstName         string
-	LastName          string
+	Email             string
+	FullName          string
 	IsVerified        bool `gorm:"default:false"`
+	IsActivated       bool `gorm:"default:false"` // Only activated user when first registered and verified OTP completely
 	VerifiedAt        time.Time
 	Role              string             `gorm:"default:'user'"`
 	Vehicles          []Vehicle          // One-to-many relationship with Vehicle
