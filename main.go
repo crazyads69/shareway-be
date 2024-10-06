@@ -1,7 +1,7 @@
 package main
 
 import (
-	"shareway/db"
+	"shareway/infra/db"
 	"shareway/router"
 	"shareway/util"
 	"shareway/util/token"

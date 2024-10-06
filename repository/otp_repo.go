@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"shareway/db/migration"
+	"shareway/infra/db/migration"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -16,7 +16,7 @@ type OTPRepository struct {
 }
 
 // NewOTPRepository creates a new OTPRepository instance
-func NewOTPRepository(db *gorm.DB) *OTPRepository {
+func NewOTPRepository(db *gorm.DB) IOTPRepository {
 	return &OTPRepository{db: db}
 }
 
@@ -24,6 +24,7 @@ func NewOTPRepository(db *gorm.DB) *OTPRepository {
 type IOTPRepository interface {
 	StoreOTP(phoneNumber string, otp string, userID uuid.UUID) error
 	DeleteOTP(userID uuid.UUID) error
+	GetLatestOTP(phoneNumber string) (*migration.OTP, error)
 	CleanupExpiredOTPs() error
 }
 
@@ -56,7 +57,7 @@ func (repo *OTPRepository) StoreOTP(phoneNumber string, otp string, userID uuid.
 		}
 
 		// Check if the maximum retry limit has been reached
-		if existingOTP.Retry >= 2 {
+		if existingOTP.Retry >= 3 {
 			return errors.New("maximum OTP requests reached")
 		}
 
@@ -76,6 +77,18 @@ func (repo *OTPRepository) DeleteOTP(userID uuid.UUID) error {
 // CleanupExpiredOTPs removes all expired OTPs from the database
 func (repo *OTPRepository) CleanupExpiredOTPs() error {
 	return repo.db.Where("expires_at <= ?", time.Now()).Delete(&migration.OTP{}).Error
+}
+
+// GetLatestOTP retrieves the latest OTP for a given phone number
+func (repo *OTPRepository) GetLatestOTP(phoneNumber string) (*migration.OTP, error) {
+	var otp migration.OTP
+	err := repo.db.Where("phone_number = ? AND expires_at > ?", phoneNumber, time.Now()).
+		Order("created_at DESC").
+		First(&otp).Error
+	if err != nil {
+		return nil, err
+	}
+	return &otp, nil
 }
 
 // Ensure OTPRepository implements IOTPRepository interface

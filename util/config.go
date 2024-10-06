@@ -22,6 +22,9 @@ type Config struct {
 	DatabasePort          int    `mapstructure:"DB_PORT"`
 	PasetoSercetKey       string `mapstructure:"PASETO_SECRET_KEY"`
 	PasetoExpiredDuration int    `mapstructure:"PASETO_EXPIRED_DURATION"`
+	TwilioAccountSID      string `mapstructure:"TWILIO_ACCOUNT_SID"`
+	TwilioAuthToken       string `mapstructure:"TWILIO_AUTH_TOKEN"`
+	TwilioServiceSID      string `mapstructure:"TWILIO_SERVICE_SID"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

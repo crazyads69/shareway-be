@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"shareway/db/migration"
+	"shareway/infra/db/migration"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
