@@ -8,22 +8,19 @@ import (
 	"shareway/util/token"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 // ProtectedController handles protected route operations
 type ProtectedController struct {
 	maker *token.PasetoMaker
 	cfg   util.Config
-	db    *gorm.DB
 }
 
 // NewProtectedController creates a new instance of ProtectedController
-func NewProtectedController(maker *token.PasetoMaker, cfg util.Config, db *gorm.DB) *ProtectedController {
+func NewProtectedController(maker *token.PasetoMaker, cfg util.Config) *ProtectedController {
 	return &ProtectedController{
 		maker: maker,
 		cfg:   cfg,
-		db:    db,
 	}
 }
 

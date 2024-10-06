@@ -7,7 +7,6 @@ import (
 	"shareway/util/token"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 
 	docs "shareway/docs"
 
@@ -20,12 +19,11 @@ type APIServer struct {
 	router  *gin.Engine
 	Maker   *token.PasetoMaker
 	Cfg     util.Config
-	DB      *gorm.DB
 	Service *service.ServiceContainer
 }
 
 // NewAPIServer creates and initializes a new APIServer instance
-func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, db *gorm.DB, service *service.ServiceContainer) (*APIServer, error) {
+func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.ServiceContainer) (*APIServer, error) {
 	r := gin.Default()
 
 	// Set up basic routes
@@ -35,7 +33,6 @@ func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, db *gorm.DB, servic
 		router:  r,
 		Maker:   maker,
 		Cfg:     cfg,
-		DB:      db,
 		Service: service,
 	}, nil
 }
@@ -65,7 +62,7 @@ func (server *APIServer) Start(address string) error {
 // SetupRouter configures the main routes for the API server
 func (server *APIServer) SetupRouter() {
 	SetupAuthRouter(server.router.Group("/auth"), server)
-	SetupProtectedRouter(server.router.Group("/protected", middleware.AuthMiddleware(server.Maker)), server.Maker, server.Cfg, server.DB)
+	SetupProtectedRouter(server.router.Group("/protected", middleware.AuthMiddleware(server.Maker)), server)
 }
 
 // SetupSwagger configures the Swagger documentation route

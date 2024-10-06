@@ -10,23 +10,20 @@ import (
 	"shareway/util/token"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 // AuthController handles authentication-related requests
 type AuthController struct {
 	cfg         util.Config
-	db          *gorm.DB
 	OTPService  service.IOTPService
 	UserService service.IUsersService
 	token       *token.PasetoMaker
 }
 
 // NewAuthController creates a new AuthController instance
-func NewAuthController(cfg util.Config, db *gorm.DB, otpService service.IOTPService, userService service.IUsersService, tokenMaker *token.PasetoMaker) *AuthController {
+func NewAuthController(cfg util.Config, otpService service.IOTPService, userService service.IUsersService, tokenMaker *token.PasetoMaker) *AuthController {
 	return &AuthController{
 		cfg:         cfg,
-		db:          db,
 		OTPService:  otpService,
 		UserService: userService,
 		token:       tokenMaker,

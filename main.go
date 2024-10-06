@@ -33,7 +33,6 @@ func main() {
 	server, err := router.NewAPIServer(
 		maker,
 		cfg,
-		db,
 		services,
 	)
 	if err != nil {
