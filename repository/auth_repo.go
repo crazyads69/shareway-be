@@ -23,6 +23,7 @@ type IAuthRepository interface {
 	CreateUser(phoneNumber string, fullName string, email string) (uuid.UUID, error)
 	GetUserByEmail(email string) (migration.User, error)
 	UpdateSession(accessToken string, userID uuid.UUID) error
+	RevokeToken(userID uuid.UUID, refreshToken string) error
 }
 
 // AuthRepository implements IAuthRepository
@@ -266,6 +267,37 @@ func (r *AuthRepository) UpdateSession(accessToken string, userID uuid.UUID) err
 			tx.Rollback()
 			return fmt.Errorf("failed to update token: %w", err)
 		}
+	}
+
+	return tx.Commit().Error
+}
+
+// RevokeToken revokes the given refresh token
+func (r *AuthRepository) RevokeToken(userID uuid.UUID, refreshToken string) error {
+	tx := r.db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// First, get the current token record
+	var token migration.PasetoToken
+	if err := tx.Where("user_id = ? AND refresh_token = ? AND revoke = false", userID, refreshToken).First(&token).Error; err != nil {
+		tx.Rollback()
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("no active token found for user")
+		}
+		return fmt.Errorf("failed to fetch token: %w", err)
+	}
+
+	// Revoke the token
+	if err := tx.Model(&token).Updates(map[string]interface{}{
+		"revoke":        true,
+		"refresh_turns": 3, // Set refresh_turns to 3 to prevent further refreshes
+	}).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to revoke token: %w", err)
 	}
 
 	return tx.Commit().Error

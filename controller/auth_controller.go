@@ -818,3 +818,84 @@ func (ctrl *AuthController) RefreshToken(ctx *gin.Context) {
 	response := helper.SuccessResponse(res, "Access token refreshed successfully", "Phiên xác thực đã được cập nhật")
 	helper.GinResponse(ctx, http.StatusOK, response)
 }
+
+// Logut user and revoke the token from the database
+// @Summary Logout user and revoke the token
+// @Description Logs out the user by revoking their refresh token from the database
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param Authorization header string true "Bearer {refresh_token}"
+// @Success 200 {object} helper.Response "Logout successful"
+// @Failure 400 {object} helper.Response "Bad request"
+// @Failure 401 {object} helper.Response "Unauthorized"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /auth/logout [post]
+func (ctrl *AuthController) Logout(ctx *gin.Context) {
+	// Get the refresh token from the request header
+	authHeader := ctx.GetHeader("Authorization")
+
+	if authHeader == "" {
+		errorToken := fmt.Errorf("authorization header is missing")
+		response := helper.ErrorResponseWithMessage(
+			errorToken,
+			"Authorization header is required",
+			"Không thể tìm thấy header xác thực",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Split the token string to get the actual token
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		errorToken := fmt.Errorf("invalid authorization header format")
+		response := helper.ErrorResponseWithMessage(
+			errorToken,
+			"Invalid Authorization header format",
+			"Định dạng header xác thực không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	refreshToken := parts[1]
+	if refreshToken == "" {
+		errorToken := fmt.Errorf("refresh token is empty")
+		response := helper.ErrorResponseWithMessage(
+			errorToken,
+			"Refresh token is empty",
+			"Refresh token trống",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Validate the refresh token
+	claims, err := ctrl.UserService.ValidateRefreshToken(refreshToken)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid refresh token",
+			"Refresh token không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Revoke the token
+	err = ctrl.UserService.RevokeToken(claims.UserID, refreshToken)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to revoke token",
+			"Không thể thu hồi token",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	response := helper.SuccessResponse(nil, "Logout successful", "Đăng xuất thành công")
+	helper.GinResponse(ctx, http.StatusOK, response)
+}
