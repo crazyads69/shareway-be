@@ -1,7 +1,20 @@
 version: "3.9"
 services:
-  golang_api_service:
-    container_name: shareride-be
+  shareway_be_service:
+    container_name: shareway-be
     build: .
     ports:
       - "35000:8080" # change port here
+    depends_on:
+      - postgres_db
+  postgres_db:
+    image: postgres:17-alpine
+    container_name: shareway-db
+    environment:
+      POSTGRES_USER: trilm
+      POSTGRES_PASSWORD: Minhtricute69.
+      POSTGRES_DB: shareway
+    ports:
+      - "5433:5432" # Map to port 5433 on the host
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
