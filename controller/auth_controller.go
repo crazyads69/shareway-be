@@ -90,7 +90,6 @@ func (ctrl *AuthController) Register(ctx *gin.Context) {
 	}
 
 	// Generate OTP and return to the user
-	var res schemas.RegisterUserResponse
 	// Add phone number to db and return user_id
 	userID, fullName, err := ctrl.UserService.CreateUserByPhone(req.PhoneNumber, req.FullName)
 	if err != nil {
@@ -103,9 +102,12 @@ func (ctrl *AuthController) Register(ctx *gin.Context) {
 		helper.GinResponse(ctx, http.StatusInternalServerError, response)
 		return
 	}
-	res.UserID = userID
-	res.PhoneNumber = req.PhoneNumber
-	res.FullName = fullName
+
+	res := schemas.RegisterUserResponse{
+		UserID:      userID,
+		PhoneNumber: req.PhoneNumber,
+		FullName:    fullName,
+	}
 
 	response := helper.SuccessResponse(res, "OTP sent successfully", "Mã OTP đã được gửi thành công")
 	helper.GinResponse(ctx, http.StatusOK, response)
@@ -161,9 +163,10 @@ func (ctrl *AuthController) ResendOTP(ctx *gin.Context) {
 		return
 	}
 
-	var res schemas.GenerateOTPResponse
-	res.PhoneNumber = req.PhoneNumber
-	res.UserID = userID
+	res := schemas.GenerateOTPResponse{
+		PhoneNumber: req.PhoneNumber,
+		UserID:      userID,
+	}
 
 	response := helper.SuccessResponse(res, "OTP sent successfully", "Mã OTP đã được gửi thành công")
 	helper.GinResponse(ctx, http.StatusOK, response)
@@ -242,11 +245,12 @@ func (ctrl *AuthController) VerifyRegisterOTP(ctx *gin.Context) {
 		return
 	}
 
-	var res schemas.VerifyRegisterOTPResponse
-	res.UserID = user.ID
-	res.FullName = user.FullName
-	res.PhoneNumber = req.PhoneNumber
-	res.IsActivated = true
+	res := schemas.VerifyRegisterOTPResponse{
+		UserID:      user.ID,
+		PhoneNumber: user.PhoneNumber,
+		FullName:    user.FullName,
+		IsActivated: true,
+	}
 
 	response := helper.SuccessResponse(res, "OTP verified successfully", "OTP đã được xác minh thành công")
 	helper.GinResponse(ctx, http.StatusOK, response)
@@ -361,10 +365,21 @@ func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 		return
 	}
 
-	var res schemas.VerifyCCCDResponse
-	res.User = &user
-	res.AccessToken = accessToken
-	res.RefreshToken = refreshToken
+	res := schemas.VerifyCCCDResponse{
+		User: schemas.UserResponse{
+			ID:          user.ID,
+			CreatedAt:   user.CreatedAt,
+			UpdatedAt:   user.UpdatedAt,
+			PhoneNumber: user.PhoneNumber,
+			Email:       user.Email,
+			FullName:    user.FullName,
+			IsVerified:  user.IsVerified,
+			IsActivated: user.IsActivated,
+			Role:        user.Role,
+		},
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}
 
 	response := helper.SuccessResponse(res, "CCCD verified successfully", "CCCD đã được xác minh thành công")
 	helper.GinResponse(ctx, http.StatusOK, response)

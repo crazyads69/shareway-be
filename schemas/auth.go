@@ -2,7 +2,6 @@ package schemas
 
 import (
 	"mime/multipart"
-	"shareway/infra/db/migration"
 	"time"
 
 	"github.com/google/uuid"
@@ -84,7 +83,7 @@ type VerifyCCCDRequest struct {
 
 // Define struct for VerifyCCCDResponse
 type VerifyCCCDResponse struct {
-	User         *migration.User `json:"user" binding:"required"`
-	AccessToken  string          `json:"access_token" binding:"required"`
-	RefreshToken string          `json:"refresh_token" binding:"required"`
+	User         UserResponse `json:"user" binding:"required"`
+	AccessToken  string       `json:"access_token" binding:"required"`
+	RefreshToken string       `json:"refresh_token" binding:"required"`
 }
