@@ -5,7 +5,9 @@ import (
 	"shareway/service"
 	"shareway/util"
 	"shareway/util/token"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	docs "shareway/docs"
@@ -26,6 +28,15 @@ type APIServer struct {
 func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.ServiceContainer) (*APIServer, error) {
 	r := gin.Default()
 
+	if cfg.GinMode != "release" {
+		r.Use(cors.New(cors.Config{
+			AllowAllOrigins:  true,
+			AllowCredentials: true,
+			AllowMethods:     []string{"POST", "GET", "PUT", "DELETE", "PATCH", "OPTIONS"},
+			AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "X-Request-Id", "X-Requested-With"},
+			MaxAge:           12 * time.Hour,
+		}))
+	}
 	// Set up basic routes
 	setupBasicRoutes(r)
 
@@ -52,6 +63,7 @@ func setupBasicRoutes(r *gin.Engine) {
 			"message": "Server is running (Healthy)",
 		})
 	})
+
 }
 
 // Start begins the API server on the specified address

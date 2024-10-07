@@ -3,13 +3,17 @@ services:
   shareway_be_service:
     container_name: shareway-be
     build: .
+    restart: always
     ports:
       - "35000:8080" # change port here
     depends_on:
       - postgres_db
+    networks:
+      - shareway-network
   postgres_db:
     image: postgres:17-alpine
     container_name: shareway-db
+    restart: always
     environment:
       POSTGRES_USER: trilm
       POSTGRES_PASSWORD: Minhtricute69.
@@ -18,3 +22,11 @@ services:
       - "5433:5432" # Map to port 5433 on the host
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - shareway-network
+volumes:
+  postgres_data:
+
+networks:
+  shareway-network:
+    driver: bridge

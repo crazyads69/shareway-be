@@ -15,6 +15,7 @@ type Config struct {
 	LogMaxBackups               int    `mapstructure:"LOG_MAX_BACKUPS"`
 	LogMaxAge                   int    `mapstructure:"LOG_MAX_AGE"`
 	LogCompress                 bool   `mapstructure:"LOG_COMPRESS"`
+	GinMode                     string `mapstructure:"GIN_MODE"`
 	DatabaseUsername            string `mapstructure:"DB_USER"`
 	DatabasePassword            string `mapstructure:"DB_PASSWORD"`
 	DatabaseName                string `mapstructure:"DB_NAME"`
