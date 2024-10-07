@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"shareway/helper"
 	"shareway/schemas"
@@ -715,5 +717,104 @@ func (ctrl *AuthController) LoginWithOAuth(ctx *gin.Context) {
 	}
 
 	response := helper.SuccessResponse(res, "OTP sent successfully", "Mã OTP đã được gửi thành công")
+	helper.GinResponse(ctx, http.StatusOK, response)
+}
+
+// Refresh token and return new access token for the user
+// RefreshToken godoc
+// @Summary Refresh token and return new access token for the user
+// @Description Validates the refresh token and issues a new access token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param Authorization header string true "Bearer <refresh_token>"
+// @Success 200 {object} helper.Response{data=schemas.RefreshTokenResponse} "Access token refreshed successfully"
+// @Failure 400 {object} helper.Response "Invalid refresh token or authorization header"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /auth/refresh-token [post]
+func (ctrl *AuthController) RefreshToken(ctx *gin.Context) {
+	// Get the refresh token from the request header
+	authHeader := ctx.GetHeader("Authorization")
+
+	if authHeader == "" {
+		errorToken := fmt.Errorf("authorization header is missing")
+		response := helper.ErrorResponseWithMessage(
+			errorToken,
+			"Authorization header is required",
+			"Không thể tìm thấy header xác thực",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Split the token string to get the actual token
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		errorToken := fmt.Errorf("invalid authorization header format")
+		response := helper.ErrorResponseWithMessage(
+			errorToken,
+			"Invalid Authorization header format",
+			"Định dạng header xác thực không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	refreshToken := parts[1]
+	if refreshToken == "" {
+		errorToken := fmt.Errorf("refresh token is empty")
+		response := helper.ErrorResponseWithMessage(
+			errorToken,
+			"Refresh token is empty",
+			"Refresh token trống",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Validate the refresh token
+	claims, err := ctrl.UserService.ValidateRefreshToken(refreshToken)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid refresh token",
+			"Refresh token không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+	// Get user id from db
+	// If the refresh token is valid, create a new access token
+	accessToken, err := ctrl.UserService.RefreshNewToken(claims.PhoneNumber, claims.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to create new access token",
+			"Không thể tạo phiên xác thực mới",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	// Update session
+	err = ctrl.UserService.UpdateSession(accessToken, claims.UserID)
+	// If error mean token has been revoked
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to update session",
+			"Không thể cập nhật phiên xác thực",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	res := schemas.RefreshTokenResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		UserID:       claims.UserID}
+
+	response := helper.SuccessResponse(res, "Access token refreshed successfully", "Phiên xác thực đã được cập nhật")
 	helper.GinResponse(ctx, http.StatusOK, response)
 }

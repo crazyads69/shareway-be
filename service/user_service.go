@@ -5,6 +5,7 @@ import (
 	"shareway/infra/db/migration"
 	"shareway/infra/fpt"
 	"shareway/repository"
+	"shareway/schemas"
 	"shareway/util"
 	"shareway/util/token"
 	"time"
@@ -26,6 +27,9 @@ type IUsersService interface {
 	UserExistsByEmail(email string) (bool, error)
 	CreateUser(phoneNumber string, fullName string, email string) (uuid.UUID, error)
 	GetUserByEmail(email string) (migration.User, error)
+	ValidateRefreshToken(refreshToken string) (schemas.Payload, error)
+	RefreshNewToken(phoneNumber string, userID uuid.UUID) (string, error)
+	UpdateSession(accessToken string, userID uuid.UUID) error
 }
 
 // UsersService implements IUsersService and handles user-related business logic
@@ -97,12 +101,12 @@ func (s *UsersService) VerifyUser(phoneNumber string) error {
 // Access token and refresh token are returned
 func (s *UsersService) CreateSession(phoneNumber string, userID uuid.UUID) (migration.User, string, string, error) {
 	// First create access token and refresh token
-	accessToken, err := s.maker.CreateToken(phoneNumber, time.Duration(s.cfg.AccessTokenExpiredDuration))
+	accessToken, err := s.maker.CreateToken(phoneNumber, userID, time.Duration(s.cfg.AccessTokenExpiredDuration))
 	if err != nil {
 		return migration.User{}, "", "", err
 	}
 
-	refreshToken, err := s.maker.CreateToken(phoneNumber, time.Duration(s.cfg.RefreshTokenExpiredDuration))
+	refreshToken, err := s.maker.CreateToken(phoneNumber, userID, time.Duration(s.cfg.RefreshTokenExpiredDuration))
 	if err != nil {
 		return migration.User{}, "", "", err
 	}
@@ -135,6 +139,25 @@ func (s *UsersService) CreateUser(phoneNumber, fullName, email string) (uuid.UUI
 // GetUserByEmail retrieves the user associated with the given email
 func (s *UsersService) GetUserByEmail(email string) (migration.User, error) {
 	return s.repo.GetUserByEmail(email)
+}
+
+// ValidateRefreshToken validates the given refresh token and returns the phone number
+func (s *UsersService) ValidateRefreshToken(refreshToken string) (schemas.Payload, error) {
+	payload, err := s.maker.VerifyToken(refreshToken)
+	if err != nil {
+		return schemas.Payload{}, err
+	}
+	return *payload, nil
+}
+
+// RefreshNewToken refreshes the access token for the given phone number and user ID
+func (s *UsersService) RefreshNewToken(phoneNumber string, userID uuid.UUID) (string, error) {
+	return s.maker.CreateToken(phoneNumber, userID, time.Duration(s.cfg.AccessTokenExpiredDuration))
+}
+
+// UpdateSession updates the access token for the given user ID
+func (s *UsersService) UpdateSession(accessToken string, userID uuid.UUID) error {
+	return s.repo.UpdateSession(accessToken, userID)
 }
 
 // Ensure UsersService implements IUsersService

@@ -82,7 +82,7 @@ func ValidateCCCDInfo(frontCCCDInfo, backCCCDInfo *fpt.CCCDInfo) error {
 	}
 
 	doe, issueDate, dob := dates[0], dates[1], dates[2]
-	currentDate := time.Now()
+	currentDate := time.Now().UTC()
 
 	// Validate expiry date (DOE)
 	if err := validateExpiry(doe, currentDate, issueDate); err != nil {

@@ -15,11 +15,15 @@ import (
 // NewDatabaseInstance creates and configures a new database connection
 func NewDatabaseInstance(cfg util.Config) *gorm.DB {
 	// Construct the PostgreSQL connection string
-	psqlconn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
+	psqlconn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable timezone=UTC",
 		cfg.DatabaseHost, cfg.DatabaseUsername, cfg.DatabasePassword, cfg.DatabaseName, cfg.DatabasePort)
 
 	// Open a connection to the database
-	db, err := gorm.Open(postgres.Open(psqlconn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(psqlconn), &gorm.Config{
+		NowFunc: func() time.Time {
+			return time.Now().UTC()
+		},
+	})
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to connect to database")
 	}
@@ -39,11 +43,10 @@ func NewDatabaseInstance(cfg util.Config) *gorm.DB {
 	}
 
 	// Uncomment the following block to drop all tables before migration (use with caution)
-	/*
-		if err := migration.DropAllTables(db); err != nil {
-			log.Fatal().Err(err).Msg("Failed to drop tables")
-		}
-	*/
+
+	if err := migration.DropAllTables(db); err != nil {
+		log.Fatal().Err(err).Msg("Failed to drop tables")
+	}
 
 	// Perform database migration
 	if err := migration.Migrate(db); err != nil {

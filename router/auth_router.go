@@ -40,5 +40,7 @@ func SetupAuthRouter(group *gin.RouterGroup, server *APIServer) {
 	group.POST("/register-oauth", authController.RegisterOAuth)
 	// VerifyLoginOTPRequest
 	group.POST("/verify-login-otp", authController.VerifyLoginOTP)
+	// RefreshTokenRequest
+	group.POST("/refresh-token", authController.RefreshToken)
 	// group.POST("/login", auth_controller.Login)
 }

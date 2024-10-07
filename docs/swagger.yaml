@@ -58,6 +58,19 @@ definitions:
     - phone_number
     - user_id
     type: object
+  schemas.RefreshTokenResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+      user_id:
+        type: string
+    required:
+    - access_token
+    - refresh_token
+    - user_id
+    type: object
   schemas.RegisterOAuthRequest:
     properties:
       email:
@@ -311,6 +324,42 @@ paths:
           schema:
             $ref: '#/definitions/helper.Response'
       summary: Login with phone number
+      tags:
+      - auth
+  /auth/refresh-token:
+    post:
+      consumes:
+      - application/json
+      description: Validates the refresh token and issues a new access token
+      parameters:
+      - description: Bearer <refresh_token>
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Access token refreshed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.RefreshTokenResponse'
+              type: object
+        "400":
+          description: Invalid refresh token or authorization header
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Refresh token and return new access token for the user
       tags:
       - auth
   /auth/register:

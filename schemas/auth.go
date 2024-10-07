@@ -11,6 +11,7 @@ import (
 
 type Payload struct {
 	ID          uuid.UUID `json:"id"`
+	UserID      uuid.UUID `json:"user_id"`
 	PhoneNumber string    `json:"phone_number"`
 	CreatedAt   time.Time `json:"created_at"`
 	ExpiredAt   time.Time `json:"expired_at"`
@@ -110,4 +111,11 @@ type LoginWithOAuthResponse struct {
 	Email       string    `json:"email" binding:"required,email,min=3,max=256"`
 	UserID      uuid.UUID `json:"user_id" binding:"required"`
 	PhoneNumber string    `json:"phone_number" binding:"required,numeric,min=9,max=11"`
+}
+
+// Define struct for RefreshTokenResponse
+type RefreshTokenResponse struct {
+	AccessToken  string    `json:"access_token" binding:"required"`
+	RefreshToken string    `json:"refresh_token" binding:"required"`
+	UserID       uuid.UUID `json:"user_id" binding:"required"`
 }

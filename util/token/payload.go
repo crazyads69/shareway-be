@@ -15,7 +15,7 @@ var (
 
 // NewPayload creates a new token payload
 // It takes a phone number and duration as input and returns a Payload and an error
-func NewPayload(phoneNumber string, duration time.Duration) (*schemas.Payload, error) {
+func NewPayload(phoneNumber string, userID uuid.UUID, duration time.Duration) (*schemas.Payload, error) {
 	// Generate a new random UUID for the token
 	tokenID, err := uuid.NewRandom()
 	if err != nil {
@@ -23,12 +23,13 @@ func NewPayload(phoneNumber string, duration time.Duration) (*schemas.Payload, e
 	}
 
 	// Create the current timestamp
-	now := time.Now()
+	now := time.Now().UTC()
 
 	// Create and return the new payload
 	return &schemas.Payload{
 		ID:          tokenID,
 		PhoneNumber: phoneNumber,
+		UserID:      userID,
 		CreatedAt:   now,
 		ExpiredAt:   now.Add(duration),
 	}, nil
@@ -37,7 +38,7 @@ func NewPayload(phoneNumber string, duration time.Duration) (*schemas.Payload, e
 // ValidatePayload checks if the payload is still valid
 // It returns an error if the token has expired
 func ValidatePayload(payload *schemas.Payload) error {
-	if payload.ExpiredAt.Before(time.Now()) {
+	if payload.ExpiredAt.Before(time.Now().UTC()) {
 		return ErrExpiredToken
 	}
 	return nil

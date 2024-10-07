@@ -6,9 +6,16 @@ import (
 	"shareway/service"
 	"shareway/util"
 	"shareway/util/token"
+	"time"
 
 	"github.com/rs/zerolog/log"
 )
+
+// Define the init function that will be called before the main function
+func init() {
+	// Set the local timezone to UTC for the entire application
+	time.Local = time.UTC
+}
 
 func main() {
 	// Load config file using viper

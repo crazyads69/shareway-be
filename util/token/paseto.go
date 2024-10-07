@@ -8,6 +8,7 @@ import (
 	"shareway/schemas"
 
 	"github.com/aead/chacha20poly1305"
+	"github.com/google/uuid"
 	"github.com/o1egl/paseto"
 )
 
@@ -41,9 +42,9 @@ func NewPasetoMaker(symmetricKey string) (*PasetoMaker, error) {
 }
 
 // CreateToken generates a new token for a given phone number and duration
-func (maker *PasetoMaker) CreateToken(phoneNumber string, duration time.Duration) (string, error) {
+func (maker *PasetoMaker) CreateToken(phoneNumber string, userID uuid.UUID, duration time.Duration) (string, error) {
 	// Create a new payload
-	payload, err := NewPayload(phoneNumber, duration)
+	payload, err := NewPayload(phoneNumber, userID, duration)
 	if err != nil {
 		return "", fmt.Errorf("failed to create payload: %w", err)
 	}

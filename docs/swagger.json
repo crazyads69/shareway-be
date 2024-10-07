@@ -132,6 +132,67 @@
                 }
             }
         },
+        "/auth/refresh-token": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Validates the refresh token and issues a new access token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Refresh token and return new access token for the user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer \u003crefresh_token\u003e",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Access token refreshed successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.RefreshTokenResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid refresh token or authorization header",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/register": {
             "post": {
                 "description": "Starts the registration process by sending an OTP and creating a user account",
@@ -631,6 +692,25 @@
                     "type": "string",
                     "maxLength": 11,
                     "minLength": 9
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.RefreshTokenResponse": {
+            "type": "object",
+            "required": [
+                "access_token",
+                "refresh_token",
+                "user_id"
+            ],
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
                 },
                 "user_id": {
                     "type": "string"
