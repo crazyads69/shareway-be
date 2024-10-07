@@ -141,24 +141,45 @@ const docTemplate = `{
             "post": {
                 "description": "Verifies the front and back images of a user's CCCD, saves the information, and updates user status",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "auths"
+                    "auth"
                 ],
                 "summary": "Verify user's CCCD",
                 "parameters": [
                     {
-                        "description": "CCCD verification request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/schemas.VerifyCCCDRequest"
-                        }
+                        "type": "file",
+                        "description": "Front image of CCCD",
+                        "name": "front_image",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Back image of CCCD",
+                        "name": "back_image",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID format)",
+                        "name": "user_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "maxLength": 11,
+                        "minLength": 9,
+                        "type": "string",
+                        "description": "User's phone number (9-11 digits)",
+                        "name": "phone_number",
+                        "in": "formData",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -926,9 +947,6 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
-        },
-        "schemas.VerifyCCCDRequest": {
-            "type": "object"
         },
         "schemas.VerifyCCCDResponse": {
             "type": "object",

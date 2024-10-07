@@ -21,7 +21,11 @@ func main() {
 	util.ConfigLogger(cfg)
 
 	// Create new Paseto token maker
-	maker, _ := token.NewPasetoMaker(cfg.PasetoSercetKey)
+	maker, err := token.SetupPasetoMaker(cfg.PasetoSercetKey)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Could not create token maker")
+		return
+	}
 	// Initialize DB
 	db := db.NewDatabaseInstance(cfg)
 

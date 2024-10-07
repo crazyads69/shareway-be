@@ -431,8 +431,6 @@ definitions:
     - phone_number
     - user_id
     type: object
-  schemas.VerifyCCCDRequest:
-    type: object
   schemas.VerifyCCCDResponse:
     properties:
       access_token:
@@ -564,16 +562,32 @@ paths:
   /auth/verify-cccd:
     post:
       consumes:
-      - application/json
+      - multipart/form-data
       description: Verifies the front and back images of a user's CCCD, saves the
         information, and updates user status
       parameters:
-      - description: CCCD verification request
-        in: body
-        name: request
+      - description: Front image of CCCD
+        in: formData
+        name: front_image
         required: true
-        schema:
-          $ref: '#/definitions/schemas.VerifyCCCDRequest'
+        type: file
+      - description: Back image of CCCD
+        in: formData
+        name: back_image
+        required: true
+        type: file
+      - description: User ID (UUID format)
+        in: formData
+        name: user_id
+        required: true
+        type: string
+      - description: User's phone number (9-11 digits)
+        in: formData
+        maxLength: 11
+        minLength: 9
+        name: phone_number
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -596,7 +610,7 @@ paths:
             $ref: '#/definitions/helper.Response'
       summary: Verify user's CCCD
       tags:
-      - auths
+      - auth
   /auth/verify-register-otp:
     post:
       consumes:

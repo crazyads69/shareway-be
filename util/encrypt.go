@@ -34,7 +34,14 @@ func NewEncryptor(cfg Config) IEncryptor {
 func (e *Encryptor) initBlock() error {
 	var err error
 	e.once.Do(func() {
-		key := []byte(e.cfg.EncryptionKey)
+		// Decode the base64-encoded key
+		key, decodeErr := base64.StdEncoding.DecodeString(e.cfg.EncryptionKey)
+		if decodeErr != nil {
+			err = errors.New("failed to decode encryption key")
+			return
+		}
+
+		// Create the AES cipher using the decoded key
 		e.block, err = aes.NewCipher(key)
 	})
 	return err

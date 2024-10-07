@@ -1,6 +1,7 @@
 package token
 
 import (
+	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -14,6 +15,14 @@ import (
 type PasetoMaker struct {
 	paseto       *paseto.V2
 	symmetricKey []byte
+}
+
+func SetupPasetoMaker(base64Key string) (*PasetoMaker, error) {
+	key, err := base64.StdEncoding.DecodeString(base64Key)
+	if err != nil {
+		return nil, fmt.Errorf("invalid key: %w", err)
+	}
+	return NewPasetoMaker(string(key))
 }
 
 // NewPasetoMaker creates a new PasetoMaker instance

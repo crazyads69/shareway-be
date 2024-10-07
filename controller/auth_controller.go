@@ -9,6 +9,7 @@ import (
 	"shareway/util"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // AuthController handles authentication-related requests
@@ -254,10 +255,13 @@ func (ctrl *AuthController) VerifyRegisterOTP(ctx *gin.Context) {
 // VerifyCCCD verifies the CCCD (Citizen Identity Card) of the user
 // @Summary Verify user's CCCD
 // @Description Verifies the front and back images of a user's CCCD, saves the information, and updates user status
-// @Tags auths
-// @Accept json
+// @Tags auth
+// @Accept multipart/form-data
 // @Produce json
-// @Param request body schemas.VerifyCCCDRequest true "CCCD verification request"
+// @Param front_image formData file true "Front image of CCCD"
+// @Param back_image formData file true "Back image of CCCD"
+// @Param user_id formData string true "User ID (UUID format)"
+// @Param phone_number formData string true "User's phone number (9-11 digits)" minlength(9) maxlength(11)
 // @Success 200 {object} helper.Response{data=schemas.VerifyCCCDResponse} "CCCD verified successfully"
 // @Failure 400 {object} helper.Response "Invalid request or CCCD info"
 // @Failure 500 {object} helper.Response "Internal server error"
@@ -265,11 +269,24 @@ func (ctrl *AuthController) VerifyRegisterOTP(ctx *gin.Context) {
 func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 	var req schemas.VerifyCCCDRequest
 
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	// We use ShouldBind instead of ShouldBindJSON because the request is multipart/form-data
+	if err := ctx.ShouldBind(&req); err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
 			"Invalid request body",
 			"Yêu cầu không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Convert UserID string to UUID
+	userID, err := uuid.Parse(req.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid user ID",
+			"ID người dùng không hợp lệ",
 		)
 		helper.GinResponse(ctx, http.StatusBadRequest, response)
 		return
@@ -309,7 +326,7 @@ func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 		return
 	}
 	// Encrypt and save the CCCD info
-	err = ctrl.UserService.EncryptAndSaveCCCDInfo(frontCCCDInfo, req.UserID)
+	err = ctrl.UserService.EncryptAndSaveCCCDInfo(frontCCCDInfo, userID)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -333,7 +350,7 @@ func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 	}
 
 	// Create a new session
-	user, accessToken, refreshToken, err := ctrl.UserService.CreateSession(req.PhoneNumber, req.UserID)
+	user, accessToken, refreshToken, err := ctrl.UserService.CreateSession(req.PhoneNumber, userID)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,

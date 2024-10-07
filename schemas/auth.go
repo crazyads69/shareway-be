@@ -78,7 +78,7 @@ type VerifyLoginOTPRequest struct {
 type VerifyCCCDRequest struct {
 	FrontImage  *multipart.FileHeader `form:"front_image" binding:"required"`
 	BackImage   *multipart.FileHeader `form:"back_image" binding:"required"`
-	UserID      uuid.UUID             `form:"user_id" binding:"required"`
+	UserID      string                `form:"user_id" binding:"required,uuid"`
 	PhoneNumber string                `form:"phone_number" binding:"required,numeric,min=9,max=11"`
 }
 
