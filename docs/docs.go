@@ -15,6 +15,134 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/auth/login-oauth": {
+            "post": {
+                "description": "Authenticates a user using OAuth2 and sends an OTP to their phone number",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Login with OAuth2",
+                "parameters": [
+                    {
+                        "description": "OAuth2 login details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.LoginWithOAuthRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OTP sent successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.LoginWithOAuthResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "User does not exist",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login-phone": {
+            "post": {
+                "description": "Initiates login process by sending OTP to the provided phone number",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Login with phone number",
+                "parameters": [
+                    {
+                        "description": "Phone number for login",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.GenerateOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OTP sent successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GenerateOTPResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "User does not exist",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/register": {
             "post": {
                 "description": "Starts the registration process by sending an OTP and creating a user account",
@@ -66,6 +194,70 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "User already exists",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register-oauth": {
+            "post": {
+                "description": "Register a new user using OAuth2 with Firebase authentication",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register a new user using OAuth2",
+                "parameters": [
+                    {
+                        "description": "User registration details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.RegisterOAuthRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OTP sent successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.RegisterOAuthResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "409": {
+                        "description": "User or email already exists",
                         "schema": {
                             "$ref": "#/definitions/helper.Response"
                         }
@@ -209,6 +401,64 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/verify-login-otp": {
+            "post": {
+                "description": "Verifies the OTP for login, creates a user session, and returns user info with access and refresh tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify login OTP and create user session",
+                "parameters": [
+                    {
+                        "description": "OTP verification details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.VerifyLoginOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OTP verified successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.VerifyLoginOTPResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or OTP verification failed",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create session",
                         "schema": {
                             "$ref": "#/definitions/helper.Response"
                         }
@@ -362,6 +612,94 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.LoginWithOAuthRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "maxLength": 256,
+                    "minLength": 3
+                }
+            }
+        },
+        "schemas.LoginWithOAuthResponse": {
+            "type": "object",
+            "required": [
+                "email",
+                "phone_number",
+                "user_id"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "maxLength": 256,
+                    "minLength": 3
+                },
+                "phone_number": {
+                    "type": "string",
+                    "maxLength": 11,
+                    "minLength": 9
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.RegisterOAuthRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "full_name",
+                "phone_number"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "maxLength": 256
+                },
+                "full_name": {
+                    "type": "string",
+                    "maxLength": 256,
+                    "minLength": 3
+                },
+                "phone_number": {
+                    "type": "string",
+                    "maxLength": 11,
+                    "minLength": 9
+                }
+            }
+        },
+        "schemas.RegisterOAuthResponse": {
+            "type": "object",
+            "required": [
+                "email",
+                "full_name",
+                "phone_number",
+                "user_id"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "maxLength": 256
+                },
+                "full_name": {
+                    "type": "string",
+                    "maxLength": 256,
+                    "minLength": 3
+                },
+                "phone_number": {
+                    "type": "string",
+                    "maxLength": 11,
+                    "minLength": 9
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "schemas.RegisterUserRequest": {
             "type": "object",
             "required": [
@@ -440,6 +778,48 @@ const docTemplate = `{
             }
         },
         "schemas.VerifyCCCDResponse": {
+            "type": "object",
+            "required": [
+                "access_token",
+                "refresh_token",
+                "user"
+            ],
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/schemas.UserResponse"
+                }
+            }
+        },
+        "schemas.VerifyLoginOTPRequest": {
+            "type": "object",
+            "required": [
+                "otp",
+                "phone_number",
+                "user_id"
+            ],
+            "properties": {
+                "otp": {
+                    "type": "string",
+                    "maxLength": 6,
+                    "minLength": 6
+                },
+                "phone_number": {
+                    "type": "string",
+                    "maxLength": 11,
+                    "minLength": 9
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.VerifyLoginOTPResponse": {
             "type": "object",
             "required": [
                 "access_token",

@@ -32,6 +32,71 @@ definitions:
     - phone_number
     - user_id
     type: object
+  schemas.LoginWithOAuthRequest:
+    properties:
+      email:
+        maxLength: 256
+        minLength: 3
+        type: string
+    required:
+    - email
+    type: object
+  schemas.LoginWithOAuthResponse:
+    properties:
+      email:
+        maxLength: 256
+        minLength: 3
+        type: string
+      phone_number:
+        maxLength: 11
+        minLength: 9
+        type: string
+      user_id:
+        type: string
+    required:
+    - email
+    - phone_number
+    - user_id
+    type: object
+  schemas.RegisterOAuthRequest:
+    properties:
+      email:
+        maxLength: 256
+        type: string
+      full_name:
+        maxLength: 256
+        minLength: 3
+        type: string
+      phone_number:
+        maxLength: 11
+        minLength: 9
+        type: string
+    required:
+    - email
+    - full_name
+    - phone_number
+    type: object
+  schemas.RegisterOAuthResponse:
+    properties:
+      email:
+        maxLength: 256
+        type: string
+      full_name:
+        maxLength: 256
+        minLength: 3
+        type: string
+      phone_number:
+        maxLength: 11
+        minLength: 9
+        type: string
+      user_id:
+        type: string
+    required:
+    - email
+    - full_name
+    - phone_number
+    - user_id
+    type: object
   schemas.RegisterUserRequest:
     properties:
       full_name:
@@ -99,6 +164,36 @@ definitions:
     - refresh_token
     - user
     type: object
+  schemas.VerifyLoginOTPRequest:
+    properties:
+      otp:
+        maxLength: 6
+        minLength: 6
+        type: string
+      phone_number:
+        maxLength: 11
+        minLength: 9
+        type: string
+      user_id:
+        type: string
+    required:
+    - otp
+    - phone_number
+    - user_id
+    type: object
+  schemas.VerifyLoginOTPResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+      user:
+        $ref: '#/definitions/schemas.UserResponse'
+    required:
+    - access_token
+    - refresh_token
+    - user
+    type: object
   schemas.VerifyRegisterOTPRequest:
     properties:
       otp:
@@ -139,6 +234,85 @@ definitions:
 info:
   contact: {}
 paths:
+  /auth/login-oauth:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user using OAuth2 and sends an OTP to their phone
+        number
+      parameters:
+      - description: OAuth2 login details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.LoginWithOAuthRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP sent successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.LoginWithOAuthResponse'
+              type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "404":
+          description: User does not exist
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      summary: Login with OAuth2
+      tags:
+      - auth
+  /auth/login-phone:
+    post:
+      consumes:
+      - application/json
+      description: Initiates login process by sending OTP to the provided phone number
+      parameters:
+      - description: Phone number for login
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.GenerateOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP sent successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GenerateOTPResponse'
+              type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "404":
+          description: User does not exist
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      summary: Login with phone number
+      tags:
+      - auth
   /auth/register:
     post:
       consumes:
@@ -177,6 +351,45 @@ paths:
           schema:
             $ref: '#/definitions/helper.Response'
       summary: Initiate user registration
+      tags:
+      - auth
+  /auth/register-oauth:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user using OAuth2 with Firebase authentication
+      parameters:
+      - description: User registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.RegisterOAuthRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP sent successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.RegisterOAuthResponse'
+              type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "409":
+          description: User or email already exists
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      summary: Register a new user using OAuth2
       tags:
       - auth
   /auth/resend-otp:
@@ -264,6 +477,42 @@ paths:
           schema:
             $ref: '#/definitions/helper.Response'
       summary: Verify user's CCCD
+      tags:
+      - auth
+  /auth/verify-login-otp:
+    post:
+      consumes:
+      - application/json
+      description: Verifies the OTP for login, creates a user session, and returns
+        user info with access and refresh tokens
+      parameters:
+      - description: OTP verification details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.VerifyLoginOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP verified successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.VerifyLoginOTPResponse'
+              type: object
+        "400":
+          description: Invalid request body or OTP verification failed
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Failed to create session
+          schema:
+            $ref: '#/definitions/helper.Response'
+      summary: Verify login OTP and create user session
       tags:
       - auth
   /auth/verify-register-otp:

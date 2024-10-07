@@ -28,8 +28,8 @@ func NewAuthController(cfg util.Config, otpService service.IOTPService, userServ
 	}
 }
 
-// InitiateRegistration starts the registration process by sending an OTP
-// InitiateRegistration godoc
+// Register starts the registration process by sending an OTP
+// Register godoc
 // @Summary Initiate user registration
 // @Description Starts the registration process by sending an OTP and creating a user account
 // @Tags auth
@@ -382,5 +382,338 @@ func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 	}
 
 	response := helper.SuccessResponse(res, "CCCD verified successfully", "CCCD đã được xác minh thành công")
+	helper.GinResponse(ctx, http.StatusOK, response)
+}
+
+// RegisterOAuth godoc
+// @Summary Register a new user using OAuth2
+// @Description Register a new user using OAuth2 with Firebase authentication
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body schemas.RegisterOAuthRequest true "User registration details"
+// @Success 200 {object} helper.Response{data=schemas.RegisterOAuthResponse} "OTP sent successfully"
+// @Failure 400 {object} helper.Response "Invalid request body"
+// @Failure 409 {object} helper.Response "User or email already exists"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /auth/register-oauth [post]
+func (ctrl *AuthController) RegisterOAuth(ctx *gin.Context) {
+	var req schemas.RegisterOAuthRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid request body",
+			"Yêu cầu không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Check if user already exists
+	exists, err := ctrl.UserService.UserExistsByPhone(req.PhoneNumber)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to check user existence",
+			"Không thể kiểm tra sự tồn tại của người dùng",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+	if exists {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"User already exists",
+			"Người dùng đã tồn tại",
+		)
+		helper.GinResponse(ctx, http.StatusConflict, response)
+		return
+	}
+
+	// Check email exists
+	exists, err = ctrl.UserService.UserExistsByEmail(req.Email)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to check email existence",
+			"Không thể kiểm tra sự tồn tại của email",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+	if exists {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Email already exists",
+			"Email đã tồn tại",
+		)
+		helper.GinResponse(ctx, http.StatusConflict, response)
+		return
+	}
+
+	// Send OTP via Twilio
+	_, err = ctrl.OTPService.SendOTP(req.PhoneNumber)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to send OTP",
+			"Không thể gửi mã OTP",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	// Create user and return user_id
+	userID, err := ctrl.UserService.CreateUser(req.PhoneNumber, req.FullName, req.Email)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to create user",
+			"Không thể tạo người dùng",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	res := schemas.RegisterOAuthResponse{
+		UserID:      userID,
+		FullName:    req.FullName,
+		PhoneNumber: req.PhoneNumber,
+		Email:       req.Email,
+	}
+
+	response := helper.SuccessResponse(res, "OTP sent successfully", "Mã OTP đã được gửi thành công")
+	helper.GinResponse(ctx, http.StatusOK, response)
+}
+
+// Login with phone number
+// LoginWithPhoneNumber godoc
+// @Summary Login with phone number
+// @Description Initiates login process by sending OTP to the provided phone number
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body schemas.GenerateOTPRequest true "Phone number for login"
+// @Success 200 {object} helper.Response{data=schemas.GenerateOTPResponse} "OTP sent successfully"
+// @Failure 400 {object} helper.Response "Invalid request body"
+// @Failure 404 {object} helper.Response "User does not exist"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /auth/login-phone [post]
+func (ctrl *AuthController) LoginWithPhoneNumber(ctx *gin.Context) {
+	var req schemas.GenerateOTPRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid request body",
+			"Yêu cầu không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Check if user exists
+	exists, err := ctrl.UserService.UserExistsByPhone(req.PhoneNumber)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to check user existence",
+			"Không thể kiểm tra sự tồn tại của người dùng",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+	if !exists {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"User does not exist",
+			"Người dùng không tồn tại",
+		)
+		helper.GinResponse(ctx, http.StatusNotFound, response)
+		return
+	}
+
+	// Send OTP via Twilio
+	_, err = ctrl.OTPService.SendOTP(req.PhoneNumber)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to send OTP",
+			"Không thể gửi mã OTP",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	// Get user_id
+	userID, err := ctrl.UserService.GetUserIDByPhone(req.PhoneNumber)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get user_id",
+			"Không thể lấy user_id",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	res := schemas.GenerateOTPResponse{
+		PhoneNumber: req.PhoneNumber,
+		UserID:      userID,
+	}
+
+	response := helper.SuccessResponse(res, "OTP sent successfully", "Mã OTP đã được gửi thành công")
+	helper.GinResponse(ctx, http.StatusOK, response)
+}
+
+// VerifyLoginOTP verifies the OTP and get user info, access token, and refresh token
+// VerifyLoginOTP godoc
+// @Summary Verify login OTP and create user session
+// @Description Verifies the OTP for login, creates a user session, and returns user info with access and refresh tokens
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body schemas.VerifyLoginOTPRequest true "OTP verification details"
+// @Success 200 {object} helper.Response{data=schemas.VerifyLoginOTPResponse} "OTP verified successfully"
+// @Failure 400 {object} helper.Response "Invalid request body or OTP verification failed"
+// @Failure 500 {object} helper.Response "Failed to create session"
+// @Router /auth/verify-login-otp [post]
+func (ctrl *AuthController) VerifyLoginOTP(ctx *gin.Context) {
+	var req schemas.VerifyLoginOTPRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid request body",
+			"Yêu cầu không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Verify the OTP
+	err := ctrl.OTPService.VerifyOTP(req.PhoneNumber, req.OTP)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"OTP verification failed",
+			"Xác minh OTP thất bại",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Create a new session
+	user, accessToken, refreshToken, err := ctrl.UserService.CreateSession(req.PhoneNumber, req.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to create session",
+			"Không thể tạo phiên xác thực người dùng",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	res := schemas.VerifyLoginOTPResponse{
+		User: schemas.UserResponse{
+			ID:          user.ID,
+			CreatedAt:   user.CreatedAt,
+			UpdatedAt:   user.UpdatedAt,
+			PhoneNumber: user.PhoneNumber,
+			Email:       user.Email,
+			FullName:    user.FullName,
+			IsVerified:  user.IsVerified,
+			IsActivated: user.IsActivated,
+			Role:        user.Role,
+		},
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}
+
+	response := helper.SuccessResponse(res, "OTP verified successfully", "OTP đã được xác minh thành công")
+	helper.GinResponse(ctx, http.StatusOK, response)
+}
+
+// Login with OAuth2
+// LoginWithOAuth godoc
+// @Summary Login with OAuth2
+// @Description Authenticates a user using OAuth2 and sends an OTP to their phone number
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body schemas.LoginWithOAuthRequest true "OAuth2 login details"
+// @Success 200 {object} helper.Response{data=schemas.LoginWithOAuthResponse} "OTP sent successfully"
+// @Failure 400 {object} helper.Response "Invalid request body"
+// @Failure 404 {object} helper.Response "User does not exist"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /auth/login-oauth [post]
+func (ctrl *AuthController) LoginWithOAuth(ctx *gin.Context) {
+	var req schemas.LoginWithOAuthRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid request body",
+			"Yêu cầu không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Check if user exists
+	exists, err := ctrl.UserService.UserExistsByEmail(req.Email)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to check user existence",
+			"Không thể kiểm tra sự tồn tại của người dùng",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+	if !exists {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"User does not exist",
+			"Người dùng không tồn tại",
+		)
+		helper.GinResponse(ctx, http.StatusNotFound, response)
+		return
+	}
+
+	// Get user info
+	user, err := ctrl.UserService.GetUserByEmail(req.Email)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get user info",
+			"Không thể lấy thông tin người dùng",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	// Send OTP via Twilio
+	_, err = ctrl.OTPService.SendOTP(user.PhoneNumber)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to send OTP",
+			"Không thể gửi mã OTP",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	// Return user info
+	res := schemas.LoginWithOAuthResponse{
+		Email:       user.Email,
+		PhoneNumber: user.PhoneNumber,
+		UserID:      user.ID,
+	}
+
+	response := helper.SuccessResponse(res, "OTP sent successfully", "Mã OTP đã được gửi thành công")
 	helper.GinResponse(ctx, http.StatusOK, response)
 }

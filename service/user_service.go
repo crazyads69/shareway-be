@@ -23,6 +23,9 @@ type IUsersService interface {
 	EncryptAndSaveCCCDInfo(cccdInfo *fpt.CCCDInfo, userID uuid.UUID) error
 	VerifyUser(phoneNumber string) error
 	CreateSession(phoneNumber string, userID uuid.UUID) (migration.User, string, string, error)
+	UserExistsByEmail(email string) (bool, error)
+	CreateUser(phoneNumber string, fullName string, email string) (uuid.UUID, error)
+	GetUserByEmail(email string) (migration.User, error)
 }
 
 // UsersService implements IUsersService and handles user-related business logic
@@ -117,6 +120,21 @@ func (s *UsersService) CreateSession(phoneNumber string, userID uuid.UUID) (migr
 	}
 
 	return user, accessToken, refreshToken, nil
+}
+
+// UserExistsByEmail checks if a user exists with the given email
+func (s *UsersService) UserExistsByEmail(email string) (bool, error) {
+	return s.repo.UserExistsByEmail(email)
+}
+
+// CreateUser creates a new user with the given phone number, full name, and email
+func (s *UsersService) CreateUser(phoneNumber, fullName, email string) (uuid.UUID, error) {
+	return s.repo.CreateUser(phoneNumber, fullName, email)
+}
+
+// GetUserByEmail retrieves the user associated with the given email
+func (s *UsersService) GetUserByEmail(email string) (migration.User, error) {
+	return s.repo.GetUserByEmail(email)
 }
 
 // Ensure UsersService implements IUsersService
