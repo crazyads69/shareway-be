@@ -11,6 +11,374 @@ definitions:
       success:
         type: boolean
     type: object
+  migration.Chat:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: string
+      isRead:
+        type: boolean
+      message:
+        type: string
+      messageType:
+        description: text, image, call
+        type: string
+      receiver:
+        $ref: '#/definitions/migration.User'
+      receiverID:
+        type: string
+      sender:
+        $ref: '#/definitions/migration.User'
+      senderID:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  migration.FavoriteLocation:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      name:
+        type: string
+      updatedAt:
+        type: string
+      user:
+        $ref: '#/definitions/migration.User'
+      userID:
+        type: string
+    type: object
+  migration.Notification:
+    properties:
+      body:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      isRead:
+        type: boolean
+      title:
+        type: string
+      tokenFCM:
+        description: FCM token of the user to send the notification
+        type: string
+      updatedAt:
+        type: string
+      user:
+        $ref: '#/definitions/migration.User'
+      userID:
+        type: string
+    type: object
+  migration.Rating:
+    properties:
+      comment:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      ratee:
+        $ref: '#/definitions/migration.User'
+      rateeID:
+        description: user who received the rating
+        type: string
+      rater:
+        $ref: '#/definitions/migration.User'
+      raterID:
+        description: user who gave the rating
+        type: string
+      rating:
+        type: number
+      ride:
+        $ref: '#/definitions/migration.Ride'
+      rideID:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  migration.Ride:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: string
+      ratings:
+        items:
+          $ref: '#/definitions/migration.Rating'
+        type: array
+      rideOffer:
+        $ref: '#/definitions/migration.RideOffer'
+      rideOfferID:
+        type: string
+      rideRequest:
+        $ref: '#/definitions/migration.RideRequest'
+      rideRequestID:
+        type: string
+      status:
+        description: scheduled, ongoing, completed, cancelled
+        type: string
+      transactions:
+        items:
+          $ref: '#/definitions/migration.Transaction'
+        type: array
+      updatedAt:
+        type: string
+    type: object
+  migration.RideOffer:
+    properties:
+      createdAt:
+        type: string
+      driverCurrentLatitude:
+        type: number
+      driverCurrentLongitude:
+        type: number
+      endLatitude:
+        type: number
+      endLongitude:
+        type: number
+      id:
+        type: string
+      rides:
+        items:
+          $ref: '#/definitions/migration.Ride'
+        type: array
+      startLatitude:
+        type: number
+      startLongitude:
+        type: number
+      status:
+        description: active, completed, cancelled
+        type: string
+      updatedAt:
+        type: string
+      user:
+        $ref: '#/definitions/migration.User'
+      userID:
+        description: user who offered the ride
+        type: string
+      vehicle:
+        $ref: '#/definitions/migration.Vehicle'
+      vehicleID:
+        description: vehicle used for the ride
+        type: string
+      waypoints:
+        description: One-to-many relationship with Waypoint
+        items:
+          $ref: '#/definitions/migration.Waypoint'
+        type: array
+    type: object
+  migration.RideRequest:
+    properties:
+      createdAt:
+        type: string
+      endLatitude:
+        type: number
+      endLongitude:
+        type: number
+      id:
+        type: string
+      riderCurrentLatitude:
+        type: number
+      riderCurrentLongitude:
+        type: number
+      rides:
+        items:
+          $ref: '#/definitions/migration.Ride'
+        type: array
+      startLatitude:
+        type: number
+      startLongitude:
+        type: number
+      status:
+        description: pending, accepted, completed, cancelled
+        type: string
+      updatedAt:
+        type: string
+      user:
+        $ref: '#/definitions/migration.User'
+      userID:
+        description: user who requested the ride
+        type: string
+    type: object
+  migration.Transaction:
+    properties:
+      amount:
+        type: number
+      createdAt:
+        type: string
+      id:
+        type: string
+      payer:
+        $ref: '#/definitions/migration.User'
+      payerID:
+        type: string
+      receiver:
+        $ref: '#/definitions/migration.User'
+      receiverID:
+        type: string
+      ride:
+        $ref: '#/definitions/migration.Ride'
+      rideID:
+        type: string
+      status:
+        description: pending, completed, failed
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  migration.User:
+    properties:
+      cccdnumber:
+        type: string
+      createdAt:
+        type: string
+      email:
+        type: string
+      favoriteLocations:
+        description: One-to-many relationship with FavoriteLocation
+        items:
+          $ref: '#/definitions/migration.FavoriteLocation'
+        type: array
+      fullName:
+        type: string
+      id:
+        type: string
+      isActivated:
+        description: Only activated user when first registered and verified OTP completely
+        type: boolean
+      isVerified:
+        type: boolean
+      notifications:
+        description: One-to-many relationship with Notification
+        items:
+          $ref: '#/definitions/migration.Notification'
+        type: array
+      phoneNumber:
+        description: DeletedAt         gorm.DeletedAt `gorm:"index"`
+        type: string
+      ratingsGiven:
+        description: One-to-many relationship with Rating (given)
+        items:
+          $ref: '#/definitions/migration.Rating'
+        type: array
+      ratingsReceived:
+        description: One-to-many relationship with Rating (received)
+        items:
+          $ref: '#/definitions/migration.Rating'
+        type: array
+      receivedChats:
+        description: One-to-many relationship with Chat (received)
+        items:
+          $ref: '#/definitions/migration.Chat'
+        type: array
+      rideOffers:
+        description: One-to-many relationship with RideOffer
+        items:
+          $ref: '#/definitions/migration.RideOffer'
+        type: array
+      rideRequests:
+        description: One-to-many relationship with RideRequest
+        items:
+          $ref: '#/definitions/migration.RideRequest'
+        type: array
+      role:
+        type: string
+      sentChats:
+        description: One-to-many relationship with Chat (sent)
+        items:
+          $ref: '#/definitions/migration.Chat'
+        type: array
+      updatedAt:
+        type: string
+      vehicles:
+        description: One-to-many relationship with Vehicle
+        items:
+          $ref: '#/definitions/migration.Vehicle'
+        type: array
+      verifiedAt:
+        type: string
+    type: object
+  migration.Vehicle:
+    properties:
+      brand:
+        type: string
+      createdAt:
+        type: string
+      fuelConsumed:
+        description: liters per 100 kilometers
+        type: number
+      id:
+        type: string
+      licensePlate:
+        type: string
+      model:
+        type: string
+      rideOffers:
+        description: One-to-many relationship with RideOffer
+        items:
+          $ref: '#/definitions/migration.RideOffer'
+        type: array
+      updatedAt:
+        type: string
+      user:
+        $ref: '#/definitions/migration.User'
+      userID:
+        type: string
+      vehicleType:
+        $ref: '#/definitions/migration.VehicleType'
+      vehicleTypeID:
+        type: string
+    type: object
+  migration.VehicleType:
+    properties:
+      brand:
+        type: string
+      createdAt:
+        type: string
+      fuelConsumed:
+        description: liters per 100 kilometers
+        type: number
+      id:
+        type: string
+      model:
+        type: string
+      type:
+        type: string
+      updatedAt:
+        type: string
+      vehicles:
+        description: One-to-many relationship with Vehicle
+        items:
+          $ref: '#/definitions/migration.Vehicle'
+        type: array
+    type: object
+  migration.Waypoint:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      order:
+        description: To maintain the order of waypoints
+        type: integer
+      rideOffer:
+        $ref: '#/definitions/migration.RideOffer'
+      rideOfferID:
+        type: string
+      updatedAt:
+        type: string
+    type: object
   schemas.GenerateOTPRequest:
     properties:
       phone_number:
@@ -62,6 +430,21 @@ definitions:
     - full_name
     - phone_number
     - user_id
+    type: object
+  schemas.VerifyCCCDRequest:
+    type: object
+  schemas.VerifyCCCDResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+      user:
+        $ref: '#/definitions/migration.User'
+    required:
+    - access_token
+    - refresh_token
+    - user
     type: object
   schemas.VerifyRegisterOTPRequest:
     properties:
@@ -178,6 +561,42 @@ paths:
       summary: Resend OTP
       tags:
       - auth
+  /auth/verify-cccd:
+    post:
+      consumes:
+      - application/json
+      description: Verifies the front and back images of a user's CCCD, saves the
+        information, and updates user status
+      parameters:
+      - description: CCCD verification request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.VerifyCCCDRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: CCCD verified successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.VerifyCCCDResponse'
+              type: object
+        "400":
+          description: Invalid request or CCCD info
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      summary: Verify user's CCCD
+      tags:
+      - auths
   /auth/verify-register-otp:
     post:
       consumes:

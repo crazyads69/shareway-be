@@ -137,6 +137,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/verify-cccd": {
+            "post": {
+                "description": "Verifies the front and back images of a user's CCCD, saves the information, and updates user status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auths"
+                ],
+                "summary": "Verify user's CCCD",
+                "parameters": [
+                    {
+                        "description": "CCCD verification request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.VerifyCCCDRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CCCD verified successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.VerifyCCCDResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request or CCCD info",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/verify-register-otp": {
             "post": {
                 "description": "Verifies the OTP sent during registration and activates the user account",
@@ -253,6 +311,550 @@ const docTemplate = `{
                 }
             }
         },
+        "migration.Chat": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isRead": {
+                    "type": "boolean"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "messageType": {
+                    "description": "text, image, call",
+                    "type": "string"
+                },
+                "receiver": {
+                    "$ref": "#/definitions/migration.User"
+                },
+                "receiverID": {
+                    "type": "string"
+                },
+                "sender": {
+                    "$ref": "#/definitions/migration.User"
+                },
+                "senderID": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "migration.FavoriteLocation": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/migration.User"
+                },
+                "userID": {
+                    "type": "string"
+                }
+            }
+        },
+        "migration.Notification": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isRead": {
+                    "type": "boolean"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "tokenFCM": {
+                    "description": "FCM token of the user to send the notification",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/migration.User"
+                },
+                "userID": {
+                    "type": "string"
+                }
+            }
+        },
+        "migration.Rating": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "ratee": {
+                    "$ref": "#/definitions/migration.User"
+                },
+                "rateeID": {
+                    "description": "user who received the rating",
+                    "type": "string"
+                },
+                "rater": {
+                    "$ref": "#/definitions/migration.User"
+                },
+                "raterID": {
+                    "description": "user who gave the rating",
+                    "type": "string"
+                },
+                "rating": {
+                    "type": "number"
+                },
+                "ride": {
+                    "$ref": "#/definitions/migration.Ride"
+                },
+                "rideID": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "migration.Ride": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "ratings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.Rating"
+                    }
+                },
+                "rideOffer": {
+                    "$ref": "#/definitions/migration.RideOffer"
+                },
+                "rideOfferID": {
+                    "type": "string"
+                },
+                "rideRequest": {
+                    "$ref": "#/definitions/migration.RideRequest"
+                },
+                "rideRequestID": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "scheduled, ongoing, completed, cancelled",
+                    "type": "string"
+                },
+                "transactions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.Transaction"
+                    }
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "migration.RideOffer": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "driverCurrentLatitude": {
+                    "type": "number"
+                },
+                "driverCurrentLongitude": {
+                    "type": "number"
+                },
+                "endLatitude": {
+                    "type": "number"
+                },
+                "endLongitude": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "rides": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.Ride"
+                    }
+                },
+                "startLatitude": {
+                    "type": "number"
+                },
+                "startLongitude": {
+                    "type": "number"
+                },
+                "status": {
+                    "description": "active, completed, cancelled",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/migration.User"
+                },
+                "userID": {
+                    "description": "user who offered the ride",
+                    "type": "string"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/migration.Vehicle"
+                },
+                "vehicleID": {
+                    "description": "vehicle used for the ride",
+                    "type": "string"
+                },
+                "waypoints": {
+                    "description": "One-to-many relationship with Waypoint",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.Waypoint"
+                    }
+                }
+            }
+        },
+        "migration.RideRequest": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "endLatitude": {
+                    "type": "number"
+                },
+                "endLongitude": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "riderCurrentLatitude": {
+                    "type": "number"
+                },
+                "riderCurrentLongitude": {
+                    "type": "number"
+                },
+                "rides": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.Ride"
+                    }
+                },
+                "startLatitude": {
+                    "type": "number"
+                },
+                "startLongitude": {
+                    "type": "number"
+                },
+                "status": {
+                    "description": "pending, accepted, completed, cancelled",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/migration.User"
+                },
+                "userID": {
+                    "description": "user who requested the ride",
+                    "type": "string"
+                }
+            }
+        },
+        "migration.Transaction": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "payer": {
+                    "$ref": "#/definitions/migration.User"
+                },
+                "payerID": {
+                    "type": "string"
+                },
+                "receiver": {
+                    "$ref": "#/definitions/migration.User"
+                },
+                "receiverID": {
+                    "type": "string"
+                },
+                "ride": {
+                    "$ref": "#/definitions/migration.Ride"
+                },
+                "rideID": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "pending, completed, failed",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "migration.User": {
+            "type": "object",
+            "properties": {
+                "cccdnumber": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "favoriteLocations": {
+                    "description": "One-to-many relationship with FavoriteLocation",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.FavoriteLocation"
+                    }
+                },
+                "fullName": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isActivated": {
+                    "description": "Only activated user when first registered and verified OTP completely",
+                    "type": "boolean"
+                },
+                "isVerified": {
+                    "type": "boolean"
+                },
+                "notifications": {
+                    "description": "One-to-many relationship with Notification",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.Notification"
+                    }
+                },
+                "phoneNumber": {
+                    "description": "DeletedAt         gorm.DeletedAt ` + "`" + `gorm:\"index\"` + "`" + `",
+                    "type": "string"
+                },
+                "ratingsGiven": {
+                    "description": "One-to-many relationship with Rating (given)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.Rating"
+                    }
+                },
+                "ratingsReceived": {
+                    "description": "One-to-many relationship with Rating (received)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.Rating"
+                    }
+                },
+                "receivedChats": {
+                    "description": "One-to-many relationship with Chat (received)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.Chat"
+                    }
+                },
+                "rideOffers": {
+                    "description": "One-to-many relationship with RideOffer",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.RideOffer"
+                    }
+                },
+                "rideRequests": {
+                    "description": "One-to-many relationship with RideRequest",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.RideRequest"
+                    }
+                },
+                "role": {
+                    "type": "string"
+                },
+                "sentChats": {
+                    "description": "One-to-many relationship with Chat (sent)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.Chat"
+                    }
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "vehicles": {
+                    "description": "One-to-many relationship with Vehicle",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.Vehicle"
+                    }
+                },
+                "verifiedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "migration.Vehicle": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "fuelConsumed": {
+                    "description": "liters per 100 kilometers",
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "licensePlate": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "rideOffers": {
+                    "description": "One-to-many relationship with RideOffer",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.RideOffer"
+                    }
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/migration.User"
+                },
+                "userID": {
+                    "type": "string"
+                },
+                "vehicleType": {
+                    "$ref": "#/definitions/migration.VehicleType"
+                },
+                "vehicleTypeID": {
+                    "type": "string"
+                }
+            }
+        },
+        "migration.VehicleType": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "fuelConsumed": {
+                    "description": "liters per 100 kilometers",
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "vehicles": {
+                    "description": "One-to-many relationship with Vehicle",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/migration.Vehicle"
+                    }
+                }
+            }
+        },
+        "migration.Waypoint": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "order": {
+                    "description": "To maintain the order of waypoints",
+                    "type": "integer"
+                },
+                "rideOffer": {
+                    "$ref": "#/definitions/migration.RideOffer"
+                },
+                "rideOfferID": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "schemas.GenerateOTPRequest": {
             "type": "object",
             "required": [
@@ -322,6 +924,28 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.VerifyCCCDRequest": {
+            "type": "object"
+        },
+        "schemas.VerifyCCCDResponse": {
+            "type": "object",
+            "required": [
+                "access_token",
+                "refresh_token",
+                "user"
+            ],
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/migration.User"
                 }
             }
         },

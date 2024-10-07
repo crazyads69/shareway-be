@@ -26,7 +26,7 @@ func main() {
 	db := db.NewDatabaseInstance(cfg)
 
 	// Initialize services using the service factory pattern (dependency injection also included repository pattern)
-	serviceFactory := service.NewServiceFactory(db, cfg)
+	serviceFactory := service.NewServiceFactory(db, cfg, maker)
 	services := serviceFactory.CreateServices()
 
 	// Create new API server

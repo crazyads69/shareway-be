@@ -1,7 +1,10 @@
 package helper
 
 import (
+	"fmt"
+	"shareway/infra/fpt"
 	"shareway/schemas"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -61,4 +64,77 @@ func GinResponse(c *gin.Context, statusCode int, response Response) {
 func ConvertToPayload(data interface{}) (*schemas.Payload, bool) {
 	payload, ok := data.(*schemas.Payload)
 	return payload, ok
+}
+
+// ValidateCCCDInfo checks the validity of CCCD (Citizen Identity Card) information
+// from both front and back sides of the card.
+func ValidateCCCDInfo(frontCCCDInfo, backCCCDInfo *fpt.CCCDInfo) error {
+	// Define constants
+	const (
+		dateLayout = "02/01/2006" // Adjust this if your date format is different
+		minAge     = 18
+	)
+
+	// Parse dates
+	dates, err := parseDates(dateLayout, frontCCCDInfo.DOE, backCCCDInfo.IssueDate, frontCCCDInfo.DOB)
+	if err != nil {
+		return err
+	}
+
+	doe, issueDate, dob := dates[0], dates[1], dates[2]
+	currentDate := time.Now()
+
+	// Validate expiry date (DOE)
+	if err := validateExpiry(doe, currentDate, issueDate); err != nil {
+		return err
+	}
+
+	// Validate date of birth (DOB)
+	if err := validateDOB(dob, currentDate, issueDate, minAge); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// parseDates parses multiple date strings into time.Time objects
+func parseDates(layout string, dates ...string) ([]time.Time, error) {
+	parsedDates := make([]time.Time, len(dates))
+	for i, date := range dates {
+		parsed, err := time.Parse(layout, date)
+		if err != nil {
+			return nil, fmt.Errorf("invalid date format for %s: %w", date, err)
+		}
+		parsedDates[i] = parsed
+	}
+	return parsedDates, nil
+}
+
+// validateExpiry checks if the DOE is valid
+func validateExpiry(doe, currentDate, issueDate time.Time) error {
+	if doe.Before(currentDate) {
+		return fmt.Errorf("CCCD has expired: expiry date %v is before current date %v", doe, currentDate)
+	}
+	if doe.Before(issueDate) || doe.Equal(issueDate) {
+		return fmt.Errorf("invalid DOE: expiry date %v is not after issue date %v", doe, issueDate)
+	}
+	return nil
+}
+
+// validateDOB checks if the DOB is valid and if the person is of legal age
+func validateDOB(dob, currentDate, issueDate time.Time, minAge int) error {
+	if dob.After(currentDate) {
+		return fmt.Errorf("invalid DOB: date of birth %v is in the future", dob)
+	}
+	if dob.After(issueDate) {
+		return fmt.Errorf("invalid DOB: date of birth %v is after issue date %v", dob, issueDate)
+	}
+	age := currentDate.Year() - dob.Year()
+	if currentDate.YearDay() < dob.YearDay() {
+		age--
+	}
+	if age < minAge {
+		return fmt.Errorf("user is under %d years old: age %d is less than the minimum age", minAge, age)
+	}
+	return nil
 }

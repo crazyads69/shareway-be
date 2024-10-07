@@ -1,6 +1,8 @@
 package schemas
 
 import (
+	"mime/multipart"
+	"shareway/infra/db/migration"
 	"time"
 
 	"github.com/google/uuid"
@@ -69,4 +71,20 @@ type LoginUserResponse struct {
 type VerifyLoginOTPRequest struct {
 	PhoneNumber string    `json:"phone_number" binding:"required,numeric,min=9,max=11"`
 	UserID      uuid.UUID `json:"user_id" binding:"required"`
+}
+
+// Define struct for VerifyCCCDRequest
+// Two images of the CCCD (front and back) as form-data
+type VerifyCCCDRequest struct {
+	FrontImage  *multipart.FileHeader `form:"front_image" binding:"required"`
+	BackImage   *multipart.FileHeader `form:"back_image" binding:"required"`
+	UserID      uuid.UUID             `form:"user_id" binding:"required"`
+	PhoneNumber string                `form:"phone_number" binding:"required,numeric,min=9,max=11"`
+}
+
+// Define struct for VerifyCCCDResponse
+type VerifyCCCDResponse struct {
+	User         *migration.User `json:"user" binding:"required"`
+	AccessToken  string          `json:"access_token" binding:"required"`
+	RefreshToken string          `json:"refresh_token" binding:"required"`
 }

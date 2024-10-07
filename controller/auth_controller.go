@@ -7,7 +7,6 @@ import (
 	"shareway/schemas"
 	"shareway/service"
 	"shareway/util"
-	"shareway/util/token"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,16 +16,14 @@ type AuthController struct {
 	cfg         util.Config
 	OTPService  service.IOTPService
 	UserService service.IUsersService
-	token       *token.PasetoMaker
 }
 
 // NewAuthController creates a new AuthController instance
-func NewAuthController(cfg util.Config, otpService service.IOTPService, userService service.IUsersService, tokenMaker *token.PasetoMaker) *AuthController {
+func NewAuthController(cfg util.Config, otpService service.IOTPService, userService service.IUsersService) *AuthController {
 	return &AuthController{
 		cfg:         cfg,
 		OTPService:  otpService,
 		UserService: userService,
-		token:       tokenMaker,
 	}
 }
 
@@ -254,32 +251,104 @@ func (ctrl *AuthController) VerifyRegisterOTP(ctx *gin.Context) {
 	helper.GinResponse(ctx, http.StatusOK, response)
 }
 
-// // VerifyCCCD verifies the CCCD of the user
-// func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
-// 	var req schemas.VerifyCCCDRequest
+// VerifyCCCD verifies the CCCD (Citizen Identity Card) of the user
+// @Summary Verify user's CCCD
+// @Description Verifies the front and back images of a user's CCCD, saves the information, and updates user status
+// @Tags auths
+// @Accept json
+// @Produce json
+// @Param request body schemas.VerifyCCCDRequest true "CCCD verification request"
+// @Success 200 {object} helper.Response{data=schemas.VerifyCCCDResponse} "CCCD verified successfully"
+// @Failure 400 {object} helper.Response "Invalid request or CCCD info"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /auth/verify-cccd [post]
+func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
+	var req schemas.VerifyCCCDRequest
 
-// 	if err := ctx.ShouldBindJSON(&req); err != nil {
-// 		response := helper.ErrorResponseWithMessage(
-// 			err,
-// 			"Invalid request body",
-// 			"Yêu cầu không hợp lệ",
-// 		)
-// 		helper.GinResponse(ctx, http.StatusBadRequest, response)
-// 		return
-// 	}
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid request body",
+			"Yêu cầu không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
 
-// 	// Verify the CCCD
-// 	err := ctrl.UserService.VerifyCCCD(req.UserID, req.CCCD)
-// 	if err != nil {
-// 		response := helper.ErrorResponseWithMessage(
-// 			err,
-// 			"CCCD verification failed",
-// 			"Xác minh CCCD thất bại",
-// 		)
-// 		helper.GinResponse(ctx, http.StatusBadRequest, response)
-// 		return
-// 	}
+	// Call FPT AI to verify the CCCD
+	frontCCCDInfo, err := ctrl.UserService.VerifyCCCD(req.FrontImage)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to verify CCCD",
+			"Không thể xác minh CCCD",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
 
-// 	response := helper.SuccessResponse(nil, "CCCD verified successfully", "CCCD đã được xác minh thành công")
-// 	helper.GinResponse(ctx, http.StatusOK, response)
-// }
+	backCCCDInfo, err := ctrl.UserService.VerifyCCCD(req.BackImage)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to verify CCCD",
+			"Không thể xác minh CCCD",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	// Check if the CCCD issued date and expiry date are valid
+	if err := helper.ValidateCCCDInfo(frontCCCDInfo, backCCCDInfo); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid CCCD info",
+			"Thông tin CCCD không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+	// Encrypt and save the CCCD info
+	err = ctrl.UserService.EncryptAndSaveCCCDInfo(frontCCCDInfo, req.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to save CCCD info",
+			"Không thể lưu thông tin CCCD",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	// Update user status to verified (is_verified = true)
+	err = ctrl.UserService.VerifyUser(req.PhoneNumber)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to verify user",
+			"Không thể xác minh người dùng",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	// Create a new session
+	user, accessToken, refreshToken, err := ctrl.UserService.CreateSession(req.PhoneNumber, req.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to create session",
+			"Không thể tạo phiên xác thực người dùng",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	var res schemas.VerifyCCCDResponse
+	res.User = &user
+	res.AccessToken = accessToken
+	res.RefreshToken = refreshToken
+
+	response := helper.SuccessResponse(res, "CCCD verified successfully", "CCCD đã được xác minh thành công")
+	helper.GinResponse(ctx, http.StatusOK, response)
+}

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"shareway/infra/db/migration"
-	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -15,6 +14,9 @@ type IAuthRepository interface {
 	GetUserIDByPhone(phoneNumber string) (uuid.UUID, error)
 	ActivateUser(phoneNumber string) error
 	GetUserByPhone(phoneNumber string) (migration.User, error)
+	SaveCCCDInfo(cccdEncrypted string, userID uuid.UUID) error
+	VerifyUser(phoneNumber string) error
+	SaveSession(phoneNumber string, accessToken string, refreshToken string, userID uuid.UUID) error
 }
 
 // AuthRepository implements IAuthRepository
@@ -41,10 +43,8 @@ func (r *AuthRepository) UserExistsByPhone(phoneNumber string) (bool, error) {
 // CreateUserByPhone creates a new user with the given phone number and full name
 func (r *AuthRepository) CreateUserByPhone(phoneNumber, fullName string) (uuid.UUID, string, error) {
 	user := migration.User{
-		ID:          uuid.New(),
 		PhoneNumber: phoneNumber,
 		FullName:    fullName,
-		CreatedAt:   time.Now(),
 	}
 	err := r.db.Create(&user).Error
 	if err != nil {
@@ -78,6 +78,31 @@ func (r *AuthRepository) GetUserByPhone(phoneNumber string) (migration.User, err
 	var user migration.User
 	err := r.db.Where("phone_number = ?", phoneNumber).First(&user).Error
 	return user, err
+}
+
+// SaveCCCDInfo saves the encrypted CCCD information to the database
+func (r *AuthRepository) SaveCCCDInfo(cccdEncrypted string, userID uuid.UUID) error {
+	// Update the user's CCCD information (CCCDNumber in the User model)
+	return r.db.Model(&migration.User{}).Where("id = ?", userID).Update("cccd_number", cccdEncrypted).Error
+}
+
+// VerifyUser updates the user status to verified
+func (r *AuthRepository) VerifyUser(phoneNumber string) error {
+	return r.db.Model(&migration.User{}).
+		Where("phone_number = ?", phoneNumber).
+		Update("is_verified", true).
+		Error
+}
+
+// SaveSession saves the access token and refresh token to the database
+func (r *AuthRepository) SaveSession(phoneNumber string, accessToken string, refreshToken string, userID uuid.UUID) error {
+	// Insert to the PasetoToken table
+	token := migration.PasetoToken{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		UserID:       userID,
+	}
+	return r.db.Create(&token).Error
 }
 
 // Ensure AuthRepository implements IAuthRepository

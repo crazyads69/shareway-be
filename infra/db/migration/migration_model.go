@@ -4,17 +4,17 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 // User represents a user in the system
 type User struct {
-	ID                uuid.UUID `gorm:"type:uuid;primary_key"`
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
-	DeletedAt         gorm.DeletedAt `gorm:"index"`
-	PhoneNumber       string         `gorm:"uniqueIndex;not null"`
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	// DeletedAt         gorm.DeletedAt `gorm:"index"`
+	PhoneNumber       string `gorm:"uniqueIndex;not null"`
 	Email             string
+	CCCDNumber        string
 	FullName          string
 	IsVerified        bool `gorm:"default:false"`
 	IsActivated       bool `gorm:"default:false"` // Only activated user when first registered and verified OTP completely
@@ -33,20 +33,20 @@ type User struct {
 
 // Admin represents an administrator in the system
 type Admin struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
-	Username  string         `gorm:"uniqueIndex;not null"`
-	Password  string         `gorm:"not null"`
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	//DeletedAt gorm.DeletedAt `gorm:"index"`
+	Username string `gorm:"uniqueIndex;not null"`
+	Password string `gorm:"not null"`
 }
 
 // OTP represents a one-time password for user verification
 type OTP struct {
-	ID          uuid.UUID `gorm:"type:uuid;primary_key"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   gorm.DeletedAt `gorm:"index"`
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	// DeletedAt   gorm.DeletedAt `gorm:"index"`
 	PhoneNumber string
 	Code        string
 	Retry       int `gorm:"default:0"` // Max 3 retries
@@ -57,23 +57,23 @@ type OTP struct {
 
 // PasetoToken represents a PASETO token for user authentication
 type PasetoToken struct {
-	ID           uuid.UUID `gorm:"type:uuid;primary_key"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	DeletedAt    gorm.DeletedAt `gorm:"index"`
-	UserID       uuid.UUID      `gorm:"type:uuid"`
-	User         User           `gorm:"foreignKey:UserID"`
-	AccessToken  string         `gorm:"type:text"`
-	RefreshToken string         `gorm:"type:text"`
-	RefreshTurns int            `gorm:"default:0"` // Max 3 refreshes per access token
-	ExpiresAt    time.Time
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	// DeletedAt    gorm.DeletedAt `gorm:"index"`
+	UserID       uuid.UUID `gorm:"type:uuid"`
+	User         User      `gorm:"foreignKey:UserID"`
+	AccessToken  string    `gorm:"type:text"`
+	RefreshToken string    `gorm:"type:text"`
+	Revoke       bool      `gorm:"default:false"`
+	RefreshTurns int       `gorm:"default:0"` // Max 3 refreshes per access tokee
 }
 
 // Transaction represents a payment transaction
 type Transaction struct {
-	ID         uuid.UUID `gorm:"type:uuid;primary_key"`
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	ID         uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt  time.Time `gorm:"autoCreateTime"`
+	UpdatedAt  time.Time `gorm:"autoUpdateTime"`
 	PayerID    uuid.UUID `gorm:"type:uuid"`
 	Payer      User      `gorm:"foreignKey:PayerID"`
 	ReceiverID uuid.UUID `gorm:"type:uuid"`
@@ -86,9 +86,9 @@ type Transaction struct {
 
 // Vehicle represents a vehicle in the system
 type Vehicle struct {
-	ID            uuid.UUID `gorm:"type:uuid;primary_key"`
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID            uuid.UUID   `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt     time.Time   `gorm:"autoCreateTime"`
+	UpdatedAt     time.Time   `gorm:"autoUpdateTime"`
 	LicensePlate  string      `gorm:"uniqueIndex"`
 	UserID        uuid.UUID   `gorm:"type:uuid"`
 	User          User        `gorm:"foreignKey:UserID"`
@@ -102,9 +102,9 @@ type Vehicle struct {
 
 // RideOffer represents a ride offer in the system
 type RideOffer struct {
-	ID                     uuid.UUID `gorm:"type:uuid;primary_key"`
-	CreatedAt              time.Time
-	UpdatedAt              time.Time
+	ID                     uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt              time.Time `gorm:"autoCreateTime"`
+	UpdatedAt              time.Time `gorm:"autoUpdateTime"`
 	UserID                 uuid.UUID `gorm:"type:uuid"` // user who offered the ride
 	User                   User      `gorm:"foreignKey:UserID"`
 	VehicleID              uuid.UUID `gorm:"type:uuid"` // vehicle used for the ride
@@ -122,7 +122,9 @@ type RideOffer struct {
 
 // Waypoint represents a point in the route of a RideOffer
 type Waypoint struct {
-	ID          uuid.UUID `gorm:"type:uuid;primary_key"`
+	ID          uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt   time.Time `gorm:"autoCreateTime"`
+	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 	RideOfferID uuid.UUID `gorm:"type:uuid"`
 	RideOffer   RideOffer `gorm:"foreignKey:RideOfferID"`
 	Latitude    float64
@@ -132,9 +134,9 @@ type Waypoint struct {
 
 // RideRequest represents a ride request in the system
 type RideRequest struct {
-	ID                    uuid.UUID `gorm:"type:uuid;primary_key"`
-	CreatedAt             time.Time
-	UpdatedAt             time.Time
+	ID                    uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt             time.Time `gorm:"autoCreateTime"`
+	UpdatedAt             time.Time `gorm:"autoUpdateTime"`
 	UserID                uuid.UUID `gorm:"type:uuid"` // user who requested the ride
 	User                  User      `gorm:"foreignKey:UserID"`
 	StartLatitude         float64
@@ -149,9 +151,9 @@ type RideRequest struct {
 
 // Ride represents a matched ride between an offer and a request
 type Ride struct {
-	ID            uuid.UUID `gorm:"type:uuid;primary_key"`
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID            uuid.UUID     `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt     time.Time     `gorm:"autoCreateTime"`
+	UpdatedAt     time.Time     `gorm:"autoUpdateTime"`
 	RideOfferID   uuid.UUID     `gorm:"type:uuid"`
 	RideOffer     RideOffer     `gorm:"foreignKey:RideOfferID"`
 	RideRequestID uuid.UUID     `gorm:"type:uuid"`
@@ -163,10 +165,10 @@ type Ride struct {
 
 // Rating represents a rating given by a user to another user
 type Rating struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Rating    float64 `gorm:"default:0;check:rating >= 0 AND rating <= 5"`
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	Rating    float64   `gorm:"default:0;check:rating >= 0 AND rating <= 5"`
 	Comment   string
 	RaterID   uuid.UUID `gorm:"type:uuid"` // user who gave the rating
 	Rater     User      `gorm:"foreignKey:RaterID"`
@@ -178,9 +180,9 @@ type Rating struct {
 
 // Notification represents a notification sent to a user
 type Notification struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 	UserID    uuid.UUID `gorm:"type:uuid"`
 	User      User      `gorm:"foreignKey:UserID"`
 	Title     string
@@ -191,9 +193,9 @@ type Notification struct {
 
 // Chat represents a chat message between 2 users
 type Chat struct {
-	ID          uuid.UUID `gorm:"type:uuid;primary_key"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt   time.Time `gorm:"autoCreateTime"`
+	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 	SenderID    uuid.UUID `gorm:"type:uuid"`
 	Sender      User      `gorm:"foreignKey:SenderID"`
 	ReceiverID  uuid.UUID `gorm:"type:uuid"`
@@ -205,9 +207,9 @@ type Chat struct {
 
 // FavoriteLocation represents a favorite location saved by a user
 type FavoriteLocation struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 	UserID    uuid.UUID `gorm:"type:uuid"`
 	User      User      `gorm:"foreignKey:UserID"`
 	Name      string
@@ -217,18 +219,18 @@ type FavoriteLocation struct {
 
 // FuelPrice represents the price of fuel
 type FuelPrice struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 	FuelType  string
 	Price     float64
 }
 
 // VehicleType represents a type of vehicle in the system
 type VehicleType struct {
-	ID           uuid.UUID `gorm:"type:uuid;primary_key"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID           uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt    time.Time `gorm:"autoCreateTime"`
+	UpdatedAt    time.Time `gorm:"autoUpdateTime"`
 	Type         string
 	Model        string
 	Brand        string
