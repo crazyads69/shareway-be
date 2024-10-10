@@ -10,9 +10,9 @@ import (
 )
 
 // formatPhoneNumber converts the phone number to E.164 format
-func formatPhoneNumber(phoneNumber string) string {
-	return "+84" + phoneNumber
-}
+// func formatPhoneNumber(phoneNumber string) string {
+// 	return "+84" + phoneNumber
+// }
 
 // IOTPService defines the interface for OTP operations
 type IOTPService interface {
@@ -38,7 +38,7 @@ func NewOTPService(cfg util.Config) IOTPService {
 // SendOTP sends an OTP to the specified phone number
 func (s *OTPService) SendOTP(phoneNumber string) (string, error) {
 	params := &twilioApi.CreateVerificationParams{}
-	params.SetTo(formatPhoneNumber(phoneNumber))
+	params.SetTo(phoneNumber) // Phone number in E.164 format already
 	params.SetChannel("sms")
 
 	resp, err := s.twilioClient.VerifyV2.CreateVerification(s.cfg.TwilioServiceSID, params)
@@ -56,7 +56,7 @@ func (s *OTPService) SendOTP(phoneNumber string) (string, error) {
 // VerifyOTP verifies the OTP for the given phone number
 func (s *OTPService) VerifyOTP(phoneNumber, code string) error {
 	params := &twilioApi.CreateVerificationCheckParams{}
-	params.SetTo(formatPhoneNumber(phoneNumber))
+	params.SetTo(phoneNumber) // Phone number in E.164 format already
 	params.SetCode(code)
 
 	resp, err := s.twilioClient.VerifyV2.CreateVerificationCheck(s.cfg.TwilioServiceSID, params)
