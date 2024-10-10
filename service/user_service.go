@@ -29,7 +29,7 @@ type IUsersService interface {
 	GetUserByEmail(email string) (migration.User, error)
 	ValidateRefreshToken(refreshToken string) (schemas.Payload, error)
 	RefreshNewToken(phoneNumber string, userID uuid.UUID) (string, error)
-	UpdateSession(accessToken string, userID uuid.UUID) error
+	UpdateSession(accessToken string, userID uuid.UUID, refreshToken string) error
 	RevokeToken(userID uuid.UUID, refreshToken string) error
 }
 
@@ -157,8 +157,8 @@ func (s *UsersService) RefreshNewToken(phoneNumber string, userID uuid.UUID) (st
 }
 
 // UpdateSession updates the access token for the given user ID
-func (s *UsersService) UpdateSession(accessToken string, userID uuid.UUID) error {
-	return s.repo.UpdateSession(accessToken, userID)
+func (s *UsersService) UpdateSession(accessToken string, userID uuid.UUID, refreshToken string) error {
+	return s.repo.UpdateSession(accessToken, userID, refreshToken)
 }
 
 // RevokeToken revokes the refresh token for the given user ID

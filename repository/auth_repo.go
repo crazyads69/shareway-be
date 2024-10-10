@@ -22,7 +22,7 @@ type IAuthRepository interface {
 	UserExistsByEmail(email string) (bool, error)
 	CreateUser(phoneNumber string, fullName string, email string) (uuid.UUID, error)
 	GetUserByEmail(email string) (migration.User, error)
-	UpdateSession(accessToken string, userID uuid.UUID) error
+	UpdateSession(accessToken string, userID uuid.UUID, refreshToken string) error
 	RevokeToken(userID uuid.UUID, refreshToken string) error
 }
 
@@ -227,7 +227,7 @@ func (r *AuthRepository) GetUserByEmail(email string) (migration.User, error) {
 }
 
 // UpdateSession updates the access token for the given user ID
-func (r *AuthRepository) UpdateSession(accessToken string, userID uuid.UUID) error {
+func (r *AuthRepository) UpdateSession(accessToken string, userID uuid.UUID, refreshToken string) error {
 	tx := r.db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -235,16 +235,20 @@ func (r *AuthRepository) UpdateSession(accessToken string, userID uuid.UUID) err
 		}
 	}()
 
-	// First, get the current token record
+	// First, get the current token record with the given user ID and refresh token
 	var token migration.PasetoToken
-	if err := tx.Where("user_id = ? AND revoke = false", userID).First(&token).Error; err != nil {
+	if err := tx.Where("user_id = ? AND refresh_token = ?", userID, refreshToken).First(&token).Error; err != nil {
 		tx.Rollback()
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return fmt.Errorf("no active token found for user")
+			return fmt.Errorf("no token found for user")
 		}
 		return fmt.Errorf("failed to fetch token: %w", err)
 	}
-
+	// If the token is already revoked, return an error message meaning the user has to log in again
+	if token.Revoke {
+		tx.Rollback()
+		return fmt.Errorf("token has been revoked: please log in again")
+	}
 	// Check if refresh_turns is 3 or more
 	if token.RefreshTurns >= 3 {
 		// If so, revoke the token

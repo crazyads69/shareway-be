@@ -942,7 +942,7 @@ func (ctrl *AuthController) RefreshToken(ctx *gin.Context) {
 	}
 
 	// Update session
-	err = ctrl.UserService.UpdateSession(accessToken, claims.UserID)
+	err = ctrl.UserService.UpdateSession(accessToken, claims.UserID, refreshToken)
 	// If error mean token has been revoked
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
