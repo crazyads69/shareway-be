@@ -21,6 +21,7 @@ import (
 func SetupAuthRouter(group *gin.RouterGroup, server *APIServer) {
 	authController := controller.NewAuthController(
 		server.Cfg,
+		server.Validate,
 		server.Service.OTPService,
 		server.Service.UserService,
 	)

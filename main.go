@@ -8,6 +8,7 @@ import (
 	"shareway/util/token"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog/log"
 )
 
@@ -18,6 +19,9 @@ func init() {
 }
 
 func main() {
+	// Validator
+	validate := validator.New()
+
 	// Load config file using viper
 	cfg, err := util.LoadConfig(".")
 	if err != nil {
@@ -45,6 +49,7 @@ func main() {
 		maker,
 		cfg,
 		services,
+		validate,
 	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Could not create router")

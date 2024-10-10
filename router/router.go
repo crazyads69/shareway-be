@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 
 	docs "shareway/docs"
 
@@ -18,14 +19,15 @@ import (
 
 // APIServer represents the API server structure
 type APIServer struct {
-	router  *gin.Engine
-	Maker   *token.PasetoMaker
-	Cfg     util.Config
-	Service *service.ServiceContainer
+	router   *gin.Engine
+	Maker    *token.PasetoMaker
+	Cfg      util.Config
+	Service  *service.ServiceContainer
+	Validate *validator.Validate
 }
 
 // NewAPIServer creates and initializes a new APIServer instance
-func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.ServiceContainer) (*APIServer, error) {
+func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.ServiceContainer, Validate *validator.Validate) (*APIServer, error) {
 	r := gin.Default()
 
 	if cfg.GinMode != "release" {
@@ -41,10 +43,11 @@ func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.Se
 	setupBasicRoutes(r)
 
 	return &APIServer{
-		router:  r,
-		Maker:   maker,
-		Cfg:     cfg,
-		Service: service,
+		router:   r,
+		Maker:    maker,
+		Cfg:      cfg,
+		Service:  service,
+		Validate: Validate,
 	}, nil
 }
 

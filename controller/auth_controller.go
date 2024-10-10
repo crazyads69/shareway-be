@@ -6,25 +6,29 @@ import (
 	"strings"
 
 	"shareway/helper"
+	"shareway/infra/fpt"
 	"shareway/schemas"
 	"shareway/service"
 	"shareway/util"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
 // AuthController handles authentication-related requests
 type AuthController struct {
 	cfg         util.Config
+	validate    *validator.Validate
 	OTPService  service.IOTPService
 	UserService service.IUsersService
 }
 
 // NewAuthController creates a new AuthController instance
-func NewAuthController(cfg util.Config, otpService service.IOTPService, userService service.IUsersService) *AuthController {
+func NewAuthController(cfg util.Config, validate *validator.Validate, otpService service.IOTPService, userService service.IUsersService) *AuthController {
 	return &AuthController{
 		cfg:         cfg,
+		validate:    validate,
 		OTPService:  otpService,
 		UserService: userService,
 	}
@@ -51,6 +55,18 @@ func (ctrl *AuthController) Register(ctx *gin.Context) {
 			err,
 			"Invalid request body",
 			"Số điện thoại không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Validate user input
+	if err := ctrl.validate.Struct(req); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+		response := helper.ErrorResponseWithMessage(
+			validationErrors,
+			"Invalid input",
+			"Dữ liệu đầu vào không hợp lệ",
 		)
 		helper.GinResponse(ctx, http.StatusBadRequest, response)
 		return
@@ -105,10 +121,13 @@ func (ctrl *AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
+	// When register complete, mean user is not activated and not verified
 	res := schemas.RegisterUserResponse{
 		UserID:      userID,
 		PhoneNumber: req.PhoneNumber,
 		FullName:    fullName,
+		IsActivated: false,
+		IsVerified:  false,
 	}
 
 	response := helper.SuccessResponse(res, "OTP sent successfully", "Mã OTP đã được gửi thành công")
@@ -122,20 +141,32 @@ func (ctrl *AuthController) Register(ctx *gin.Context) {
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param request body schemas.GenerateOTPRequest true "OTP resend request"
-// @Success 200 {object} helper.Response{data=schemas.GenerateOTPResponse} "OTP sent successfully"
+// @Param request body schemas.ResendOTPRequest true "OTP resend request"
+// @Success 200 {object} helper.Response{data=schemas.ResendOTPResponse} "OTP sent successfully"
 // @Failure 400 {object} helper.Response "Invalid request body"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /auth/resend-otp [post]
 func (ctrl *AuthController) ResendOTP(ctx *gin.Context) {
 
-	var req schemas.GenerateOTPRequest
+	var req schemas.ResendOTPRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
 			"Invalid request body",
 			"Yêu cầu không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Validate user input
+	if err := ctrl.validate.Struct(req); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+		response := helper.ErrorResponseWithMessage(
+			validationErrors,
+			"Invalid input",
+			"Dữ liệu đầu vào không hợp lệ",
 		)
 		helper.GinResponse(ctx, http.StatusBadRequest, response)
 		return
@@ -165,7 +196,7 @@ func (ctrl *AuthController) ResendOTP(ctx *gin.Context) {
 		return
 	}
 
-	res := schemas.GenerateOTPResponse{
+	res := schemas.ResendOTPResponse{
 		PhoneNumber: req.PhoneNumber,
 		UserID:      userID,
 	}
@@ -199,6 +230,18 @@ func (ctrl *AuthController) VerifyRegisterOTP(ctx *gin.Context) {
 		return
 	}
 
+	// Validate user input
+	if err := ctrl.validate.Struct(req); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+		response := helper.ErrorResponseWithMessage(
+			validationErrors,
+			"Invalid input",
+			"Dữ liệu đầu vào không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
 	// Verify the OTP
 	err := ctrl.OTPService.VerifyOTP(req.PhoneNumber, req.OTP)
 	if err != nil {
@@ -223,18 +266,6 @@ func (ctrl *AuthController) VerifyRegisterOTP(ctx *gin.Context) {
 		return
 	}
 
-	// Update user status
-	err = ctrl.UserService.ActivateUser(req.PhoneNumber)
-	if err != nil {
-		response := helper.ErrorResponseWithMessage(
-			err,
-			"Failed to update user status",
-			"Không thể cập nhật trạng thái người dùng",
-		)
-		helper.GinResponse(ctx, http.StatusInternalServerError, response)
-		return
-	}
-
 	// Get user info
 	user, err := ctrl.UserService.GetUserByPhone(req.PhoneNumber)
 	if err != nil {
@@ -247,11 +278,13 @@ func (ctrl *AuthController) VerifyRegisterOTP(ctx *gin.Context) {
 		return
 	}
 
+	// After OTP verified, user is activated but not verified with CCCD
 	res := schemas.VerifyRegisterOTPResponse{
 		UserID:      user.ID,
 		PhoneNumber: user.PhoneNumber,
 		FullName:    user.FullName,
 		IsActivated: true,
+		IsVerified:  false,
 	}
 
 	response := helper.SuccessResponse(res, "OTP verified successfully", "OTP đã được xác minh thành công")
@@ -272,6 +305,11 @@ func (ctrl *AuthController) VerifyRegisterOTP(ctx *gin.Context) {
 // @Failure 400 {object} helper.Response "Invalid request or CCCD info"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /auth/verify-cccd [post]
+type VerifyResult struct {
+	info *fpt.CCCDInfo
+	err  error
+}
+
 func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 	var req schemas.VerifyCCCDRequest
 
@@ -281,6 +319,18 @@ func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 			err,
 			"Invalid request body",
 			"Yêu cầu không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Validate user input
+	if err := ctrl.validate.Struct(req); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+		response := helper.ErrorResponseWithMessage(
+			validationErrors,
+			"Invalid input",
+			"Dữ liệu đầu vào không hợp lệ",
 		)
 		helper.GinResponse(ctx, http.StatusBadRequest, response)
 		return
@@ -299,30 +349,69 @@ func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 	}
 
 	// Call FPT AI to verify the CCCD
-	frontCCCDInfo, err := ctrl.UserService.VerifyCCCD(req.FrontImage)
-	if err != nil {
+	// frontCCCDInfo, err := ctrl.UserService.VerifyCCCD(req.FrontImage)
+	// if err != nil {
+	// 	response := helper.ErrorResponseWithMessage(
+	// 		err,
+	// 		"Failed to verify CCCD",
+	// 		"Không thể xác minh CCCD",
+	// 	)
+	// 	helper.GinResponse(ctx, http.StatusInternalServerError, response)
+	// 	return
+	// }
+
+	// backCCCDInfo, err := ctrl.UserService.VerifyCCCD(req.BackImage)
+	// if err != nil {
+	// 	response := helper.ErrorResponseWithMessage(
+	// 		err,
+	// 		"Failed to verify CCCD",
+	// 		"Không thể xác minh CCCD",
+	// 	)
+	// 	helper.GinResponse(ctx, http.StatusInternalServerError, response)
+	// 	return
+	// }
+
+	frontChan := make(chan VerifyResult)
+	backChan := make(chan VerifyResult)
+
+	// Perform front and back image verifications concurrently
+	go func() {
+		info, err := ctrl.UserService.VerifyCCCD(req.FrontImage)
+		frontChan <- VerifyResult{info, err}
+	}()
+
+	go func() {
+		info, err := ctrl.UserService.VerifyCCCD(req.BackImage)
+		backChan <- VerifyResult{info, err}
+	}()
+
+	// Wait for both verifications to complete
+	frontResult := <-frontChan
+	backResult := <-backChan
+
+	// Check for errors in either verification
+	if frontResult.err != nil {
 		response := helper.ErrorResponseWithMessage(
-			err,
-			"Failed to verify CCCD",
-			"Không thể xác minh CCCD",
+			frontResult.err,
+			"Failed to verify front CCCD",
+			"Không thể xác minh mặt trước CCCD",
 		)
 		helper.GinResponse(ctx, http.StatusInternalServerError, response)
 		return
 	}
 
-	backCCCDInfo, err := ctrl.UserService.VerifyCCCD(req.BackImage)
-	if err != nil {
+	if backResult.err != nil {
 		response := helper.ErrorResponseWithMessage(
-			err,
-			"Failed to verify CCCD",
-			"Không thể xác minh CCCD",
+			backResult.err,
+			"Failed to verify back CCCD",
+			"Không thể xác minh mặt sau CCCD",
 		)
 		helper.GinResponse(ctx, http.StatusInternalServerError, response)
 		return
 	}
 
 	// Check if the CCCD issued date and expiry date are valid
-	if err := helper.ValidateCCCDInfo(frontCCCDInfo, backCCCDInfo); err != nil {
+	if err := helper.ValidateCCCDInfo(frontResult.info, backResult.info); err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
 			"Invalid CCCD info",
@@ -331,8 +420,9 @@ func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 		helper.GinResponse(ctx, http.StatusBadRequest, response)
 		return
 	}
+
 	// Encrypt and save the CCCD info
-	err = ctrl.UserService.EncryptAndSaveCCCDInfo(frontCCCDInfo, userID)
+	err = ctrl.UserService.EncryptAndSaveCCCDInfo(frontResult.info, userID)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -412,6 +502,18 @@ func (ctrl *AuthController) RegisterOAuth(ctx *gin.Context) {
 		return
 	}
 
+	// Validate user input
+	if err := ctrl.validate.Struct(req); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+		response := helper.ErrorResponseWithMessage(
+			validationErrors,
+			"Invalid input",
+			"Dữ liệu đầu vào không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
 	// Check if user already exists
 	exists, err := ctrl.UserService.UserExistsByPhone(req.PhoneNumber)
 	if err != nil {
@@ -478,11 +580,13 @@ func (ctrl *AuthController) RegisterOAuth(ctx *gin.Context) {
 		return
 	}
 
+	// When register complete, mean user is not activated and not verified
 	res := schemas.RegisterOAuthResponse{
 		UserID:      userID,
 		FullName:    req.FullName,
 		PhoneNumber: req.PhoneNumber,
-		Email:       req.Email,
+		IsActivated: false,
+		IsVerified:  false,
 	}
 
 	response := helper.SuccessResponse(res, "OTP sent successfully", "Mã OTP đã được gửi thành công")
@@ -496,20 +600,32 @@ func (ctrl *AuthController) RegisterOAuth(ctx *gin.Context) {
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param request body schemas.GenerateOTPRequest true "Phone number for login"
-// @Success 200 {object} helper.Response{data=schemas.GenerateOTPResponse} "OTP sent successfully"
+// @Param request body schemas.LoginRequest true "Phone number for login"
+// @Success 200 {object} helper.Response{data=schemas.LoginResponse} "OTP sent successfully"
 // @Failure 400 {object} helper.Response "Invalid request body"
 // @Failure 404 {object} helper.Response "User does not exist"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /auth/login-phone [post]
 func (ctrl *AuthController) LoginWithPhoneNumber(ctx *gin.Context) {
-	var req schemas.GenerateOTPRequest
+	var req schemas.LoginRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
 			"Invalid request body",
 			"Yêu cầu không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Validate user input
+	if err := ctrl.validate.Struct(req); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+		response := helper.ErrorResponseWithMessage(
+			validationErrors,
+			"Invalid input",
+			"Dữ liệu đầu vào không hợp lệ",
 		)
 		helper.GinResponse(ctx, http.StatusBadRequest, response)
 		return
@@ -549,20 +665,22 @@ func (ctrl *AuthController) LoginWithPhoneNumber(ctx *gin.Context) {
 	}
 
 	// Get user_id
-	userID, err := ctrl.UserService.GetUserIDByPhone(req.PhoneNumber)
+	user, err := ctrl.UserService.GetUserByPhone(req.PhoneNumber)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
-			"Failed to get user_id",
-			"Không thể lấy user_id",
+			"Failed to get user info",
+			"Không thể lấy thông tin người dùng",
 		)
 		helper.GinResponse(ctx, http.StatusInternalServerError, response)
 		return
 	}
 
-	res := schemas.GenerateOTPResponse{
+	res := schemas.LoginResponse{
 		PhoneNumber: req.PhoneNumber,
-		UserID:      userID,
+		UserID:      user.ID,
+		IsActivated: user.IsActivated,
+		IsVerified:  user.IsVerified,
 	}
 
 	response := helper.SuccessResponse(res, "OTP sent successfully", "Mã OTP đã được gửi thành công")
@@ -589,6 +707,18 @@ func (ctrl *AuthController) VerifyLoginOTP(ctx *gin.Context) {
 			err,
 			"Invalid request body",
 			"Yêu cầu không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Validate user input
+	if err := ctrl.validate.Struct(req); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+		response := helper.ErrorResponseWithMessage(
+			validationErrors,
+			"Invalid input",
+			"Dữ liệu đầu vào không hợp lệ",
 		)
 		helper.GinResponse(ctx, http.StatusBadRequest, response)
 		return
@@ -664,6 +794,18 @@ func (ctrl *AuthController) LoginWithOAuth(ctx *gin.Context) {
 		return
 	}
 
+	// Validate user input
+	if err := ctrl.validate.Struct(req); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+		response := helper.ErrorResponseWithMessage(
+			validationErrors,
+			"Invalid input",
+			"Dữ liệu đầu vào không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
 	// Check if user exists
 	exists, err := ctrl.UserService.UserExistsByEmail(req.Email)
 	if err != nil {
@@ -711,9 +853,11 @@ func (ctrl *AuthController) LoginWithOAuth(ctx *gin.Context) {
 
 	// Return user info
 	res := schemas.LoginWithOAuthResponse{
-		Email:       user.Email,
 		PhoneNumber: user.PhoneNumber,
 		UserID:      user.ID,
+		FullName:    user.FullName,
+		IsActivated: user.IsActivated,
+		IsVerified:  user.IsVerified,
 	}
 
 	response := helper.SuccessResponse(res, "OTP sent successfully", "Mã OTP đã được gửi thành công")

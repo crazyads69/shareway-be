@@ -283,12 +283,18 @@ func (r *AuthRepository) RevokeToken(userID uuid.UUID, refreshToken string) erro
 
 	// First, get the current token record
 	var token migration.PasetoToken
-	if err := tx.Where("user_id = ? AND refresh_token = ? AND revoke = false", userID, refreshToken).First(&token).Error; err != nil {
+	if err := tx.Where("user_id = ? AND refresh_token = ?", userID, refreshToken).First(&token).Error; err != nil {
 		tx.Rollback()
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return fmt.Errorf("no active token found for user")
+			return fmt.Errorf("no token found for user")
 		}
 		return fmt.Errorf("failed to fetch token: %w", err)
+	}
+
+	// Check if the token is already revoked
+	if token.Revoke {
+		tx.Rollback()
+		return nil // Token already revoked, consider this a success
 	}
 
 	// Revoke the token

@@ -99,7 +99,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/schemas.GenerateOTPRequest"
+                            "$ref": "#/definitions/schemas.LoginRequest"
                         }
                     }
                 ],
@@ -115,7 +115,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/schemas.GenerateOTPResponse"
+                                            "$ref": "#/definitions/schemas.LoginResponse"
                                         }
                                     }
                                 }
@@ -407,7 +407,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/schemas.GenerateOTPRequest"
+                            "$ref": "#/definitions/schemas.ResendOTPRequest"
                         }
                     }
                 ],
@@ -423,7 +423,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/schemas.GenerateOTPResponse"
+                                            "$ref": "#/definitions/schemas.ResendOTPResponse"
                                         }
                                     }
                                 }
@@ -432,85 +432,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid request body",
-                        "schema": {
-                            "$ref": "#/definitions/helper.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/helper.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/verify-cccd": {
-            "post": {
-                "description": "Verifies the front and back images of a user's CCCD, saves the information, and updates user status",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Verify user's CCCD",
-                "parameters": [
-                    {
-                        "type": "file",
-                        "description": "Front image of CCCD",
-                        "name": "front_image",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "file",
-                        "description": "Back image of CCCD",
-                        "name": "back_image",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "User ID (UUID format)",
-                        "name": "user_id",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "maxLength": 11,
-                        "minLength": 9,
-                        "type": "string",
-                        "description": "User's phone number (9-11 digits)",
-                        "name": "phone_number",
-                        "in": "formData",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "CCCD verified successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/helper.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/schemas.VerifyCCCDResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request or CCCD info",
                         "schema": {
                             "$ref": "#/definitions/helper.Response"
                         }
@@ -698,30 +619,34 @@ const docTemplate = `{
                 }
             }
         },
-        "schemas.GenerateOTPRequest": {
+        "schemas.LoginRequest": {
             "type": "object",
             "required": [
                 "phone_number"
             ],
             "properties": {
                 "phone_number": {
-                    "type": "string",
-                    "maxLength": 11,
-                    "minLength": 9
+                    "type": "string"
                 }
             }
         },
-        "schemas.GenerateOTPResponse": {
+        "schemas.LoginResponse": {
             "type": "object",
             "required": [
+                "is_activated",
+                "is_verified",
                 "phone_number",
                 "user_id"
             ],
             "properties": {
+                "is_activated": {
+                    "type": "boolean"
+                },
+                "is_verified": {
+                    "type": "boolean"
+                },
                 "phone_number": {
-                    "type": "string",
-                    "maxLength": 11,
-                    "minLength": 9
+                    "type": "string"
                 },
                 "user_id": {
                     "type": "string"
@@ -744,15 +669,23 @@ const docTemplate = `{
         "schemas.LoginWithOAuthResponse": {
             "type": "object",
             "required": [
-                "email",
+                "full_name",
+                "is_activated",
+                "is_verified",
                 "phone_number",
                 "user_id"
             ],
             "properties": {
-                "email": {
+                "full_name": {
                     "type": "string",
                     "maxLength": 256,
                     "minLength": 3
+                },
+                "is_activated": {
+                    "type": "boolean"
+                },
+                "is_verified": {
+                    "type": "boolean"
                 },
                 "phone_number": {
                     "type": "string",
@@ -793,7 +726,8 @@ const docTemplate = `{
             "properties": {
                 "email": {
                     "type": "string",
-                    "maxLength": 256
+                    "maxLength": 256,
+                    "minLength": 3
                 },
                 "full_name": {
                     "type": "string",
@@ -801,34 +735,33 @@ const docTemplate = `{
                     "minLength": 3
                 },
                 "phone_number": {
-                    "type": "string",
-                    "maxLength": 11,
-                    "minLength": 9
+                    "type": "string"
                 }
             }
         },
         "schemas.RegisterOAuthResponse": {
             "type": "object",
             "required": [
-                "email",
                 "full_name",
+                "is_activated",
+                "is_verified",
                 "phone_number",
                 "user_id"
             ],
             "properties": {
-                "email": {
-                    "type": "string",
-                    "maxLength": 256
-                },
                 "full_name": {
                     "type": "string",
                     "maxLength": 256,
                     "minLength": 3
                 },
+                "is_activated": {
+                    "type": "boolean"
+                },
+                "is_verified": {
+                    "type": "boolean"
+                },
                 "phone_number": {
-                    "type": "string",
-                    "maxLength": 11,
-                    "minLength": 9
+                    "type": "string"
                 },
                 "user_id": {
                     "type": "string"
@@ -848,9 +781,7 @@ const docTemplate = `{
                     "minLength": 3
                 },
                 "phone_number": {
-                    "type": "string",
-                    "maxLength": 11,
-                    "minLength": 9
+                    "type": "string"
                 }
             }
         },
@@ -858,6 +789,8 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "full_name",
+                "is_activated",
+                "is_verified",
                 "phone_number",
                 "user_id"
             ],
@@ -867,10 +800,40 @@ const docTemplate = `{
                     "maxLength": 256,
                     "minLength": 3
                 },
+                "is_activated": {
+                    "type": "boolean"
+                },
+                "is_verified": {
+                    "type": "boolean"
+                },
                 "phone_number": {
-                    "type": "string",
-                    "maxLength": 11,
-                    "minLength": 9
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.ResendOTPRequest": {
+            "type": "object",
+            "required": [
+                "phone_number"
+            ],
+            "properties": {
+                "phone_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.ResendOTPResponse": {
+            "type": "object",
+            "required": [
+                "phone_number",
+                "user_id"
+            ],
+            "properties": {
+                "phone_number": {
+                    "type": "string"
                 },
                 "user_id": {
                     "type": "string"
@@ -912,25 +875,6 @@ const docTemplate = `{
                 }
             }
         },
-        "schemas.VerifyCCCDResponse": {
-            "type": "object",
-            "required": [
-                "access_token",
-                "refresh_token",
-                "user"
-            ],
-            "properties": {
-                "access_token": {
-                    "type": "string"
-                },
-                "refresh_token": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/schemas.UserResponse"
-                }
-            }
-        },
         "schemas.VerifyLoginOTPRequest": {
             "type": "object",
             "required": [
@@ -945,9 +889,7 @@ const docTemplate = `{
                     "minLength": 6
                 },
                 "phone_number": {
-                    "type": "string",
-                    "maxLength": 11,
-                    "minLength": 9
+                    "type": "string"
                 },
                 "user_id": {
                     "type": "string"
@@ -987,9 +929,7 @@ const docTemplate = `{
                     "minLength": 6
                 },
                 "phone_number": {
-                    "type": "string",
-                    "maxLength": 11,
-                    "minLength": 9
+                    "type": "string"
                 },
                 "user_id": {
                     "type": "string"
@@ -1001,6 +941,7 @@ const docTemplate = `{
             "required": [
                 "full_name",
                 "is_activated",
+                "is_verified",
                 "phone_number",
                 "user_id"
             ],
@@ -1013,10 +954,11 @@ const docTemplate = `{
                 "is_activated": {
                     "type": "boolean"
                 },
+                "is_verified": {
+                    "type": "boolean"
+                },
                 "phone_number": {
-                    "type": "string",
-                    "maxLength": 11,
-                    "minLength": 9
+                    "type": "string"
                 },
                 "user_id": {
                     "type": "string"
