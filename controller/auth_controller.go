@@ -644,7 +644,7 @@ func (ctrl *AuthController) LoginWithPhoneNumber(ctx *gin.Context) {
 	}
 	if !exists {
 		response := helper.ErrorResponseWithMessage(
-			err,
+			fmt.Errorf("User does not exist"),
 			"User does not exist",
 			"Người dùng không tồn tại",
 		)
@@ -819,7 +819,7 @@ func (ctrl *AuthController) LoginWithOAuth(ctx *gin.Context) {
 	}
 	if !exists {
 		response := helper.ErrorResponseWithMessage(
-			err,
+			fmt.Errorf("User does not exist"),
 			"User does not exist",
 			"Người dùng không tồn tại",
 		)
