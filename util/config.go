@@ -37,6 +37,11 @@ type Config struct {
 	EncryptionKey               string `mapstructure:"ENCRYPTION_KEY"`
 	AccessTokenExpiredDuration  int    `mapstructure:"ACCESS_TOKEN_EXPIRED_DURATION"`
 	RefreshTokenExpiredDuration int    `mapstructure:"REFRESH_TOKEN_EXPIRED_DURATION"`
+	MaxOTPAttempts              int    `mapstructure:"MAX_OTP_ATTEMPTS"`
+	MaxOTPSendCount             int    `mapstructure:"MAX_OTP_SEND_COUNT"`
+	OtpExpiredDuration          int    `mapstructure:"OTP_EXPIRED_DURATION"`
+	OtpCooldownDuration         int    `mapstructure:"OTP_COOLDOWN_DURATION"`
+	OTPSendCountDuration        int    `mapstructure:"OTP_SEND_COUNT_DURATION"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

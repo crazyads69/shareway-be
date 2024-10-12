@@ -37,11 +37,15 @@ func main() {
 		log.Fatal().Err(err).Msg("Could not create token maker")
 		return
 	}
+
 	// Initialize DB
-	db := db.NewDatabaseInstance(cfg)
+	database := db.NewDatabaseInstance(cfg)
+
+	// Initialize Redis client
+	redisClient := db.NewRedisClient(cfg)
 
 	// Initialize services using the service factory pattern (dependency injection also included repository pattern)
-	serviceFactory := service.NewServiceFactory(db, cfg, maker)
+	serviceFactory := service.NewServiceFactory(database, cfg, maker, redisClient)
 	services := serviceFactory.CreateServices()
 
 	// Create new API server

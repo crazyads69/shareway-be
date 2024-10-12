@@ -8,8 +8,10 @@ services:
       - "35000:8080" # change port here
     depends_on:
       - postgres_db
+      - redis
     networks:
       - shareway-network
+
   postgres_db:
     image: postgres:17-alpine
     container_name: shareway-db
@@ -24,8 +26,21 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - shareway-network
+
+  redis:
+    image: redis:alpine
+    container_name: shareway-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - shareway-network
+
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   shareway-network:

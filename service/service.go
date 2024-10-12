@@ -6,6 +6,7 @@ import (
 	"shareway/util"
 	"shareway/util/token"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -20,9 +21,10 @@ type ServiceFactory struct {
 	fptReader *fpt.FPTReader
 	encryptor util.IEncryptor
 	maker     *token.PasetoMaker
+	redis     *redis.Client
 }
 
-func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker) *ServiceFactory {
+func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, redisClient *redis.Client) *ServiceFactory {
 	repoFactory := repository.NewRepositoryFactory(db)
 	repos := repoFactory.CreateRepositories()
 
@@ -37,6 +39,7 @@ func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker) *
 		fptReader: fptReader,
 		encryptor: encryptor,
 		maker:     token,
+		redis:     redisClient,
 	}
 }
 
@@ -48,7 +51,7 @@ func (f *ServiceFactory) CreateServices() *ServiceContainer {
 }
 
 func (f *ServiceFactory) createOTPService() IOTPService {
-	return NewOTPService(f.cfg)
+	return NewOTPService(f.cfg, f.redis)
 }
 
 func (f *ServiceFactory) createUserService() IUsersService {

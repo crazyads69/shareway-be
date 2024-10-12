@@ -95,7 +95,7 @@ func (ctrl *AuthController) Register(ctx *gin.Context) {
 	}
 
 	// Send OTP via Twilio
-	_, err = ctrl.OTPService.SendOTP(req.PhoneNumber)
+	_, err = ctrl.OTPService.SendOTP(ctx.Request.Context(), req.PhoneNumber)
 	if err != nil {
 		// ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send OTP"})
 		response := helper.ErrorResponseWithMessage(
@@ -173,7 +173,7 @@ func (ctrl *AuthController) ResendOTP(ctx *gin.Context) {
 	}
 
 	// Send OTP via Twilio (you might need to modify OTPService to support voice calls)
-	_, err := ctrl.OTPService.SendOTP(req.PhoneNumber) // Add voice parameter if supported
+	_, err := ctrl.OTPService.SendOTP(ctx.Request.Context(), req.PhoneNumber) // Add voice parameter if supported
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -243,7 +243,7 @@ func (ctrl *AuthController) VerifyRegisterOTP(ctx *gin.Context) {
 	}
 
 	// Verify the OTP
-	err := ctrl.OTPService.VerifyOTP(req.PhoneNumber, req.OTP)
+	err := ctrl.OTPService.VerifyOTP(ctx.Request.Context(), req.PhoneNumber, req.OTP)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -557,7 +557,7 @@ func (ctrl *AuthController) RegisterOAuth(ctx *gin.Context) {
 	}
 
 	// Send OTP via Twilio
-	_, err = ctrl.OTPService.SendOTP(req.PhoneNumber)
+	_, err = ctrl.OTPService.SendOTP(ctx.Request.Context(), req.PhoneNumber)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -653,7 +653,7 @@ func (ctrl *AuthController) LoginWithPhoneNumber(ctx *gin.Context) {
 	}
 
 	// Send OTP via Twilio
-	_, err = ctrl.OTPService.SendOTP(req.PhoneNumber)
+	_, err = ctrl.OTPService.SendOTP(ctx.Request.Context(), req.PhoneNumber)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -725,7 +725,7 @@ func (ctrl *AuthController) VerifyLoginOTP(ctx *gin.Context) {
 	}
 
 	// Verify the OTP
-	err := ctrl.OTPService.VerifyOTP(req.PhoneNumber, req.OTP)
+	err := ctrl.OTPService.VerifyOTP(ctx.Request.Context(), req.PhoneNumber, req.OTP)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -840,7 +840,7 @@ func (ctrl *AuthController) LoginWithOAuth(ctx *gin.Context) {
 	}
 
 	// Send OTP via Twilio
-	_, err = ctrl.OTPService.SendOTP(user.PhoneNumber)
+	_, err = ctrl.OTPService.SendOTP(ctx.Request.Context(), user.PhoneNumber)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
