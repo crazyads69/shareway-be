@@ -31,7 +31,7 @@ type Config struct {
 	RedisPassword               string `mapstructure:"REDIS_PASSWORD"`
 	RedisDB                     int    `mapstructure:"REDIS_DB"`
 	RedisExpiredDuration        int    `mapstructure:"REDIS_EXPIRED_DURATION"`
-	RedisProotocol              int    `mapstructure:"REDIS_PROTOCOL"`
+	RedisProtocol               int    `mapstructure:"REDIS_PROTOCOL"`
 	FptAiApiKey                 string `mapstructure:"FPT_AI_API_KEY"`
 	FptAiApiUrl                 string `mapstructure:"FPT_AI_API_URL"`
 	EncryptionKey               string `mapstructure:"ENCRYPTION_KEY"`

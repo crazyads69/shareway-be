@@ -13,6 +13,7 @@ func NewRedisClient(cfg util.Config) *redis.Client {
 		Password:         cfg.RedisPassword,
 		DB:               cfg.RedisDB,
 		DisableIndentity: true,
+		Protocol:         cfg.RedisProtocol,
 	})
 	return client
 }
