@@ -16,7 +16,6 @@ import (
 // IUsersService defines the interface for user-related business logic operations
 type IUsersService interface {
 	UserExistsByPhone(phoneNumber string) (bool, error)
-	CreateUserByPhone(phoneNumber, fullName string) (uuid.UUID, string, error)
 	GetUserIDByPhone(phoneNumber string) (uuid.UUID, error)
 	ActivateUser(phoneNumber string) error
 	GetUserByPhone(phoneNumber string) (migration.User, error)
@@ -56,11 +55,6 @@ func NewUsersService(repo repository.IAuthRepository, encryptor util.IEncryptor,
 // UserExistsByPhone checks if a user exists with the given phone number
 func (s *UsersService) UserExistsByPhone(phoneNumber string) (bool, error) {
 	return s.repo.UserExistsByPhone(phoneNumber)
-}
-
-// CreateUserByPhone creates a new user with the given phone number and full name
-func (s *UsersService) CreateUserByPhone(phoneNumber, fullName string) (uuid.UUID, string, error) {
-	return s.repo.CreateUserByPhone(phoneNumber, fullName)
 }
 
 // GetUserIDByPhone retrieves the user ID associated with the given phone number

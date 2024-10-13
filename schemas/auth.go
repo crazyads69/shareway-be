@@ -17,15 +17,21 @@ type Payload struct {
 	ExpiredAt   time.Time `json:"expired_at"`
 }
 
-// Define ResendOTPRequest struct
-type ResendOTPRequest struct {
+// Define InitRegisterRequest struct
+type InitRegisterRequest struct {
 	PhoneNumber string `json:"phone_number" binding:"required,e164" validate:"required,e164"`
 }
 
-// Define GenerateOTPResponse struct
-type ResendOTPResponse struct {
-	PhoneNumber string    `json:"phone_number" binding:"required,e164"`
-	UserID      uuid.UUID `json:"user_id" binding:"required"`
+// Define InitRegisterResponse struct
+type InitRegisterResponse struct {
+	PhoneNumber string `json:"phone_number" binding:"required,e164"`
+	IsActivated bool   `json:"is_activated" binding:"required"`
+	IsVerified  bool   `json:"is_verified" binding:"required"`
+}
+
+// Define ResendOTPRequest struct
+type ResendOTPRequest struct {
+	PhoneNumber string `json:"phone_number" binding:"required,e164" validate:"required,e164"`
 }
 
 // Define struct for LoginRequest
@@ -45,6 +51,7 @@ type LoginResponse struct {
 type RegisterUserRequest struct {
 	PhoneNumber string `json:"phone_number" binding:"required,e164" validate:"required,e164"`
 	FullName    string `json:"full_name" binding:"required,min=3,max=256" validate:"required,min=3,max=256"`
+	Email       string `json:"email" binding:"omitempty,email,max=256" validate:"omitempty,email,max=256"`
 }
 
 // Define struct to first register a user response
@@ -58,9 +65,8 @@ type RegisterUserResponse struct {
 
 // Define struct to verify the OTP
 type VerifyRegisterOTPRequest struct {
-	PhoneNumber string    `json:"phone_number" binding:"required,e164" validate:"required,e164"`
-	UserID      uuid.UUID `json:"user_id" binding:"required,uuid" validate:"required,uuid"`
-	OTP         string    `json:"otp" binding:"required,numeric,min=6,max=6" validate:"required,numeric,min=6,max=6"`
+	PhoneNumber string `json:"phone_number" binding:"required,e164" validate:"required,e164"`
+	OTP         string `json:"otp" binding:"required,numeric,min=6,max=6" validate:"required,numeric,min=6,max=6"`
 }
 
 // Define struct to verify the OTP response

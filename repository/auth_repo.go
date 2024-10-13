@@ -12,7 +12,6 @@ import (
 // IAuthRepository defines the interface for authentication-related database operations
 type IAuthRepository interface {
 	UserExistsByPhone(phoneNumber string) (bool, error)
-	CreateUserByPhone(phoneNumber, fullName string) (uuid.UUID, string, error)
 	GetUserIDByPhone(phoneNumber string) (uuid.UUID, error)
 	ActivateUser(phoneNumber string) error
 	GetUserByPhone(phoneNumber string) (migration.User, error)
@@ -45,31 +44,6 @@ func (r *AuthRepository) UserExistsByPhone(phoneNumber string) (bool, error) {
 		Error
 
 	return count > 0, err
-}
-
-// CreateUserByPhone creates a new user with the given phone number and full name
-func (r *AuthRepository) CreateUserByPhone(phoneNumber, fullName string) (uuid.UUID, string, error) {
-	tx := r.db.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	user := migration.User{
-		PhoneNumber: phoneNumber,
-		FullName:    fullName,
-	}
-	if err := tx.Create(&user).Error; err != nil {
-		tx.Rollback()
-		return uuid.Nil, "", err
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return uuid.Nil, "", err
-	}
-
-	return user.ID, user.FullName, nil
 }
 
 // GetUserIDByPhone retrieves the user ID associated with the given phone number
@@ -195,7 +169,9 @@ func (r *AuthRepository) CreateUser(phoneNumber, fullName, email string) (uuid.U
 	user := migration.User{
 		PhoneNumber: phoneNumber,
 		FullName:    fullName,
-		Email:       email,
+	}
+	if email != "" {
+		user.Email = email
 	}
 
 	if err := tx.Create(&user).Error; err != nil {

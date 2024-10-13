@@ -11,6 +11,26 @@ definitions:
       success:
         type: boolean
     type: object
+  schemas.InitRegisterRequest:
+    properties:
+      phone_number:
+        type: string
+    required:
+    - phone_number
+    type: object
+  schemas.InitRegisterResponse:
+    properties:
+      is_activated:
+        type: boolean
+      is_verified:
+        type: boolean
+      phone_number:
+        type: string
+    required:
+    - is_activated
+    - is_verified
+    - phone_number
+    type: object
   schemas.LoginRequest:
     properties:
       phone_number:
@@ -79,46 +99,11 @@ definitions:
     - refresh_token
     - user_id
     type: object
-  schemas.RegisterOAuthRequest:
+  schemas.RegisterUserRequest:
     properties:
       email:
         maxLength: 256
-        minLength: 3
         type: string
-      full_name:
-        maxLength: 256
-        minLength: 3
-        type: string
-      phone_number:
-        type: string
-    required:
-    - email
-    - full_name
-    - phone_number
-    type: object
-  schemas.RegisterOAuthResponse:
-    properties:
-      full_name:
-        maxLength: 256
-        minLength: 3
-        type: string
-      is_activated:
-        type: boolean
-      is_verified:
-        type: boolean
-      phone_number:
-        type: string
-      user_id:
-        type: string
-    required:
-    - full_name
-    - is_activated
-    - is_verified
-    - phone_number
-    - user_id
-    type: object
-  schemas.RegisterUserRequest:
-    properties:
       full_name:
         maxLength: 256
         minLength: 3
@@ -156,16 +141,6 @@ definitions:
         type: string
     required:
     - phone_number
-    type: object
-  schemas.ResendOTPResponse:
-    properties:
-      phone_number:
-        type: string
-      user_id:
-        type: string
-    required:
-    - phone_number
-    - user_id
     type: object
   schemas.UserResponse:
     properties:
@@ -226,37 +201,53 @@ definitions:
         type: string
       phone_number:
         type: string
-      user_id:
-        type: string
     required:
     - otp
     - phone_number
-    - user_id
-    type: object
-  schemas.VerifyRegisterOTPResponse:
-    properties:
-      full_name:
-        maxLength: 256
-        minLength: 3
-        type: string
-      is_activated:
-        type: boolean
-      is_verified:
-        type: boolean
-      phone_number:
-        type: string
-      user_id:
-        type: string
-    required:
-    - full_name
-    - is_activated
-    - is_verified
-    - phone_number
-    - user_id
     type: object
 info:
   contact: {}
 paths:
+  /auth/init-register:
+    post:
+      consumes:
+      - application/json
+      description: Start the registration process by sending an OTP to the provided
+        phone number
+      parameters:
+      - description: Registration initialization request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.InitRegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP sent successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.InitRegisterResponse'
+              type: object
+        "400":
+          description: Invalid request body or input
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "409":
+          description: User already exists
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      summary: Initialize user registration
+      tags:
+      - auth
   /auth/login-oauth:
     post:
       consumes:
@@ -411,10 +402,10 @@ paths:
     post:
       consumes:
       - application/json
-      description: Starts the registration process by sending an OTP and creating
-        a user account
+      description: Starts the registration process and creates a user account
       parameters:
-      - description: Registration request containing phone number and full name
+      - description: Registration request containing phone number, full name, and
+          optional email
         in: body
         name: request
         required: true
@@ -424,7 +415,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: User created and OTP sent successfully
+          description: User created successfully
           schema:
             allOf:
             - $ref: '#/definitions/helper.Response'
@@ -433,7 +424,7 @@ paths:
                   $ref: '#/definitions/schemas.RegisterUserResponse'
               type: object
         "400":
-          description: Invalid request body
+          description: Invalid request body or input
           schema:
             $ref: '#/definitions/helper.Response'
         "409":
@@ -444,55 +435,16 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/helper.Response'
-      summary: Initiate user registration
-      tags:
-      - auth
-  /auth/register-oauth:
-    post:
-      consumes:
-      - application/json
-      description: Register a new user using OAuth2 with Firebase authentication
-      parameters:
-      - description: User registration details
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/schemas.RegisterOAuthRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OTP sent successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/helper.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/schemas.RegisterOAuthResponse'
-              type: object
-        "400":
-          description: Invalid request body
-          schema:
-            $ref: '#/definitions/helper.Response'
-        "409":
-          description: User or email already exists
-          schema:
-            $ref: '#/definitions/helper.Response'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/helper.Response'
-      summary: Register a new user using OAuth2
+      summary: Register a new user
       tags:
       - auth
   /auth/resend-otp:
     post:
       consumes:
       - application/json
-      description: Resends the OTP to the provided phone number
+      description: Resends the OTP to the provided phone number for user verification
       parameters:
-      - description: OTP resend request
+      - description: OTP resend request containing phone number
         in: body
         name: request
         required: true
@@ -508,10 +460,10 @@ paths:
             - $ref: '#/definitions/helper.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/schemas.ResendOTPResponse'
+                  type: object
               type: object
         "400":
-          description: Invalid request body
+          description: Invalid request body or input
           schema:
             $ref: '#/definitions/helper.Response'
         "500":
@@ -561,10 +513,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Verifies the OTP sent during registration and activates the user
-        account
+      description: Verifies the OTP sent during registration
       parameters:
-      - description: OTP verification request
+      - description: OTP verification request containing phone number and OTP
         in: body
         name: request
         required: true
@@ -574,13 +525,13 @@ paths:
       - application/json
       responses:
         "200":
-          description: OTP verified and user activated successfully
+          description: OTP verified successfully
           schema:
             allOf:
             - $ref: '#/definitions/helper.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/schemas.VerifyRegisterOTPResponse'
+                  type: object
               type: object
         "400":
           description: Invalid request body or OTP verification failed

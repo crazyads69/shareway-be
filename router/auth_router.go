@@ -25,6 +25,8 @@ func SetupAuthRouter(group *gin.RouterGroup, server *APIServer) {
 		server.Service.OTPService,
 		server.Service.UserService,
 	)
+	// InitRegisterRequest
+	group.POST("/init-register", authController.InitRegister)
 	// RegisterUserRequest
 	group.POST("/register", authController.Register)
 	// LoginWithPhoneNumberRequest
@@ -37,8 +39,6 @@ func SetupAuthRouter(group *gin.RouterGroup, server *APIServer) {
 	group.POST("/verify-register-otp", authController.VerifyRegisterOTP)
 	// VerifyCCCDRequest
 	group.POST("/verify-cccd", authController.VerifyCCCD)
-	// RegisterOAuthRequest
-	group.POST("/register-oauth", authController.RegisterOAuth)
 	// VerifyLoginOTPRequest
 	group.POST("/verify-login-otp", authController.VerifyLoginOTP)
 	// RefreshTokenRequest
