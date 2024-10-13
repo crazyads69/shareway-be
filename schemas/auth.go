@@ -2,10 +2,17 @@ package schemas
 
 import (
 	"mime/multipart"
+	"shareway/infra/fpt"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+// Define VerifyResult struct
+type VerifyResult struct {
+	Info *fpt.CCCDInfo
+	Err  error
+}
 
 // Define Payload struct
 

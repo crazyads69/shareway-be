@@ -434,6 +434,85 @@
                 }
             }
         },
+        "/auth/verify-cccd": {
+            "post": {
+                "description": "Verifies the front and back images of a user's CCCD, saves the information, and updates user status",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify user's CCCD (Citizen Identity Card)",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Front image of CCCD",
+                        "name": "front_image",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Back image of CCCD",
+                        "name": "back_image",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID (UUID format)",
+                        "name": "user_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "maxLength": 11,
+                        "minLength": 9,
+                        "type": "string",
+                        "description": "User's phone number (9-11 digits)",
+                        "name": "phone_number",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CCCD verified successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.VerifyCCCDResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request or CCCD info",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/verify-login-otp": {
             "post": {
                 "description": "Verifies the OTP for login, creates a user session, and returns user info with access and refresh tokens",
@@ -828,6 +907,25 @@
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.VerifyCCCDResponse": {
+            "type": "object",
+            "required": [
+                "access_token",
+                "refresh_token",
+                "user"
+            ],
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/schemas.UserResponse"
                 }
             }
         },

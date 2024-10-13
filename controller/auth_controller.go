@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"shareway/helper"
-	"shareway/infra/fpt"
 	"shareway/schemas"
 	"shareway/service"
 	"shareway/util"
@@ -330,7 +329,8 @@ func (ctrl *AuthController) VerifyRegisterOTP(ctx *gin.Context) {
 }
 
 // VerifyCCCD verifies the CCCD (Citizen Identity Card) of the user
-// @Summary Verify user's CCCD
+// VerifyCCCD godoc
+// @Summary Verify user's CCCD (Citizen Identity Card)
 // @Description Verifies the front and back images of a user's CCCD, saves the information, and updates user status
 // @Tags auth
 // @Accept multipart/form-data
@@ -343,11 +343,6 @@ func (ctrl *AuthController) VerifyRegisterOTP(ctx *gin.Context) {
 // @Failure 400 {object} helper.Response "Invalid request or CCCD info"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /auth/verify-cccd [post]
-type VerifyResult struct {
-	info *fpt.CCCDInfo
-	err  error
-}
-
 func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 	var req schemas.VerifyCCCDRequest
 
@@ -386,18 +381,18 @@ func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 		return
 	}
 
-	frontChan := make(chan VerifyResult)
-	backChan := make(chan VerifyResult)
+	frontChan := make(chan schemas.VerifyResult)
+	backChan := make(chan schemas.VerifyResult)
 
 	// Perform front and back image verifications concurrently
 	go func() {
 		info, err := ctrl.UserService.VerifyCCCD(req.FrontImage)
-		frontChan <- VerifyResult{info, err}
+		frontChan <- schemas.VerifyResult{Info: info, Err: err}
 	}()
 
 	go func() {
 		info, err := ctrl.UserService.VerifyCCCD(req.BackImage)
-		backChan <- VerifyResult{info, err}
+		backChan <- schemas.VerifyResult{Info: info, Err: err}
 	}()
 
 	// Wait for both verifications to complete
@@ -405,9 +400,9 @@ func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 	backResult := <-backChan
 
 	// Check for errors in either verification
-	if frontResult.err != nil {
+	if frontResult.Err != nil {
 		response := helper.ErrorResponseWithMessage(
-			frontResult.err,
+			frontResult.Err,
 			"Failed to verify front CCCD",
 			"Không thể xác minh mặt trước CCCD",
 		)
@@ -415,9 +410,9 @@ func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 		return
 	}
 
-	if backResult.err != nil {
+	if backResult.Err != nil {
 		response := helper.ErrorResponseWithMessage(
-			backResult.err,
+			backResult.Err,
 			"Failed to verify back CCCD",
 			"Không thể xác minh mặt sau CCCD",
 		)
@@ -426,7 +421,7 @@ func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 	}
 
 	// Check if the CCCD issued date and expiry date are valid
-	if err := helper.ValidateCCCDInfo(frontResult.info, backResult.info); err != nil {
+	if err := helper.ValidateCCCDInfo(frontResult.Info, backResult.Info); err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
 			"Invalid CCCD info",
@@ -437,7 +432,7 @@ func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 	}
 
 	// Encrypt and save the CCCD info
-	err = ctrl.UserService.EncryptAndSaveCCCDInfo(frontResult.info, userID)
+	err = ctrl.UserService.EncryptAndSaveCCCDInfo(frontResult.Info, userID)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
