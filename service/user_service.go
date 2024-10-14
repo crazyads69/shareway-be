@@ -30,6 +30,7 @@ type IUsersService interface {
 	RefreshNewToken(phoneNumber string, userID uuid.UUID) (string, error)
 	UpdateSession(accessToken string, userID uuid.UUID, refreshToken string) error
 	RevokeToken(userID uuid.UUID, refreshToken string) error
+	GetUserByID(userID uuid.UUID) (migration.User, error)
 }
 
 // UsersService implements IUsersService and handles user-related business logic
@@ -158,6 +159,11 @@ func (s *UsersService) UpdateSession(accessToken string, userID uuid.UUID, refre
 // RevokeToken revokes the refresh token for the given user ID
 func (s *UsersService) RevokeToken(userID uuid.UUID, refreshToken string) error {
 	return s.repo.RevokeToken(userID, refreshToken)
+}
+
+// GetUserByID retrieves the user associated with the given user ID
+func (s *UsersService) GetUserByID(userID uuid.UUID) (migration.User, error) {
+	return s.repo.GetUserByID(userID)
 }
 
 // Ensure UsersService implements IUsersService

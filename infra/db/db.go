@@ -44,9 +44,9 @@ func NewDatabaseInstance(cfg util.Config) *gorm.DB {
 
 	// Uncomment the following block to drop all tables before migration (use with caution)
 
-	if err := migration.DropAllTables(db); err != nil {
+	/* if err := migration.DropAllTables(db); err != nil {
 		log.Fatal().Err(err).Msg("Failed to drop tables")
-	}
+	} */
 
 	// Perform database migration
 	if err := migration.Migrate(db); err != nil {

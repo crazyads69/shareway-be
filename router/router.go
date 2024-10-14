@@ -76,8 +76,11 @@ func (server *APIServer) Start(address string) error {
 
 // SetupRouter configures the main routes for the API server
 func (server *APIServer) SetupRouter() {
+	// Auth routes for user authentication
 	SetupAuthRouter(server.router.Group("/auth"), server)
 	SetupProtectedRouter(server.router.Group("/protected", middleware.AuthMiddleware(server.Maker)), server)
+	// User routes for user management
+	SetupUserRouter(server.router.Group("/user", middleware.AuthMiddleware(server.Maker)), server)
 }
 
 // SetupSwagger configures the Swagger documentation route

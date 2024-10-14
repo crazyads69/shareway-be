@@ -5,22 +5,19 @@ import (
 	"shareway/helper"
 	"shareway/middleware"
 	"shareway/util"
-	"shareway/util/token"
 
 	"github.com/gin-gonic/gin"
 )
 
 // ProtectedController handles protected route operations
 type ProtectedController struct {
-	maker *token.PasetoMaker
-	cfg   util.Config
+	cfg util.Config
 }
 
 // NewProtectedController creates a new instance of ProtectedController
-func NewProtectedController(maker *token.PasetoMaker, cfg util.Config) *ProtectedController {
+func NewProtectedController(cfg util.Config) *ProtectedController {
 	return &ProtectedController{
-		maker: maker,
-		cfg:   cfg,
+		cfg: cfg,
 	}
 }
 
@@ -38,13 +35,14 @@ func (ctrl *ProtectedController) ProtectedEndpoint(ctx *gin.Context) {
 	payload := ctx.MustGet(middleware.AuthorizationPayloadKey)
 
 	data, err := helper.ConvertToPayload(payload)
-	if !err {
+	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			fmt.Errorf("failed to convert payload"),
 			"Failed to convert payload",
 			"Không thể chuyển đổi payload",
 		)
 		helper.GinResponse(ctx, 500, response)
+		return
 	}
 
 	response := helper.SuccessResponse(data, "Successfully authenticated", "Xác thực thành công")

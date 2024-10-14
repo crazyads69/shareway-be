@@ -8,6 +8,6 @@ import (
 
 // SetupProtectedRouter configures the protected routes
 func SetupProtectedRouter(group *gin.RouterGroup, server *APIServer) {
-	protectedController := controller.NewProtectedController(server.Maker, server.Cfg)
+	protectedController := controller.NewProtectedController(server.Cfg)
 	group.GET("/test", protectedController.ProtectedEndpoint)
 }

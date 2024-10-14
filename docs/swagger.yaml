@@ -11,6 +11,13 @@ definitions:
       success:
         type: boolean
     type: object
+  schemas.GetUserProfileResponse:
+    properties:
+      user:
+        $ref: '#/definitions/schemas.UserResponse'
+    required:
+    - user
+    type: object
   schemas.InitRegisterRequest:
     properties:
       phone_number:
@@ -633,4 +640,31 @@ paths:
       summary: Test protected endpoint
       tags:
       - Protected
+  /user/get-profile:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the profile information of the authenticated user
+      parameters:
+      - description: Bearer <access_token>
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.GetUserProfileResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - user
 swagger: "2.0"

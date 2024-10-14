@@ -23,6 +23,7 @@ type IAuthRepository interface {
 	GetUserByEmail(email string) (migration.User, error)
 	UpdateSession(accessToken string, userID uuid.UUID, refreshToken string) error
 	RevokeToken(userID uuid.UUID, refreshToken string) error
+	GetUserByID(userID uuid.UUID) (migration.User, error)
 }
 
 // AuthRepository implements IAuthRepository
@@ -287,6 +288,14 @@ func (r *AuthRepository) RevokeToken(userID uuid.UUID, refreshToken string) erro
 	}
 
 	return tx.Commit().Error
+}
+
+// GetUserByID retrieves the user associated with the given user ID
+func (r *AuthRepository) GetUserByID(userID uuid.UUID) (migration.User, error) {
+	// Get the user record with the given user ID
+	var user migration.User
+	err := r.db.First(&user, "id = ?", userID).Error
+	return user, err
 }
 
 // Ensure AuthRepository implements IAuthRepository

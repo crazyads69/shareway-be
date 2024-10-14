@@ -61,9 +61,12 @@ func GinResponse(c *gin.Context, statusCode int, response Response) {
 }
 
 // ConvertToPayload attempts to convert an interface{} to a *schemas.Payload
-func ConvertToPayload(data interface{}) (*schemas.Payload, bool) {
+func ConvertToPayload(data interface{}) (*schemas.Payload, error) {
 	payload, ok := data.(*schemas.Payload)
-	return payload, ok
+	if !ok {
+		return nil, fmt.Errorf("failed to convert payload")
+	}
+	return payload, nil
 }
 
 // ValidateCCCDInfo checks the validity of CCCD (Citizen Identity Card) information
