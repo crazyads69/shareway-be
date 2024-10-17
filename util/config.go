@@ -42,6 +42,8 @@ type Config struct {
 	OtpExpiredDuration          int    `mapstructure:"OTP_EXPIRED_DURATION"`
 	OtpCooldownDuration         int    `mapstructure:"OTP_COOLDOWN_DURATION"`
 	OTPSendCountDuration        int    `mapstructure:"OTP_SEND_COUNT_DURATION"`
+	AmqpServerURL               string `mapstructure:"AMQP_SERVER_URL"`
+	AmqpNotificationQueue       string `mapstructure:"AMQP_NOTIFICATION_QUEUE"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

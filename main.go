@@ -2,6 +2,7 @@ package main
 
 import (
 	"shareway/infra/db"
+	rabbitmq "shareway/infra/rabbit_mq"
 	"shareway/router"
 	"shareway/service"
 	"shareway/util"
@@ -30,6 +31,20 @@ func main() {
 	}
 	// Set logger configuration
 	util.ConfigLogger(cfg)
+
+	// Init RabbitMQ
+	rabbitMQ, err := rabbitmq.NewRabbitMQ(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Could not create RabbitMQ instance")
+		return
+	}
+	defer rabbitMQ.Close()
+	// Declare queue for notifications
+	err = rabbitMQ.DeclareQueue()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Could not declare queue")
+		return
+	}
 
 	// Create new Paseto token maker
 	maker, err := token.SetupPasetoMaker(cfg.PasetoSercetKey)
