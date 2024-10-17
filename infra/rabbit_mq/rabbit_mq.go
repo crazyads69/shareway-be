@@ -1,7 +1,10 @@
 package rabbitmq
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"shareway/schemas"
 	"shareway/util"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -62,4 +65,27 @@ func (r *RabbitMQ) Close() {
 // GetChannel returns the amqp.Channel
 func (r *RabbitMQ) GetChannel() *amqp.Channel {
 	return r.channel
+}
+
+// PublishNotification publishes a notification to the queue for notifications
+func (r *RabbitMQ) PublishNotification(ctx context.Context, notification schemas.Notification) error {
+	body, err := json.Marshal(notification)
+	if err != nil {
+		return fmt.Errorf("failed to marshal notification: %w", err)
+	}
+
+	err = r.channel.PublishWithContext(ctx,
+		"",                             // exchange
+		r.config.AmqpNotificationQueue, // routing key
+		false,                          // mandatory
+		false,                          // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+	if err != nil {
+		return fmt.Errorf("failed to publish a message: %w", err)
+	}
+
+	return nil
 }
