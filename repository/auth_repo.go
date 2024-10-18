@@ -24,6 +24,7 @@ type IAuthRepository interface {
 	UpdateSession(accessToken string, userID uuid.UUID, refreshToken string) error
 	RevokeToken(userID uuid.UUID, refreshToken string) error
 	GetUserByID(userID uuid.UUID) (migration.User, error)
+	RegisterDeviceToken(userID uuid.UUID, deviceToken string) error
 }
 
 // AuthRepository implements IAuthRepository
@@ -296,6 +297,34 @@ func (r *AuthRepository) GetUserByID(userID uuid.UUID) (migration.User, error) {
 	var user migration.User
 	err := r.db.First(&user, "id = ?", userID).Error
 	return user, err
+}
+
+// RegisterDeviceToken registers the device token for the given user ID in the database
+func (r *AuthRepository) RegisterDeviceToken(userID uuid.UUID, deviceToken string) (err error) {
+	tx := r.db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			err = fmt.Errorf("panic occurred: %v", r)
+		}
+	}()
+
+	// Update the device token for the user with the given user ID
+	result := tx.Model(&migration.User{}).
+		Where("id = ?", userID).
+		Update("device_token", deviceToken)
+
+	if result.Error != nil {
+		tx.Rollback()
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		tx.Rollback()
+		return errors.New("user not found")
+	}
+
+	return tx.Commit().Error
 }
 
 // Ensure AuthRepository implements IAuthRepository

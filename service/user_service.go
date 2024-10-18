@@ -31,6 +31,7 @@ type IUsersService interface {
 	UpdateSession(accessToken string, userID uuid.UUID, refreshToken string) error
 	RevokeToken(userID uuid.UUID, refreshToken string) error
 	GetUserByID(userID uuid.UUID) (migration.User, error)
+	RegisterDeviceToken(userID uuid.UUID, deviceToken string) error
 }
 
 // UsersService implements IUsersService and handles user-related business logic
@@ -164,6 +165,11 @@ func (s *UsersService) RevokeToken(userID uuid.UUID, refreshToken string) error 
 // GetUserByID retrieves the user associated with the given user ID
 func (s *UsersService) GetUserByID(userID uuid.UUID) (migration.User, error) {
 	return s.repo.GetUserByID(userID)
+}
+
+// RegisterDeviceToken registers the device token for the given user ID
+func (s *UsersService) RegisterDeviceToken(userID uuid.UUID, deviceToken string) error {
+	return s.repo.RegisterDeviceToken(userID, deviceToken)
 }
 
 // Ensure UsersService implements IUsersService

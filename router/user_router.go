@@ -13,7 +13,10 @@ func SetupUserRouter(
 ) {
 	userController := controller.NewUserController(
 		server.Service.UserService,
+		server.Validate,
 	)
 	// GetUserProfile Request
 	group.GET("/get-profile", userController.GetUserProfile)
+	// RegisterDeviceToken Request
+	group.POST("/register-device-token", userController.RegisterDeviceToken)
 }

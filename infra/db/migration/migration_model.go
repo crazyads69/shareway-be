@@ -20,6 +20,7 @@ type User struct {
 	IsActivated       bool `gorm:"default:false"` // Only activated user when first registered and verified OTP completely
 	VerifiedAt        time.Time
 	Role              string             `gorm:"default:'user'"`
+	DeviceToken       string             // FCM token for push notification
 	Vehicles          []Vehicle          // One-to-many relationship with Vehicle
 	RatingsReceived   []Rating           `gorm:"foreignKey:RateeID"` // One-to-many relationship with Rating (received)
 	RatingsGiven      []Rating           `gorm:"foreignKey:RaterID"` // One-to-many relationship with Rating (given)

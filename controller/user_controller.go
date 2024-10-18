@@ -8,15 +8,18 @@ import (
 	"shareway/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type UserController struct {
 	UserService service.IUsersService
+	validate    *validator.Validate
 }
 
-func NewUserController(userService service.IUsersService) *UserController {
+func NewUserController(userService service.IUsersService, validate *validator.Validate) *UserController {
 	return &UserController{
 		UserService: userService,
+		validate:    validate,
 	}
 }
 
@@ -78,5 +81,76 @@ func (ctrl *UserController) GetUserProfile(ctx *gin.Context) {
 	}
 
 	response := helper.SuccessResponse(res, "Successfully authenticated", "Xác thực thành công")
+	helper.GinResponse(ctx, 200, response)
+}
+
+// RegisterDeviceToken receives device token and saves it to the database for push notification service through Firebase Cloud Messaging
+// RegisterDeviceToken godoc
+// @Summary Register device token for push notifications
+// @Description Registers the device token for the authenticated user to enable push notifications via Firebase Cloud Messaging
+// @Tags user
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param Authorization header string true "Bearer <access_token>"
+// @Param request body schemas.RegisterDeviceTokenRequest true "Device token registration request"
+// @Success 200 {object} helper.Response "Successfully registered device token"
+// @Failure 400 {object} helper.Response "Invalid request or validation error"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /user/register-device-token [post]
+func (ctrl *UserController) RegisterDeviceToken(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Bind request to schema
+	var req schemas.RegisterDeviceTokenRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to bind request"),
+			"Failed to bind request",
+			"Không thể bind request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Validate request
+	if err := ctrl.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Register device token
+	err = ctrl.UserService.RegisterDeviceToken(data.UserID, req.DeviceToken)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to register device token"),
+			"Failed to register device token",
+			"Không thể đăng ký device token",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	response := helper.SuccessResponse(nil, "Successfully registered device token", "Đăng ký device token thành công")
 	helper.GinResponse(ctx, 200, response)
 }

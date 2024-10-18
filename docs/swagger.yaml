@@ -106,6 +106,13 @@ definitions:
     - refresh_token
     - user_id
     type: object
+  schemas.RegisterDeviceTokenRequest:
+    properties:
+      device_token:
+        type: string
+    required:
+    - device_token
+    type: object
   schemas.RegisterUserRequest:
     properties:
       email:
@@ -665,6 +672,44 @@ paths:
       security:
       - BearerAuth: []
       summary: Get user profile
+      tags:
+      - user
+  /user/register-device-token:
+    post:
+      consumes:
+      - application/json
+      description: Registers the device token for the authenticated user to enable
+        push notifications via Firebase Cloud Messaging
+      parameters:
+      - description: Bearer <access_token>
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Device token registration request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.RegisterDeviceTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully registered device token
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "400":
+          description: Invalid request or validation error
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Register device token for push notifications
       tags:
       - user
 swagger: "2.0"
