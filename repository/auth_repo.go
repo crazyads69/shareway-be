@@ -336,20 +336,23 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 		}
 	}()
 
+	// Check if the user exists
+	var user migration.User
+	if err := tx.Where("phone_number = ?", phoneNumber).First(&user).Error; err != nil {
+		tx.Rollback()
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("user not found")
+		}
+		return err
+	}
+
 	// Delete the user with the given phone number
-	result := tx.Where("phone_number = ?", phoneNumber).Delete(&migration.User{})
-
-	if result.Error != nil {
+	if err := tx.Delete(&user).Error; err != nil {
 		tx.Rollback()
-		return result.Error
+		return err
 	}
 
-	if result.RowsAffected == 0 {
-		tx.Rollback()
-		return errors.New("user not found")
-	}
 	return tx.Commit().Error
-
 }
 
 // Ensure AuthRepository implements IAuthRepository
