@@ -44,6 +44,9 @@ type Config struct {
 	OTPSendCountDuration        int    `mapstructure:"OTP_SEND_COUNT_DURATION"`
 	AmqpServerURL               string `mapstructure:"AMQP_SERVER_URL"`
 	AmqpNotificationQueue       string `mapstructure:"AMQP_NOTIFICATION_QUEUE"`
+	GoongApiURL                 string `mapstructure:"GOONG_API_URL"`
+	GoongAPIKey                 string `mapstructure:"GOONG_API_KEY"`
+	GoongCacheExpiredDuration   int    `mapstructure:"GOONG_CACHE_EXPIRED_DURATION"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

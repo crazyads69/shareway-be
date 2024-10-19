@@ -13,6 +13,7 @@ import (
 type ServiceContainer struct {
 	OTPService  IOTPService
 	UserService IUsersService
+	MapsService IMapsService
 }
 
 type ServiceFactory struct {
@@ -47,6 +48,7 @@ func (f *ServiceFactory) CreateServices() *ServiceContainer {
 	return &ServiceContainer{
 		OTPService:  f.createOTPService(),
 		UserService: f.createUserService(),
+		MapsService: f.createMapsService(),
 	}
 }
 
@@ -56,4 +58,8 @@ func (f *ServiceFactory) createOTPService() IOTPService {
 
 func (f *ServiceFactory) createUserService() IUsersService {
 	return NewUsersService(f.repos.AuthRepository, f.encryptor, f.fptReader, f.maker, f.cfg)
+}
+
+func (f *ServiceFactory) createMapsService() IMapsService {
+	return NewMapsService(f.repos.MapsRepository, f.cfg, f.redis)
 }

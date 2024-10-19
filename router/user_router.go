@@ -7,10 +7,7 @@ import (
 )
 
 // SetupUserRouter ...
-func SetupUserRouter(
-	group *gin.RouterGroup,
-	server *APIServer,
-) {
+func SetupUserRouter(group *gin.RouterGroup, server *APIServer) {
 	userController := controller.NewUserController(
 		server.Service.UserService,
 		server.Validate,

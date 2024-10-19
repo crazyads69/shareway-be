@@ -11,6 +11,13 @@ definitions:
       success:
         type: boolean
     type: object
+  schemas.DeleteUserRequest:
+    properties:
+      phone_number:
+        type: string
+    required:
+    - phone_number
+    type: object
   schemas.GetUserProfileResponse:
     properties:
       user:
@@ -235,6 +242,37 @@ definitions:
 info:
   contact: {}
 paths:
+  /auth/delete-user:
+    post:
+      consumes:
+      - application/json
+      description: Delete the user from the provided phone number in the database
+        (only available in dev environment)
+      parameters:
+      - description: Delete user request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.DeleteUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User deleted successfully
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "400":
+          description: Invalid request body or input
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Failed to delete user
+          schema:
+            $ref: '#/definitions/helper.Response'
+      summary: Delete a user
+      tags:
+      - auth
   /auth/init-register:
     post:
       consumes:

@@ -45,4 +45,6 @@ func SetupAuthRouter(group *gin.RouterGroup, server *APIServer) {
 	group.POST("/refresh-token", authController.RefreshToken)
 	// LogoutRequest
 	group.POST("/logout", authController.Logout)
+	// DeleteUser
+	group.POST("/delete-user", authController.DeleteUser)
 }

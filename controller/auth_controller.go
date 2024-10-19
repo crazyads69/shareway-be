@@ -937,3 +937,56 @@ func (ctrl *AuthController) Logout(ctx *gin.Context) {
 	response := helper.SuccessResponse(nil, "Logout successful", "Đăng xuất thành công")
 	helper.GinResponse(ctx, http.StatusOK, response)
 }
+
+// DeleteUser delete the user from provide phone number in db (only available in dev environment)
+// DeleteUser godoc
+// @Summary Delete a user
+// @Description Delete the user from the provided phone number in the database (only available in dev environment)
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body schemas.DeleteUserRequest true "Delete user request"
+// @Success 200 {object} helper.Response "User deleted successfully"
+// @Failure 400 {object} helper.Response "Invalid request body or input"
+// @Failure 500 {object} helper.Response "Failed to delete user"
+// @Router /auth/delete-user [post]
+func (ctrl *AuthController) DeleteUser(ctx *gin.Context) {
+	var req schemas.DeleteUserRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid request body",
+			"Yêu cầu không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	if err := ctrl.validate.Struct(req); err != nil {
+		validationErrors := err.(validator.ValidationErrors)
+		response := helper.ErrorResponseWithMessage(
+			validationErrors,
+			"Invalid input",
+			"Dữ liệu đầu vào không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Delete user
+	err := ctrl.UserService.DeleteUser(req.PhoneNumber)
+
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to delete user",
+			"Không thể xóa người dùng",
+		)
+		helper.GinResponse(ctx, http.StatusInternalServerError, response)
+		return
+	}
+
+	response := helper.SuccessResponse(nil, "User deleted successfully", "Người dùng đã được xóa thành công")
+	helper.GinResponse(ctx, http.StatusOK, response)
+}

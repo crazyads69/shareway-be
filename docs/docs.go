@@ -15,6 +15,52 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/auth/delete-user": {
+            "post": {
+                "description": "Delete the user from the provided phone number in the database (only available in dev environment)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Delete a user",
+                "parameters": [
+                    {
+                        "description": "Delete user request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.DeleteUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body or input",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete user",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/init-register": {
             "post": {
                 "description": "Start the registration process by sending an OTP to the provided phone number",
@@ -796,6 +842,17 @@ const docTemplate = `{
                 },
                 "success": {
                     "type": "boolean"
+                }
+            }
+        },
+        "schemas.DeleteUserRequest": {
+            "type": "object",
+            "required": [
+                "phone_number"
+            ],
+            "properties": {
+                "phone_number": {
+                    "type": "string"
                 }
             }
         },

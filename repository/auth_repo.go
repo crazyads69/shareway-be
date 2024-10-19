@@ -25,6 +25,7 @@ type IAuthRepository interface {
 	RevokeToken(userID uuid.UUID, refreshToken string) error
 	GetUserByID(userID uuid.UUID) (migration.User, error)
 	RegisterDeviceToken(userID uuid.UUID, deviceToken string) error
+	DeleteUser(phoneNumber string) error
 }
 
 // AuthRepository implements IAuthRepository
@@ -300,12 +301,11 @@ func (r *AuthRepository) GetUserByID(userID uuid.UUID) (migration.User, error) {
 }
 
 // RegisterDeviceToken registers the device token for the given user ID in the database
-func (r *AuthRepository) RegisterDeviceToken(userID uuid.UUID, deviceToken string) (err error) {
+func (r *AuthRepository) RegisterDeviceToken(userID uuid.UUID, deviceToken string) error {
 	tx := r.db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			err = fmt.Errorf("panic occurred: %v", r)
 		}
 	}()
 
@@ -325,6 +325,31 @@ func (r *AuthRepository) RegisterDeviceToken(userID uuid.UUID, deviceToken strin
 	}
 
 	return tx.Commit().Error
+}
+
+// DeleteUser delete user from given phone number in db
+func (r *AuthRepository) DeleteUser(phoneNumber string) error {
+	tx := r.db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Delete the user with the given phone number
+	result := tx.Where("phone_number = ?", phoneNumber).Delete(&migration.User{})
+
+	if result.Error != nil {
+		tx.Rollback()
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		tx.Rollback()
+		return errors.New("user not found")
+	}
+	return tx.Commit().Error
+
 }
 
 // Ensure AuthRepository implements IAuthRepository

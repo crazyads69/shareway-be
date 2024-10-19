@@ -7,6 +7,7 @@ import (
 // RepositoryContainer holds all the repositories
 type RepositoryContainer struct {
 	AuthRepository IAuthRepository
+	MapsRepository IMapsRepository
 	// Add other repositories here as needed
 }
 
@@ -26,6 +27,7 @@ func NewRepositoryFactory(db *gorm.DB) *RepositoryFactory {
 func (f *RepositoryFactory) CreateRepositories() *RepositoryContainer {
 	return &RepositoryContainer{
 		AuthRepository: f.createAuthRepository(),
+		MapsRepository: f.createMapsRepository(),
 		// Initialize other repositories here
 	}
 }
@@ -33,6 +35,11 @@ func (f *RepositoryFactory) CreateRepositories() *RepositoryContainer {
 // createAuthRepository initializes and returns the Auth repository
 func (f *RepositoryFactory) createAuthRepository() IAuthRepository {
 	return NewAuthRepository(f.db)
+}
+
+// createMapsRepository initializes and returns the Maps repository
+func (f *RepositoryFactory) createMapsRepository() IMapsRepository {
+	return NewMapsRepository(f.db)
 }
 
 // Add methods for creating other repositories as needed

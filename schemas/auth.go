@@ -151,3 +151,8 @@ type RefreshTokenResponse struct {
 	RefreshToken string    `json:"refresh_token" binding:"required"`
 	UserID       uuid.UUID `json:"user_id" binding:"required"`
 }
+
+// Define struct for DeleteUserRequest
+type DeleteUserRequest struct {
+	PhoneNumber string `json:"phone_number" binding:"required,e164" validate:"required,e164"`
+}
