@@ -40,25 +40,25 @@ func NewAuthRepository(db *gorm.DB) IAuthRepository {
 
 // UserExistsByPhone checks if a user exists with the given phone number
 func (r *AuthRepository) UserExistsByPhone(phoneNumber string) (bool, error) {
-	var count int64
+	var exists bool
 	err := r.db.Model(&migration.User{}).
+		Select("1").
 		Where("phone_number = ?", phoneNumber).
-		Count(&count).
+		Limit(1).
+		Find(&exists).
 		Error
-
-	return count > 0, err
+	return exists, err
 }
 
 // GetUserIDByPhone retrieves the user ID associated with the given phone number
 func (r *AuthRepository) GetUserIDByPhone(phoneNumber string) (uuid.UUID, error) {
-	var userID uuid.UUID
+	var user migration.User
 	err := r.db.Model(&migration.User{}).
 		Select("id").
 		Where("phone_number = ?", phoneNumber).
-		First(&userID).
+		First(&user).
 		Error
-
-	return userID, err
+	return user.ID, err
 }
 
 // ActivateUser updates the user status to activated
@@ -156,8 +156,8 @@ func (r *AuthRepository) UserExistsByEmail(email string) (bool, error) {
 		Limit(1).
 		Find(&exists).
 		Error
-
 	return exists, err
+
 }
 
 // CreateUser creates a new user with the given phone number, full name, and email
@@ -192,16 +192,13 @@ func (r *AuthRepository) CreateUser(phoneNumber, fullName, email string) (uuid.U
 // GetUserByEmail retrieves a user by their email address
 func (r *AuthRepository) GetUserByEmail(email string) (migration.User, error) {
 	var user migration.User
-
 	err := r.db.Where("email = ?", email).First(&user).Error
-
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return migration.User{}, fmt.Errorf("user with email %s not found", email)
 		}
 		return migration.User{}, fmt.Errorf("failed to fetch user: %w", err)
 	}
-
 	return user, nil
 }
 
@@ -296,7 +293,7 @@ func (r *AuthRepository) RevokeToken(userID uuid.UUID, refreshToken string) erro
 func (r *AuthRepository) GetUserByID(userID uuid.UUID) (migration.User, error) {
 	// Get the user record with the given user ID
 	var user migration.User
-	err := r.db.First(&user, "id = ?", userID).Error
+	err := r.db.First(&user, userID).Error
 	return user, err
 }
 

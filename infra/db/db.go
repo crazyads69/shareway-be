@@ -35,7 +35,7 @@ func NewDatabaseInstance(cfg util.Config) *gorm.DB {
 	}
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(10 * time.Second)
+	sqlDB.SetConnMaxLifetime(time.Hour) // Set connection lifetime to 1 hour to prevent stale connections
 
 	// Enable UUID extension
 	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";").Error; err != nil {
