@@ -562,8 +562,6 @@ paths:
         type: string
       - description: User's phone number (9-11 digits)
         in: formData
-        maxLength: 11
-        minLength: 9
         name: phone_number
         required: true
         type: string

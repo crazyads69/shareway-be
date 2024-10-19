@@ -338,7 +338,7 @@ func (ctrl *AuthController) VerifyRegisterOTP(ctx *gin.Context) {
 // @Param front_image formData file true "Front image of CCCD"
 // @Param back_image formData file true "Back image of CCCD"
 // @Param user_id formData string true "User ID (UUID format)"
-// @Param phone_number formData string true "User's phone number (9-11 digits)" minlength(9) maxlength(11)
+// @Param phone_number formData string true "User's phone number (9-11 digits)"
 // @Success 200 {object} helper.Response{data=schemas.VerifyCCCDResponse} "CCCD verified successfully"
 // @Failure 400 {object} helper.Response "Invalid request or CCCD info"
 // @Failure 500 {object} helper.Response "Internal server error"

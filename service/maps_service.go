@@ -74,7 +74,7 @@ func (s *MapsService) GetAutoComplete(ctx context.Context, input string, limit i
 	}
 
 	// Cache the response
-	err = s.redisClient.Set(ctx, cacheKey, body, time.Duration(s.cfg.GoongCacheExpiredDuration)).Err()
+	err = s.redisClient.Set(ctx, cacheKey, body, time.Second*time.Duration(s.cfg.GoongCacheExpiredDuration)).Err()
 	if err != nil {
 		return nil, err
 	}

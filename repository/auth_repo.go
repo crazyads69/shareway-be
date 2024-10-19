@@ -346,7 +346,62 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 		return err
 	}
 
-	// Delete the user with the given phone number
+	// Delete related records in paseto_tokens table
+	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.PasetoToken{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Delete related records in other tables
+	// OTP
+	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.OTP{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Vehicles
+	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.Vehicle{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// RideRequests
+	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.RideRequest{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// RideOffers
+	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.RideOffer{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Notifications
+	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.Notification{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// FavoriteLocations
+	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.FavoriteLocation{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Chats (both sent and received)
+	if err := tx.Where("sender_id = ? OR receiver_id = ?", user.ID, user.ID).Delete(&migration.Chat{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Ratings (both given and received)
+	if err := tx.Where("rater_id = ? OR ratee_id = ?", user.ID, user.ID).Delete(&migration.Rating{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Finally, delete the user
 	if err := tx.Delete(&user).Error; err != nil {
 		tx.Rollback()
 		return err

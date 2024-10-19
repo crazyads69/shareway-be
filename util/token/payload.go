@@ -22,6 +22,9 @@ func NewPayload(phoneNumber string, userID uuid.UUID, duration time.Duration) (*
 		return nil, fmt.Errorf("failed to generate token ID: %w", err)
 	}
 
+	// Convert the duration to seconds
+	durationInSecond := duration * time.Second
+
 	// Create the current timestamp
 	now := time.Now().UTC()
 
@@ -31,7 +34,7 @@ func NewPayload(phoneNumber string, userID uuid.UUID, duration time.Duration) (*
 		PhoneNumber: phoneNumber,
 		UserID:      userID,
 		CreatedAt:   now,
-		ExpiredAt:   now.Add(duration),
+		ExpiredAt:   now.Add(durationInSecond),
 	}, nil
 }
 

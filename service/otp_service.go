@@ -83,8 +83,8 @@ func (s *OTPService) SendOTP(ctx context.Context, phoneNumber string) (string, e
 	// Increment the send count and set cooldown
 	pipe := s.redisClient.Pipeline()
 	pipe.Incr(ctx, sendCountKey)
-	pipe.Expire(ctx, sendCountKey, time.Duration(s.cfg.OTPSendCountDuration))
-	pipe.Set(ctx, cooldownKey, "cooldown", time.Duration(s.cfg.OtpCooldownDuration))
+	pipe.Expire(ctx, sendCountKey, time.Second*time.Duration(s.cfg.OTPSendCountDuration))
+	pipe.Set(ctx, cooldownKey, "cooldown", time.Second*time.Duration(s.cfg.OtpCooldownDuration))
 	_, err = pipe.Exec(ctx)
 	if err != nil {
 		return "", err

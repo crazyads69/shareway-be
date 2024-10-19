@@ -527,8 +527,6 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "maxLength": 11,
-                        "minLength": 9,
                         "type": "string",
                         "description": "User's phone number (9-11 digits)",
                         "name": "phone_number",
