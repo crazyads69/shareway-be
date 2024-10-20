@@ -5,10 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"shareway/infra/otp"
+	"shareway/repository"
 	"shareway/util"
-	"time"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/twilio/twilio-go"
 	twilioApi "github.com/twilio/twilio-go/rest/verify/v2"
 )
@@ -28,26 +27,24 @@ type IOTPService interface {
 type OTPService struct {
 	twilioClient *twilio.RestClient
 	cfg          util.Config
-	redisClient  *redis.Client
+	repo         repository.IOTPRepository
 }
 
 // NewOTPService creates a new OTPService instance
-func NewOTPService(cfg util.Config, redisClient *redis.Client) IOTPService {
+func NewOTPService(cfg util.Config, repo repository.IOTPRepository) IOTPService {
 	client := otp.NewOTPClient(cfg)
 	return &OTPService{
 		twilioClient: client,
 		cfg:          cfg,
-		redisClient:  redisClient,
+		repo:         repo,
 	}
 }
 
 // SendOTP sends an OTP to the specified phone number
 func (s *OTPService) SendOTP(ctx context.Context, phoneNumber string) (string, error) {
 
-	// Check the number of OTPs sent to the phone number
-	sendCountKey := fmt.Sprintf("otp:send_count:%s", phoneNumber)
-	sendCount, err := s.redisClient.Get(ctx, sendCountKey).Int()
-	if err != nil && err != redis.Nil {
+	sendCount, err := s.repo.CheckSendCount(ctx, phoneNumber)
+	if err != nil {
 		return "", err
 	}
 
@@ -56,9 +53,8 @@ func (s *OTPService) SendOTP(ctx context.Context, phoneNumber string) (string, e
 	}
 
 	// Check cooldown time between OTP sends
-	cooldownKey := fmt.Sprintf("otp:cooldown:%s", phoneNumber)
-	cooldown, err := s.redisClient.TTL(ctx, cooldownKey).Result()
-	if err != nil && err != redis.Nil {
+	cooldown, err := s.repo.CheckCooldown(ctx, phoneNumber)
+	if err != nil {
 		return "", err
 	}
 
@@ -81,11 +77,12 @@ func (s *OTPService) SendOTP(ctx context.Context, phoneNumber string) (string, e
 	}
 
 	// Increment the send count and set cooldown
-	pipe := s.redisClient.Pipeline()
-	pipe.Incr(ctx, sendCountKey)
-	pipe.Expire(ctx, sendCountKey, time.Second*time.Duration(s.cfg.OTPSendCountDuration))
-	pipe.Set(ctx, cooldownKey, "cooldown", time.Second*time.Duration(s.cfg.OtpCooldownDuration))
-	_, err = pipe.Exec(ctx)
+	err = s.repo.IncrementSendCount(ctx, phoneNumber, s.cfg.OTPSendCountDuration)
+	if err != nil {
+		return "", err
+	}
+
+	err = s.repo.SetCooldown(ctx, phoneNumber, s.cfg.OtpCooldownDuration)
 	if err != nil {
 		return "", err
 	}
@@ -112,15 +109,8 @@ func (s *OTPService) VerifyOTP(ctx context.Context, phoneNumber, code string) er
 		return errors.New("OTP verification failed")
 	}
 
-	// Delete all related keys when OTP is verified successfully
-	sendCountKey := fmt.Sprintf("otp:send_count:%s", phoneNumber)
-	cooldownKey := fmt.Sprintf("otp:cooldown:%s", phoneNumber)
-
 	// Delete keys in a transaction to ensure atomicity
-	pipe := s.redisClient.Pipeline()
-	pipe.Del(ctx, sendCountKey)
-	pipe.Del(ctx, cooldownKey)
-	_, err = pipe.Exec(ctx)
+	err = s.repo.ClearOTPData(ctx, phoneNumber)
 	if err != nil {
 		return err
 	}

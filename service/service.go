@@ -26,7 +26,7 @@ type ServiceFactory struct {
 }
 
 func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, redisClient *redis.Client) *ServiceFactory {
-	repoFactory := repository.NewRepositoryFactory(db)
+	repoFactory := repository.NewRepositoryFactory(db, redisClient, cfg)
 	repos := repoFactory.CreateRepositories()
 
 	// Initialize FPT reader
@@ -53,7 +53,7 @@ func (f *ServiceFactory) CreateServices() *ServiceContainer {
 }
 
 func (f *ServiceFactory) createOTPService() IOTPService {
-	return NewOTPService(f.cfg, f.redis)
+	return NewOTPService(f.cfg, f.repos.OTPRepository)
 }
 
 func (f *ServiceFactory) createUserService() IUsersService {
