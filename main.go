@@ -34,6 +34,7 @@ func main() {
 		log.Fatal().Err(err).Msg("Could not load config")
 		return
 	}
+
 	// Set logger configuration
 	util.ConfigLogger(cfg)
 
@@ -94,7 +95,6 @@ func main() {
 
 	// Run the crawler once to populate the database
 	err = vrCrawler.CrawlData()
-
 	if err != nil {
 		log.Fatal().Err(err).Msg("Could not crawl data")
 	}

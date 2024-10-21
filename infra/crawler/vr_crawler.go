@@ -142,6 +142,20 @@ func extractVehicleInfo(content string) *migration.VehicleType {
 
 	name = strings.TrimSpace(name)
 
+	// Some case still have the key in the name
+	if strings.Contains(name, "Nhãn hiệu") {
+		name = strings.ReplaceAll(name, "Nhãn hiệu", "")
+	}
+	if strings.Contains(name, "Tên thương mại") {
+		name = strings.ReplaceAll(name, "Tên thương mại", "")
+	}
+	if strings.Contains(name, "Mức tiêu thụ nhiên liệu công khai") {
+		name = strings.ReplaceAll(name, "Mức tiêu thụ nhiên liệu công khai", "")
+	}
+
+	// Remove the : character
+	name = strings.TrimSpace(strings.ReplaceAll(name, ":", ""))
+
 	var fuelConsumption float64
 	if len(fuelConsumptionMatch) > 1 {
 		fuelConsumption, _ = strconv.ParseFloat(strings.Replace(fuelConsumptionMatch[1], ",", ".", -1), 64)
