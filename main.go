@@ -90,6 +90,7 @@ func main() {
 
 	// Create a cron job to update the vehicle data from the VR website
 	vrCrawler := crawler.NewVrCrawler(database)
+	fuelCrawler := crawler.NewFuelCrawler(database)
 
 	// Run the crawler once to populate the database
 	err = vrCrawler.CrawlData()
@@ -98,11 +99,27 @@ func main() {
 		log.Fatal().Err(err).Msg("Could not crawl data")
 	}
 
+	err = fuelCrawler.UpdateFuelPrices()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Could not update fuel prices")
+	}
+
 	// Add job to scheduler to run every week
 	_, err = scheduler.NewJob(
 		gocron.CronJob(`0 0 * * 0`, false), // Run every Sunday at midnight
 		gocron.NewTask(
 			vrCrawler.CrawlData,
+		),
+	)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Could not create cron job")
+	}
+
+	// Add job to scheduler to run every 1 hour
+	_, err = scheduler.NewJob(
+		gocron.CronJob(`0 * * * *`, false), // Run every hour
+		gocron.NewTask(
+			fuelCrawler.UpdateFuelPrices,
 		),
 	)
 	if err != nil {

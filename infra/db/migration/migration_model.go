@@ -223,7 +223,7 @@ type FuelPrice struct {
 	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
-	FuelType  string
+	FuelType  string    `gorm:"uniqueIndex"`
 	Price     float64
 }
 
