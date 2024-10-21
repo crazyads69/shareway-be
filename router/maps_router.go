@@ -11,5 +11,5 @@ func SetupMapsRouter(group *gin.RouterGroup, server *APIServer) {
 		server.Service.MapsService,
 		server.Validate,
 	)
-	group.GET("/auto-complete", mapController.GetAutoComplete)
+	group.GET("/autocomplete", mapController.GetAutoComplete)
 }

@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"log"
 	"shareway/helper"
 	"shareway/schemas"
 	"shareway/service"
@@ -23,6 +22,23 @@ func NewMapsController(mapsService service.IMapsService, validate *validator.Val
 }
 
 // GetAutoComplete returns a list of places that match the query string
+// GetAutoComplete godoc
+// @Summary Get autocomplete suggestions for places
+// @Description Returns a list of places that match the query string
+// @Tags maps
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param Authorization header string true "Bearer <access_token>"
+// @Param input query string true "Input string to search for"
+// @Param limit query int false "Limit the number of results"
+// @Param location query string false "Location coordinates (lat,lng)"
+// @Param radius query int false "Search radius in meters"
+// @Param more_compound query bool false "Include more compound results"
+// @Success 200 {object} helper.Response "Successfully retrieved autocomplete data"
+// @Failure 400 {object} helper.Response "Invalid request query"
+// @Failure 500 {object} helper.Response "Failed to get autocomplete data"
+// @Router /maps/autocomplete [get]
 func (ctrl *MapsController) GetAutoComplete(ctx *gin.Context) {
 
 	var req schemas.AutoCompleteRequest
@@ -47,5 +63,10 @@ func (ctrl *MapsController) GetAutoComplete(ctx *gin.Context) {
 		return
 	}
 
-	log.Printf("Found %d places", len(places))
+	response := helper.SuccessResponse(
+		places,
+		"Successfully retrieved autocomplete data",
+		"Lấy dữ liệu gợi ý thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
 }

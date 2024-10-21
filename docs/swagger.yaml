@@ -659,6 +659,58 @@ paths:
       summary: Verify registration OTP
       tags:
       - auth
+  /maps/autocomplete:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of places that match the query string
+      parameters:
+      - description: Bearer <access_token>
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Input string to search for
+        in: query
+        name: input
+        required: true
+        type: string
+      - description: Limit the number of results
+        in: query
+        name: limit
+        type: integer
+      - description: Location coordinates (lat,lng)
+        in: query
+        name: location
+        type: string
+      - description: Search radius in meters
+        in: query
+        name: radius
+        type: integer
+      - description: Include more compound results
+        in: query
+        name: more_compound
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved autocomplete data
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "400":
+          description: Invalid request query
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Failed to get autocomplete data
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get autocomplete suggestions for places
+      tags:
+      - maps
   /protected/test:
     get:
       consumes:
