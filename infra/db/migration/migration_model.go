@@ -232,9 +232,7 @@ type VehicleType struct {
 	ID           uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
 	CreatedAt    time.Time `gorm:"autoCreateTime"`
 	UpdatedAt    time.Time `gorm:"autoUpdateTime"`
-	Type         string
-	Model        string
-	Brand        string
+	Name         string    `gorm:"uniqueIndex"`
 	FuelConsumed float64   `gorm:"default:0"` // liters per 100 kilometers
 	Vehicles     []Vehicle // One-to-many relationship with Vehicle
 }
