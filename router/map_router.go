@@ -6,9 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupMapsRouter(group *gin.RouterGroup, server *APIServer) {
-	mapController := controller.NewMapsController(
-		server.Service.MapsService,
+func SetupMapRouter(group *gin.RouterGroup, server *APIServer) {
+	mapController := controller.NewMapController(
+		server.Service.MapService,
 		server.Validate,
 	)
 	group.GET("/autocomplete", mapController.GetAutoComplete)

@@ -11,9 +11,10 @@ import (
 )
 
 type ServiceContainer struct {
-	OTPService  IOTPService
-	UserService IUsersService
-	MapsService IMapsService
+	OTPService     IOTPService
+	UserService    IUsersService
+	MapService     IMapService
+	VehicleService IVehicleService
 }
 
 type ServiceFactory struct {
@@ -46,9 +47,10 @@ func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, r
 
 func (f *ServiceFactory) CreateServices() *ServiceContainer {
 	return &ServiceContainer{
-		OTPService:  f.createOTPService(),
-		UserService: f.createUserService(),
-		MapsService: f.createMapsService(),
+		OTPService:     f.createOTPService(),
+		UserService:    f.createUserService(),
+		MapService:     f.createMapsService(),
+		VehicleService: f.createVehicleService(),
 	}
 }
 
@@ -60,6 +62,10 @@ func (f *ServiceFactory) createUserService() IUsersService {
 	return NewUsersService(f.repos.AuthRepository, f.encryptor, f.fptReader, f.maker, f.cfg)
 }
 
-func (f *ServiceFactory) createMapsService() IMapsService {
-	return NewMapsService(f.repos.MapsRepository, f.cfg, f.redis)
+func (f *ServiceFactory) createMapsService() IMapService {
+	return NewMapService(f.repos.MapsRepository, f.cfg, f.redis)
+}
+
+func (f *ServiceFactory) createVehicleService() IVehicleService {
+	return NewVehicleService(f.repos.VehicleRepository, f.cfg)
 }

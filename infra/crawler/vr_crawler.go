@@ -17,6 +17,7 @@ var (
 	brandRegex           = regexp.MustCompile(`(?i)Nhãn hiệu\s*:([^:;]+)`)
 	commercialNameRegex  = regexp.MustCompile(`(?i)Tên thương mại:\s*([^;]+)`)
 	fuelConsumptionRegex = regexp.MustCompile(`(?i)Mức tiêu thụ nhiên liệu công khai\s*:?\s*([\d,\.]+)\s*(?:[lL]ít|[lL])?\s*/\s*100\s*km`)
+	modelCodeRegex       = regexp.MustCompile(`(?i)Mã [Kk]iểu [Ll]oại:?\s*([^;:]+)`)
 )
 
 type IVrCrawler interface {
@@ -30,14 +31,11 @@ type VrCrawler struct {
 }
 
 func NewVrCrawler(db *gorm.DB) IVrCrawler {
-	return &VrCrawler{
-		db: db,
-	}
+	return &VrCrawler{db: db}
 }
 
 func (c *VrCrawler) CrawlData() error {
 	baseURL := "http://www.vr.org.vn/Pages/thong-bao.aspx?Category=22&Page="
-	// Max number of pages to crawl
 	maxPages := 57
 
 	for page := 1; page <= maxPages; page++ {
@@ -109,21 +107,20 @@ func (c *VrCrawler) UpdateOrCreateVehicles(vehicles []migration.VehicleType) err
 }
 
 func extractVehicleInfo(content string) *migration.VehicleType {
+	// Skip entries related to cars or electric vehicles
 	if strings.Contains(strings.ToLower(content), "xe hơi") ||
 		strings.Contains(strings.ToLower(content), "ô tô") ||
-		strings.Contains(strings.ToLower(content), "wh/km") ||
-		strings.Contains(strings.ToLower(content), `"wh\km"`) ||
-		strings.Contains(strings.ToLower(content), `"wh\ km"`) ||
-		strings.Contains(strings.ToLower(content), "wh/ km") {
+		strings.Contains(strings.ToLower(content), "wh/km") {
 		return nil
 	}
 
 	brandMatch := brandRegex.FindStringSubmatch(content)
 	commercialNameMatch := commercialNameRegex.FindStringSubmatch(content)
 	fuelConsumptionMatch := fuelConsumptionRegex.FindStringSubmatch(content)
+	modelCodeMatch := modelCodeRegex.FindStringSubmatch(content)
 
 	var name string
-	var brand, commercialName string
+	var brand, commercialName, modelCode string
 
 	if len(brandMatch) > 1 {
 		brand = strings.TrimSpace(brandMatch[1])
@@ -131,36 +128,44 @@ func extractVehicleInfo(content string) *migration.VehicleType {
 	if len(commercialNameMatch) > 1 {
 		commercialName = strings.TrimSpace(commercialNameMatch[1])
 	}
+	if len(modelCodeMatch) > 1 {
+		modelCode = strings.TrimSpace(modelCodeMatch[1])
+	}
 
-	if brand != "" && commercialName != "" && commercialName != "---" {
+	// Determine the name based on available information
+	if brand != "" && !isEmptyOrDash(commercialName) {
 		name = brand + " " + commercialName
-	} else if commercialName != "" && commercialName != "---" {
+	} else if !isEmptyOrDash(commercialName) {
 		name = commercialName
-	} else {
+	} else if brand != "" && !isEmptyOrDash(modelCode) {
+		name = brand + " " + modelCode
+	} else if brand != "" {
 		name = brand
+	} else if !isEmptyOrDash(modelCode) {
+		name = modelCode
 	}
 
+	// Remove any "---" from the name and trim spaces
+	name = strings.ReplaceAll(name, "---", "")
+	name = strings.ReplaceAll(name, "--", "")
+	name = strings.ReplaceAll(name, "/", "")
+	name = strings.ReplaceAll(name, "  ", " ")
+	name = strings.ReplaceAll(name, "Nhãn hiệu", "")
+	name = strings.ReplaceAll(name, "Tên thương mại", "")
+	name = strings.ReplaceAll(name, "Mức tiêu thụ nhiên liệu công khai", "")
+	name = strings.ReplaceAll(name, "Mã Kiểu Loại", "")
+	name = strings.ReplaceAll(name, "Mã kiểu loại", "")
+	name = strings.ReplaceAll(name, ":", "")
 	name = strings.TrimSpace(name)
-
-	// Some case still have the key in the name
-	if strings.Contains(name, "Nhãn hiệu") {
-		name = strings.ReplaceAll(name, "Nhãn hiệu", "")
-	}
-	if strings.Contains(name, "Tên thương mại") {
-		name = strings.ReplaceAll(name, "Tên thương mại", "")
-	}
-	if strings.Contains(name, "Mức tiêu thụ nhiên liệu công khai") {
-		name = strings.ReplaceAll(name, "Mức tiêu thụ nhiên liệu công khai", "")
-	}
-
-	// Remove the : character
-	name = strings.TrimSpace(strings.ReplaceAll(name, ":", ""))
 
 	var fuelConsumption float64
 	if len(fuelConsumptionMatch) > 1 {
-		fuelConsumption, _ = strconv.ParseFloat(strings.Replace(fuelConsumptionMatch[1], ",", ".", -1), 64)
+		fuelConsumptionStr := strings.TrimSpace(fuelConsumptionMatch[1])
+		fuelConsumptionStr = strings.Replace(fuelConsumptionStr, ",", ".", -1) // Replace comma with dot
+		fuelConsumption, _ = strconv.ParseFloat(fuelConsumptionStr, 64)
 	}
 
+	// If we couldn't extract either name or fuel consumption, return nil
 	if name == "" || fuelConsumption == 0 {
 		return nil
 	}
@@ -169,6 +174,11 @@ func extractVehicleInfo(content string) *migration.VehicleType {
 		Name:         name,
 		FuelConsumed: fuelConsumption,
 	}
+}
+
+func isEmptyOrDash(s string) bool {
+	trimmed := strings.TrimSpace(s)
+	return trimmed == "" || trimmed == "-" || trimmed == "/" || trimmed == "---" || trimmed == "--"
 }
 
 // Make sure the crawler implements the IVrCrawler interface

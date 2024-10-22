@@ -82,7 +82,9 @@ func (server *APIServer) SetupRouter() {
 	// User routes for user management
 	SetupUserRouter(server.router.Group("/user", middleware.AuthMiddleware(server.Maker)), server)
 	// Map routes for map management
-	SetupMapsRouter(server.router.Group("/maps", middleware.AuthMiddleware(server.Maker)), server)
+	SetupMapRouter(server.router.Group("/map", middleware.AuthMiddleware(server.Maker)), server)
+	// Vehicle routes for vehicle management
+	SetupVehicleRouter(server.router.Group("/vehicle", middleware.AuthMiddleware(server.Maker)), server)
 }
 
 // SetupSwagger configures the Swagger documentation route

@@ -15,25 +15,25 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type IMapsService interface {
+type IMapService interface {
 	GetAutoComplete(ctx context.Context, input string, limit int, location string, radius int, moreCompound bool) (schemas.GoongAutoCompleteResponse, error)
 }
 
-type MapsService struct {
+type MapService struct {
 	repo        repository.IMapsRepository
 	cfg         util.Config
 	redisClient *redis.Client
 }
 
-func NewMapsService(repo repository.IMapsRepository, cfg util.Config, redisClient *redis.Client) IMapsService {
-	return &MapsService{
+func NewMapService(repo repository.IMapsRepository, cfg util.Config, redisClient *redis.Client) IMapService {
+	return &MapService{
 		repo:        repo,
 		cfg:         cfg,
 		redisClient: redisClient,
 	}
 }
 
-func (s *MapsService) GetAutoComplete(ctx context.Context, input string, limit int, location string, radius int, moreCompound bool) (schemas.GoongAutoCompleteResponse, error) {
+func (s *MapService) GetAutoComplete(ctx context.Context, input string, limit int, location string, radius int, moreCompound bool) (schemas.GoongAutoCompleteResponse, error) {
 	// Build the request URL
 	baseURL, err := url.Parse(fmt.Sprintf("%s/place/autocomplete", s.cfg.GoongApiURL))
 	if err != nil {
@@ -104,4 +104,4 @@ func (s *MapsService) GetAutoComplete(ctx context.Context, input string, limit i
 }
 
 // Make sure MapsService implements IMapsService
-var _ IMapsService = (*MapsService)(nil)
+var _ IMapService = (*MapService)(nil)

@@ -9,9 +9,10 @@ import (
 
 // RepositoryContainer holds all the repositories
 type RepositoryContainer struct {
-	AuthRepository IAuthRepository
-	MapsRepository IMapsRepository
-	OTPRepository  IOTPRepository
+	AuthRepository    IAuthRepository
+	MapsRepository    IMapsRepository
+	OTPRepository     IOTPRepository
+	VehicleRepository IVehicleRepository
 	// Add other repositories here as needed
 }
 
@@ -34,9 +35,10 @@ func NewRepositoryFactory(db *gorm.DB, redisClient *redis.Client, cfg util.Confi
 // CreateRepositories initializes and returns all repositories
 func (f *RepositoryFactory) CreateRepositories() *RepositoryContainer {
 	return &RepositoryContainer{
-		AuthRepository: f.createAuthRepository(),
-		MapsRepository: f.createMapsRepository(),
-		OTPRepository:  f.createOTPRepository(),
+		AuthRepository:    f.createAuthRepository(),
+		MapsRepository:    f.createMapsRepository(),
+		OTPRepository:     f.createOTPRepository(),
+		VehicleRepository: f.createVehicleRepository(),
 		// Initialize other repositories here
 	}
 }
@@ -54,6 +56,11 @@ func (f *RepositoryFactory) createMapsRepository() IMapsRepository {
 // createOTPRepository initializes and returns the OTP repository
 func (f *RepositoryFactory) createOTPRepository() IOTPRepository {
 	return NewOTPRepository(f.redisClient, f.cfg)
+}
+
+// createVehicleRepository initializes and returns the Vehicle repository
+func (f *RepositoryFactory) createVehicleRepository() IVehicleRepository {
+	return NewVehicleRepository(f.db)
 }
 
 // Add methods for creating other repositories as needed

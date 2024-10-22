@@ -25,6 +25,13 @@ definitions:
     required:
     - user
     type: object
+  schemas.GetVehiclesResponse:
+    properties:
+      vehicles:
+        items:
+          $ref: '#/definitions/schemas.Vehicle'
+        type: array
+    type: object
   schemas.InitRegisterRequest:
     properties:
       phone_number:
@@ -185,6 +192,15 @@ definitions:
         type: string
     required:
     - id
+    type: object
+  schemas.Vehicle:
+    properties:
+      name:
+        type: string
+      vehicle_id:
+        type: string
+    required:
+    - vehicle_id
     type: object
   schemas.VerifyCCCDResponse:
     properties:
@@ -710,7 +726,7 @@ paths:
       - BearerAuth: []
       summary: Get autocomplete suggestions for places
       tags:
-      - maps
+      - map
   /protected/test:
     get:
       consumes:
@@ -800,4 +816,37 @@ paths:
       summary: Register device token for push notifications
       tags:
       - user
+  /vehicle/vehicles:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves and returns the list of vehicles for user to select when
+        registering a vehicle
+      parameters:
+      - description: Bearer <access_token>
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved vehicles
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GetVehiclesResponse'
+              type: object
+        "500":
+          description: Failed to get vehicles
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get list of vehicles
+      tags:
+      - vehicle
 swagger: "2.0"

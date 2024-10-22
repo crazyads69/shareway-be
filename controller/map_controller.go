@@ -9,13 +9,13 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type MapsController struct {
-	MapsService service.IMapsService
+type MapController struct {
+	MapsService service.IMapService
 	validate    *validator.Validate
 }
 
-func NewMapsController(mapsService service.IMapsService, validate *validator.Validate) *MapsController {
-	return &MapsController{
+func NewMapController(mapsService service.IMapService, validate *validator.Validate) *MapController {
+	return &MapController{
 		MapsService: mapsService,
 		validate:    validate,
 	}
@@ -25,7 +25,7 @@ func NewMapsController(mapsService service.IMapsService, validate *validator.Val
 // GetAutoComplete godoc
 // @Summary Get autocomplete suggestions for places
 // @Description Returns a list of places that match the query string
-// @Tags maps
+// @Tags map
 // @Accept json
 // @Produce json
 // @Security BearerAuth
@@ -39,7 +39,7 @@ func NewMapsController(mapsService service.IMapsService, validate *validator.Val
 // @Failure 400 {object} helper.Response "Invalid request query"
 // @Failure 500 {object} helper.Response "Failed to get autocomplete data"
 // @Router /maps/autocomplete [get]
-func (ctrl *MapsController) GetAutoComplete(ctx *gin.Context) {
+func (ctrl *MapController) GetAutoComplete(ctx *gin.Context) {
 
 	var req schemas.AutoCompleteRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {

@@ -699,7 +699,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "maps"
+                    "map"
                 ],
                 "summary": "Get autocomplete suggestions for places",
                 "parameters": [
@@ -902,6 +902,61 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/vehicle/vehicles": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves and returns the list of vehicles for user to select when registering a vehicle",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vehicle"
+                ],
+                "summary": "Get list of vehicles",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer \u003caccess_token\u003e",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved vehicles",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GetVehiclesResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get vehicles",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -942,6 +997,17 @@ const docTemplate = `{
             "properties": {
                 "user": {
                     "$ref": "#/definitions/schemas.UserResponse"
+                }
+            }
+        },
+        "schemas.GetVehiclesResponse": {
+            "type": "object",
+            "properties": {
+                "vehicles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Vehicle"
+                    }
                 }
             }
         },
@@ -1175,6 +1241,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.Vehicle": {
+            "type": "object",
+            "required": [
+                "vehicle_id"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "vehicle_id": {
                     "type": "string"
                 }
             }
