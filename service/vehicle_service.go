@@ -4,10 +4,15 @@ import (
 	"shareway/repository"
 	"shareway/schemas"
 	"shareway/util"
+
+	"github.com/google/uuid"
 )
 
 type IVehicleService interface {
 	GetVehicles() ([]schemas.Vehicle, error)
+	RegisterVehicle(userID uuid.UUID, vehicleID uuid.UUID, licensePlate string, caVet string) error
+	LicensePlateExists(licensePlate string) (bool, error)
+	CaVetExists(caVet string) (bool, error)
 }
 
 type VehicleService struct {
@@ -29,4 +34,16 @@ func (s *VehicleService) GetVehicles() ([]schemas.Vehicle, error) {
 	}
 
 	return vehicles, nil
+}
+
+func (s *VehicleService) RegisterVehicle(userID uuid.UUID, vehicleID uuid.UUID, licensePlate string, caVet string) error {
+	return s.repo.RegisterVehicle(userID, vehicleID, licensePlate, caVet)
+}
+
+func (s *VehicleService) LicensePlateExists(licensePlate string) (bool, error) {
+	return s.repo.LicensePlateExists(licensePlate)
+}
+
+func (s *VehicleService) CaVetExists(caVet string) (bool, error) {
+	return s.repo.CaVetExists(caVet)
 }

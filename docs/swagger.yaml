@@ -163,6 +163,23 @@ definitions:
     - phone_number
     - user_id
     type: object
+  schemas.RegisterVehicleRequest:
+    properties:
+      ca_vet:
+        type: string
+      license_plate:
+        type: string
+      user_id:
+        type: string
+      vehicle_id:
+        description: this id from the vehicle_type table in the database
+        type: string
+    required:
+    - ca_vet
+    - license_plate
+    - user_id
+    - vehicle_id
+    type: object
   schemas.ResendOTPRequest:
     properties:
       phone_number:
@@ -816,6 +833,43 @@ paths:
       summary: Register device token for push notifications
       tags:
       - user
+  /vehicle/register-vehicle:
+    post:
+      consumes:
+      - application/json
+      description: Register a new vehicle for the authenticated user
+      parameters:
+      - description: Bearer <access_token>
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Vehicle registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.RegisterVehicleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully registered vehicle
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Register a new vehicle
+      tags:
+      - vehicle
   /vehicle/vehicles:
     get:
       consumes:

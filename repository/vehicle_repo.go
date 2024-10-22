@@ -4,11 +4,15 @@ import (
 	"shareway/infra/db/migration"
 	"shareway/schemas"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type IVehicleRepository interface {
 	GetVehicles() ([]schemas.Vehicle, error)
+	RegisterVehicle(userID uuid.UUID, vehicleID uuid.UUID, licensePlate string, caVet string) error
+	LicensePlateExists(licensePlate string) (bool, error)
+	CaVetExists(caVet string) (bool, error)
 }
 
 type VehicleRepository struct {
@@ -40,4 +44,50 @@ func (r *VehicleRepository) GetVehicles() ([]schemas.Vehicle, error) {
 	}
 
 	return schemaVehicles, nil
+}
+
+// RegisterVehicle registers a vehicle for a user
+func (r *VehicleRepository) RegisterVehicle(userID uuid.UUID, vehicleID uuid.UUID, licensePlate string, caVet string) error {
+	// Get the vehicle type from the database
+	var vehicle migration.VehicleType
+	if err := r.db.First(&vehicle, vehicleID).Error; err != nil {
+		return err
+	}
+
+	// Create a new vehicle registration record
+	vehicleRegistration := migration.Vehicle{
+		UserID:        userID,
+		VehicleTypeID: vehicleID,
+		LicensePlate:  licensePlate,
+		Name:          vehicle.Name,
+		FuelConsumed:  vehicle.FuelConsumed,
+		CaVet:         caVet,
+	}
+
+	// Insert the new record into the database
+	if err := r.db.Create(&vehicleRegistration).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// LicensePlateExists checks if a given license plate already exists in the database
+func (r *VehicleRepository) LicensePlateExists(licensePlate string) (bool, error) {
+	var count int64
+	err := r.db.Model(&migration.Vehicle{}).Where("license_plate = ?", licensePlate).Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// CaVetExists checks if a given CA VET already exists in the database
+func (r *VehicleRepository) CaVetExists(caVet string) (bool, error) {
+	var count int64
+	err := r.db.Model(&migration.Vehicle{}).Where("ca_vet = ?", caVet).Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

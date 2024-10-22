@@ -95,9 +95,9 @@ type Vehicle struct {
 	User          User        `gorm:"foreignKey:UserID"`
 	VehicleTypeID uuid.UUID   `gorm:"type:uuid"`
 	VehicleType   VehicleType `gorm:"foreignKey:VehicleTypeID"`
-	Brand         string
-	Model         string
-	FuelConsumed  float64     `gorm:"default:0"` // liters per 100 kilometers
+	Name          string
+	CaVet         string      `gorm:"uniqueIndex"` // Certificate of vehicle registration each vehicle has a unique number
+	FuelConsumed  float64     `gorm:"default:0"`   // liters per 100 kilometers
 	RideOffers    []RideOffer // One-to-many relationship with RideOffer
 }
 
