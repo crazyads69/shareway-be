@@ -892,6 +892,76 @@
                 }
             }
         },
+        "/user/update-profile": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update the profile information of the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Update user profile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer \u003caccess_token\u003e",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "User profile update information",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.UpdateUserProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully updated user profile",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.UpdateUserProfileResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/vehicle/register-vehicle": {
             "post": {
                 "security": [
@@ -1278,6 +1348,39 @@
             "properties": {
                 "phone_number": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.UpdateUserProfileRequest": {
+            "type": "object",
+            "required": [
+                "full_name",
+                "phone_number"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "maxLength": 256
+                },
+                "full_name": {
+                    "description": "Email is optional",
+                    "type": "string",
+                    "maxLength": 256,
+                    "minLength": 3
+                },
+                "phone_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.UpdateUserProfileResponse": {
+            "type": "object",
+            "required": [
+                "user"
+            ],
+            "properties": {
+                "user": {
+                    "$ref": "#/definitions/schemas.UserResponse"
                 }
             }
         },

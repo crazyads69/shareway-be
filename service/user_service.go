@@ -33,6 +33,7 @@ type IUsersService interface {
 	GetUserByID(userID uuid.UUID) (migration.User, error)
 	RegisterDeviceToken(userID uuid.UUID, deviceToken string) error
 	DeleteUser(phoneNumber string) error
+	UpdateUserProfile(userID uuid.UUID, phoneNumber string, fullName string, email string) error
 }
 
 // UsersService implements IUsersService and handles user-related business logic
@@ -176,6 +177,11 @@ func (s *UsersService) RegisterDeviceToken(userID uuid.UUID, deviceToken string)
 // DeleteUser delete the user from given phone number (if found else return nil)
 func (s *UsersService) DeleteUser(phoneNumber string) error {
 	return s.repo.DeleteUser(phoneNumber)
+}
+
+// UpdateUserProfile updates the user profile with the given user ID
+func (s *UsersService) UpdateUserProfile(userID uuid.UUID, phoneNumber, fullName, email string) error {
+	return s.repo.UpdateUserProfile(userID, phoneNumber, fullName, email)
 }
 
 // Ensure UsersService implements IUsersService

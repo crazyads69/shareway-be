@@ -187,6 +187,29 @@ definitions:
     required:
     - phone_number
     type: object
+  schemas.UpdateUserProfileRequest:
+    properties:
+      email:
+        maxLength: 256
+        type: string
+      full_name:
+        description: Email is optional
+        maxLength: 256
+        minLength: 3
+        type: string
+      phone_number:
+        type: string
+    required:
+    - full_name
+    - phone_number
+    type: object
+  schemas.UpdateUserProfileResponse:
+    properties:
+      user:
+        $ref: '#/definitions/schemas.UserResponse'
+    required:
+    - user
+    type: object
   schemas.UserResponse:
     properties:
       created_at:
@@ -831,6 +854,48 @@ paths:
       security:
       - BearerAuth: []
       summary: Register device token for push notifications
+      tags:
+      - user
+  /user/update-profile:
+    post:
+      consumes:
+      - application/json
+      description: Update the profile information of the authenticated user
+      parameters:
+      - description: Bearer <access_token>
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: User profile update information
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.UpdateUserProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated user profile
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.UpdateUserProfileResponse'
+              type: object
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
       tags:
       - user
   /vehicle/register-vehicle:

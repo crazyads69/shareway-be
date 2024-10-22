@@ -26,6 +26,7 @@ type IAuthRepository interface {
 	GetUserByID(userID uuid.UUID) (migration.User, error)
 	RegisterDeviceToken(userID uuid.UUID, deviceToken string) error
 	DeleteUser(phoneNumber string) error
+	UpdateUserProfile(userID uuid.UUID, phoneNumber string, fullName string, email string) error
 }
 
 // AuthRepository implements IAuthRepository
@@ -402,6 +403,43 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 	if err := tx.Delete(&user).Error; err != nil {
 		tx.Rollback()
 		return err
+	}
+
+	return tx.Commit().Error
+}
+
+// UpdateUser updates the user with the given user ID
+func (r *AuthRepository) UpdateUserProfile(userID uuid.UUID, phoneNumber, fullName, email string) error {
+	tx := r.db.Begin()
+	// Defer a function to handle rollback or commit
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Create a map to hold the fields to update
+	updates := map[string]interface{}{
+		"phone_number": phoneNumber,
+		"full_name":    fullName,
+	}
+
+	// Only include email in updates if it's not empty
+	if email != "" {
+		updates["email"] = email
+	}
+
+	// Update the user record with the given user ID within the transaction
+	result := tx.Model(&migration.User{}).Where("id = ?", userID).Updates(updates)
+
+	if result.Error != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to update user profile: %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		tx.Rollback()
+		return errors.New("user not found")
 	}
 
 	return tx.Commit().Error

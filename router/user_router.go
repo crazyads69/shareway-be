@@ -16,4 +16,6 @@ func SetupUserRouter(group *gin.RouterGroup, server *APIServer) {
 	group.GET("/get-profile", userController.GetUserProfile)
 	// RegisterDeviceToken Request
 	group.POST("/register-device-token", userController.RegisterDeviceToken)
+	// UpdateUserProfile Request
+	group.POST("/update-profile", userController.UpdateUserProfile)
 }
