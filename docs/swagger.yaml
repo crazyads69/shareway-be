@@ -32,6 +32,155 @@ definitions:
           $ref: '#/definitions/schemas.Vehicle'
         type: array
     type: object
+  schemas.GiveRideRequest:
+    properties:
+      points:
+        description: List of points for the route
+        items:
+          $ref: '#/definitions/schemas.Point'
+        type: array
+    required:
+    - points
+    type: object
+  schemas.GoongAutoCompleteResponse:
+    properties:
+      executed_time:
+        type: integer
+      executed_time_all:
+        type: integer
+      predictions:
+        items:
+          $ref: '#/definitions/schemas.Prediction'
+        type: array
+      status:
+        type: string
+    type: object
+  schemas.GoongDirectionsResponse:
+    properties:
+      geocoded_waypoints:
+        items:
+          properties:
+            geocoder_status:
+              type: string
+            place_id:
+              type: string
+          type: object
+        type: array
+      routes:
+        items:
+          properties:
+            bounds:
+              description: Empty struct as the bounds are empty in the example
+              type: object
+            legs:
+              items:
+                properties:
+                  distance:
+                    properties:
+                      text:
+                        type: string
+                      value:
+                        type: integer
+                    type: object
+                  duration:
+                    properties:
+                      text:
+                        type: string
+                      value:
+                        type: integer
+                    type: object
+                  end_address:
+                    type: string
+                  end_location:
+                    properties:
+                      lat:
+                        type: number
+                      lng:
+                        type: number
+                    type: object
+                  start_address:
+                    type: string
+                  start_location:
+                    properties:
+                      lat:
+                        type: number
+                      lng:
+                        type: number
+                    type: object
+                  steps:
+                    items:
+                      properties:
+                        distance:
+                          properties:
+                            text:
+                              type: string
+                            value:
+                              type: integer
+                          type: object
+                        duration:
+                          properties:
+                            text:
+                              type: string
+                            value:
+                              type: integer
+                          type: object
+                        end_location:
+                          properties:
+                            lat:
+                              type: number
+                            lng:
+                              type: number
+                          type: object
+                        html_instructions:
+                          type: string
+                        maneuver:
+                          type: string
+                        polyline:
+                          properties:
+                            points:
+                              type: string
+                          type: object
+                        start_location:
+                          properties:
+                            lat:
+                              type: number
+                            lng:
+                              type: number
+                          type: object
+                        travel_mode:
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              type: array
+            overview_polyline:
+              properties:
+                points:
+                  type: string
+              type: object
+            summary:
+              type: string
+            warnings:
+              items:
+                type: string
+              type: array
+            waypoint_order:
+              items:
+                type: integer
+              type: array
+          type: object
+        type: array
+    type: object
+  schemas.HitchRideRequest:
+    properties:
+      points:
+        description: List of points for the route
+        items:
+          $ref: '#/definitions/schemas.Point'
+        type: array
+    required:
+    - points
+    type: object
   schemas.InitRegisterRequest:
     properties:
       phone_number:
@@ -106,6 +255,56 @@ definitions:
     - is_verified
     - phone_number
     - user_id
+    type: object
+  schemas.MatchedSubstring:
+    properties:
+      length:
+        type: integer
+      offset:
+        type: integer
+    type: object
+  schemas.PlusCode:
+    properties:
+      compound_code:
+        type: string
+      global_code:
+        type: string
+    type: object
+  schemas.Point:
+    properties:
+      lat:
+        description: Latitude
+        type: number
+      lng:
+        description: Longitude
+        type: number
+    type: object
+  schemas.Prediction:
+    properties:
+      description:
+        type: string
+      display_type:
+        type: string
+      has_children:
+        type: boolean
+      matched_substrings:
+        items:
+          $ref: '#/definitions/schemas.MatchedSubstring'
+        type: array
+      place_id:
+        type: string
+      plus_code:
+        $ref: '#/definitions/schemas.PlusCode'
+      reference:
+        type: string
+      score:
+        type: number
+      structured_formatting:
+        $ref: '#/definitions/schemas.StructuredFormatting'
+      terms:
+        items:
+          $ref: '#/definitions/schemas.Term'
+        type: array
     type: object
   schemas.RefreshTokenResponse:
     properties:
@@ -186,6 +385,20 @@ definitions:
         type: string
     required:
     - phone_number
+    type: object
+  schemas.StructuredFormatting:
+    properties:
+      main_text:
+        type: string
+      secondary_text:
+        type: string
+    type: object
+  schemas.Term:
+    properties:
+      offset:
+        type: integer
+      value:
+        type: string
     type: object
   schemas.UpdateUserProfileRequest:
     properties:
@@ -715,7 +928,7 @@ paths:
       summary: Verify registration OTP
       tags:
       - auth
-  /maps/autocomplete:
+  /map/autocomplete:
     get:
       consumes:
       - application/json
@@ -753,7 +966,12 @@ paths:
         "200":
           description: Successfully retrieved autocomplete data
           schema:
-            $ref: '#/definitions/helper.Response'
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GoongAutoCompleteResponse'
+              type: object
         "400":
           description: Invalid request query
           schema:
@@ -765,6 +983,92 @@ paths:
       security:
       - BearerAuth: []
       summary: Get autocomplete suggestions for places
+      tags:
+      - map
+  /map/give-ride:
+    post:
+      consumes:
+      - application/json
+      description: Receives a list of points and returns a route and polyline encoded
+        string for the driver
+      parameters:
+      - description: Bearer <access_token>
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Give ride request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.GiveRideRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully created route
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GoongDirectionsResponse'
+              type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Failed to create route
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Create a route for a driver's give ride
+      tags:
+      - map
+  /map/hitch-ride:
+    post:
+      consumes:
+      - application/json
+      description: Receives a list of points and returns a route and polyline encoded
+        string for the passenger
+      parameters:
+      - description: Bearer <access_token>
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Hitch ride request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.HitchRideRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully created route
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GoongDirectionsResponse'
+              type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Failed to create route
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Create a route for a passenger's hitch ride
       tags:
       - map
   /protected/test:

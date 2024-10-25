@@ -102,36 +102,61 @@ type Vehicle struct {
 }
 
 // RideOffer represents a ride offer in the system
+// type RideOffer struct {
+// 	ID                     uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+// 	CreatedAt              time.Time `gorm:"autoCreateTime"`
+// 	UpdatedAt              time.Time `gorm:"autoUpdateTime"`
+// 	UserID                 uuid.UUID `gorm:"type:uuid"` // user who offered the ride
+// 	User                   User      `gorm:"foreignKey:UserID"`
+// 	VehicleID              uuid.UUID `gorm:"type:uuid"` // vehicle used for the ride
+// 	Vehicle                Vehicle   `gorm:"foreignKey:VehicleID"`
+// 	StartLatitude          float64
+// 	StartLongitude         float64
+// 	EndLatitude            float64
+// 	EndLongitude           float64
+// 	Waypoints              []Waypoint `gorm:"foreignKey:RideOfferID"` // One-to-many relationship with Waypoint
+// 	DriverCurrentLatitude  float64
+// 	DriverCurrentLongitude float64
+// 	Status                 string    `gorm:"default:'active'"` // active, completed, cancelled
+// 	Rides                  []Ride    `gorm:"foreignKey:RideOfferID"`
+// 	StartTime              time.Time // Time to start the ride (could be in the future or right now)
+// }
+
 type RideOffer struct {
 	ID                     uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
 	CreatedAt              time.Time `gorm:"autoCreateTime"`
 	UpdatedAt              time.Time `gorm:"autoUpdateTime"`
-	UserID                 uuid.UUID `gorm:"type:uuid"` // user who offered the ride
+	UserID                 uuid.UUID `gorm:"type:uuid"`
 	User                   User      `gorm:"foreignKey:UserID"`
-	VehicleID              uuid.UUID `gorm:"type:uuid"` // vehicle used for the ride
+	VehicleID              uuid.UUID `gorm:"type:uuid"`
 	Vehicle                Vehicle   `gorm:"foreignKey:VehicleID"`
 	StartLatitude          float64
 	StartLongitude         float64
 	EndLatitude            float64
 	EndLongitude           float64
-	Waypoints              []Waypoint `gorm:"foreignKey:RideOfferID"` // One-to-many relationship with Waypoint
+	EncodedPolyline        string `gorm:"type:text"` // Store the overview_polyline here
 	DriverCurrentLatitude  float64
 	DriverCurrentLongitude float64
-	Status                 string `gorm:"default:'active'"` // active, completed, cancelled
+	StartAddress           string `gorm:"type:text"`
+	EndAddress             string `gorm:"type:text"`
+	Distance               int    // in meters
+	Duration               int    // in seconds
+	Status                 string `gorm:"default:'created'"` // created, active, matched, completed, cancelled
 	Rides                  []Ride `gorm:"foreignKey:RideOfferID"`
+	StartTime              time.Time
 }
 
 // Waypoint represents a point in the route of a RideOffer
-type Waypoint struct {
-	ID          uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	CreatedAt   time.Time `gorm:"autoCreateTime"`
-	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
-	RideOfferID uuid.UUID `gorm:"type:uuid"`
-	RideOffer   RideOffer `gorm:"foreignKey:RideOfferID"`
-	Latitude    float64
-	Longitude   float64
-	Order       int // To maintain the order of waypoints
-}
+// type Waypoint struct {
+// 	ID          uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+// 	CreatedAt   time.Time `gorm:"autoCreateTime"`
+// 	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
+// 	RideOfferID uuid.UUID `gorm:"type:uuid"`
+// 	RideOffer   RideOffer `gorm:"foreignKey:RideOfferID"`
+// 	Latitude    float64
+// 	Longitude   float64
+// 	Order       int // To maintain the order of waypoints
+// }
 
 // RideRequest represents a ride request in the system
 type RideRequest struct {
@@ -146,8 +171,13 @@ type RideRequest struct {
 	EndLongitude          float64
 	RiderCurrentLatitude  float64
 	RiderCurrentLongitude float64
-	Status                string `gorm:"default:'pending'"` // pending, accepted, completed, cancelled
+	StartAddress          string `gorm:"type:text"`
+	EndAddress            string `gorm:"type:text"`
+	Status                string `gorm:"default:'created'"` // created, active, matched, completed, cancelled
 	Rides                 []Ride `gorm:"foreignKey:RideRequestID"`
+	EncodedPolyline       string `gorm:"type:text"`
+	Distance              int    // in meters
+	Duration              int    // in seconds
 }
 
 // Ride represents a matched ride between an offer and a request

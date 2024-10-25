@@ -673,7 +673,7 @@
                 }
             }
         },
-        "/maps/autocomplete": {
+        "/map/autocomplete": {
             "get": {
                 "security": [
                     {
@@ -735,7 +735,19 @@
                     "200": {
                         "description": "Successfully retrieved autocomplete data",
                         "schema": {
-                            "$ref": "#/definitions/helper.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GoongAutoCompleteResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -746,6 +758,146 @@
                     },
                     "500": {
                         "description": "Failed to get autocomplete data",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/map/give-ride": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Receives a list of points and returns a route and polyline encoded string for the driver",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "map"
+                ],
+                "summary": "Create a route for a driver's give ride",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer \u003caccess_token\u003e",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Give ride request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.GiveRideRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully created route",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GoongDirectionsResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create route",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/map/hitch-ride": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Receives a list of points and returns a route and polyline encoded string for the passenger",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "map"
+                ],
+                "summary": "Create a route for a passenger's hitch ride",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer \u003caccess_token\u003e",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Hitch ride request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.HitchRideRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully created route",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GoongDirectionsResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create route",
                         "schema": {
                             "$ref": "#/definitions/helper.Response"
                         }
@@ -1128,6 +1280,237 @@
                 }
             }
         },
+        "schemas.GiveRideRequest": {
+            "type": "object",
+            "required": [
+                "points"
+            ],
+            "properties": {
+                "points": {
+                    "description": "List of points for the route",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Point"
+                    }
+                }
+            }
+        },
+        "schemas.GoongAutoCompleteResponse": {
+            "type": "object",
+            "properties": {
+                "executed_time": {
+                    "type": "integer"
+                },
+                "executed_time_all": {
+                    "type": "integer"
+                },
+                "predictions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Prediction"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.GoongDirectionsResponse": {
+            "type": "object",
+            "properties": {
+                "geocoded_waypoints": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "geocoder_status": {
+                                "type": "string"
+                            },
+                            "place_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "routes": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "bounds": {
+                                "description": "Empty struct as the bounds are empty in the example",
+                                "type": "object"
+                            },
+                            "legs": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "distance": {
+                                            "type": "object",
+                                            "properties": {
+                                                "text": {
+                                                    "type": "string"
+                                                },
+                                                "value": {
+                                                    "type": "integer"
+                                                }
+                                            }
+                                        },
+                                        "duration": {
+                                            "type": "object",
+                                            "properties": {
+                                                "text": {
+                                                    "type": "string"
+                                                },
+                                                "value": {
+                                                    "type": "integer"
+                                                }
+                                            }
+                                        },
+                                        "end_address": {
+                                            "type": "string"
+                                        },
+                                        "end_location": {
+                                            "type": "object",
+                                            "properties": {
+                                                "lat": {
+                                                    "type": "number"
+                                                },
+                                                "lng": {
+                                                    "type": "number"
+                                                }
+                                            }
+                                        },
+                                        "start_address": {
+                                            "type": "string"
+                                        },
+                                        "start_location": {
+                                            "type": "object",
+                                            "properties": {
+                                                "lat": {
+                                                    "type": "number"
+                                                },
+                                                "lng": {
+                                                    "type": "number"
+                                                }
+                                            }
+                                        },
+                                        "steps": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "distance": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "text": {
+                                                                "type": "string"
+                                                            },
+                                                            "value": {
+                                                                "type": "integer"
+                                                            }
+                                                        }
+                                                    },
+                                                    "duration": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "text": {
+                                                                "type": "string"
+                                                            },
+                                                            "value": {
+                                                                "type": "integer"
+                                                            }
+                                                        }
+                                                    },
+                                                    "end_location": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "lat": {
+                                                                "type": "number"
+                                                            },
+                                                            "lng": {
+                                                                "type": "number"
+                                                            }
+                                                        }
+                                                    },
+                                                    "html_instructions": {
+                                                        "type": "string"
+                                                    },
+                                                    "maneuver": {
+                                                        "type": "string"
+                                                    },
+                                                    "polyline": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "points": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    },
+                                                    "start_location": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "lat": {
+                                                                "type": "number"
+                                                            },
+                                                            "lng": {
+                                                                "type": "number"
+                                                            }
+                                                        }
+                                                    },
+                                                    "travel_mode": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "overview_polyline": {
+                                "type": "object",
+                                "properties": {
+                                    "points": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "summary": {
+                                "type": "string"
+                            },
+                            "warnings": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "waypoint_order": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "schemas.HitchRideRequest": {
+            "type": "object",
+            "required": [
+                "points"
+            ],
+            "properties": {
+                "points": {
+                    "description": "List of points for the route",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Point"
+                    }
+                }
+            }
+        },
         "schemas.InitRegisterRequest": {
             "type": "object",
             "required": [
@@ -1233,6 +1616,82 @@
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.MatchedSubstring": {
+            "type": "object",
+            "properties": {
+                "length": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                }
+            }
+        },
+        "schemas.PlusCode": {
+            "type": "object",
+            "properties": {
+                "compound_code": {
+                    "type": "string"
+                },
+                "global_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.Point": {
+            "type": "object",
+            "properties": {
+                "lat": {
+                    "description": "Latitude",
+                    "type": "number"
+                },
+                "lng": {
+                    "description": "Longitude",
+                    "type": "number"
+                }
+            }
+        },
+        "schemas.Prediction": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "display_type": {
+                    "type": "string"
+                },
+                "has_children": {
+                    "type": "boolean"
+                },
+                "matched_substrings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.MatchedSubstring"
+                    }
+                },
+                "place_id": {
+                    "type": "string"
+                },
+                "plus_code": {
+                    "$ref": "#/definitions/schemas.PlusCode"
+                },
+                "reference": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "structured_formatting": {
+                    "$ref": "#/definitions/schemas.StructuredFormatting"
+                },
+                "terms": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Term"
+                    }
                 }
             }
         },
@@ -1347,6 +1806,28 @@
             ],
             "properties": {
                 "phone_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.StructuredFormatting": {
+            "type": "object",
+            "properties": {
+                "main_text": {
+                    "type": "string"
+                },
+                "secondary_text": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.Term": {
+            "type": "object",
+            "properties": {
+                "offset": {
+                    "type": "integer"
+                },
+                "value": {
                     "type": "string"
                 }
             }
