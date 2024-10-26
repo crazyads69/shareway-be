@@ -41,7 +41,7 @@ func NewMapService(repo repository.IMapsRepository, cfg util.Config, redisClient
 
 func (s *MapService) GetLocationFromPlaceID(ctx context.Context, placeID string) (schemas.Point, error) {
 	// Build the request URL
-	baseURL, err := url.Parse(fmt.Sprintf("%s/place/details", s.cfg.GoongApiURL))
+	baseURL, err := url.Parse(fmt.Sprintf("%s/place/detail", s.cfg.GoongApiURL))
 	if err != nil {
 		return schemas.Point{}, fmt.Errorf("invalid base URL: %w", err)
 	}
