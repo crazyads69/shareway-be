@@ -19,4 +19,7 @@ func SetupMapRouter(group *gin.RouterGroup, server *APIServer) {
 
 	// CreateHitchRide request
 	group.POST("/hitch-ride", mapController.CreateHitchRide)
+
+	// GetGeoCode request
+	group.POST("/geocode", mapController.GetGeoCode)
 }

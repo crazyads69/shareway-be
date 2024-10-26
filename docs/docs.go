@@ -271,15 +271,6 @@ const docTemplate = `{
                     "auth"
                 ],
                 "summary": "Logout user and revoke the token",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer {refresh_token}",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "Logout successful",
@@ -326,15 +317,6 @@ const docTemplate = `{
                     "auth"
                 ],
                 "summary": "Refresh token and return new access token for the user",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer \u003crefresh_token\u003e",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "Access token refreshed successfully",
@@ -705,13 +687,6 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Bearer \u003caccess_token\u003e",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
                         "description": "Input string to search for",
                         "name": "input",
                         "in": "query",
@@ -776,6 +751,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/map/geocode": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves geocode information for a specified latitude and longitude",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "map"
+                ],
+                "summary": "Get geocode data for a given point",
+                "parameters": [
+                    {
+                        "description": "Geocode request parameters",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.GeoCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved geocode data",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GeoCodeLocationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get geocode data",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/map/give-ride": {
             "post": {
                 "security": [
@@ -795,13 +833,6 @@ const docTemplate = `{
                 ],
                 "summary": "Create a route for a driver's give ride",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer \u003caccess_token\u003e",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
                     {
                         "description": "Give ride request details",
                         "name": "request",
@@ -865,13 +896,6 @@ const docTemplate = `{
                 ],
                 "summary": "Create a route for a passenger's hitch ride",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer \u003caccess_token\u003e",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
                     {
                         "description": "Hitch ride request details",
                         "name": "request",
@@ -972,15 +996,6 @@ const docTemplate = `{
                     "user"
                 ],
                 "summary": "Get user profile",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer \u003caccess_token\u003e",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1016,13 +1031,6 @@ const docTemplate = `{
                 ],
                 "summary": "Register device token for push notifications",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer \u003caccess_token\u003e",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
                     {
                         "description": "Device token registration request",
                         "name": "request",
@@ -1074,13 +1082,6 @@ const docTemplate = `{
                 ],
                 "summary": "Update user profile",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer \u003caccess_token\u003e",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
                     {
                         "description": "User profile update information",
                         "name": "request",
@@ -1145,13 +1146,6 @@ const docTemplate = `{
                 "summary": "Register a new vehicle",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Bearer \u003caccess_token\u003e",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
                         "description": "Vehicle registration details",
                         "name": "request",
                         "in": "body",
@@ -1201,15 +1195,6 @@ const docTemplate = `{
                     "vehicle"
                 ],
                 "summary": "Get list of vehicles",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer \u003caccess_token\u003e",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "Successfully retrieved vehicles",
@@ -1269,6 +1254,50 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.GeoCodeLocation": {
+            "type": "object",
+            "properties": {
+                "formatted_address": {
+                    "type": "string"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "place_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.GeoCodeLocationResponse": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.GeoCodeLocation"
+                    }
+                }
+            }
+        },
+        "schemas.GeoCodeRequest": {
+            "type": "object",
+            "required": [
+                "point"
+            ],
+            "properties": {
+                "point": {
+                    "description": "Point for which the geocode is performed",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/schemas.Point"
+                        }
+                    ]
+                }
+            }
+        },
         "schemas.GetUserProfileResponse": {
             "type": "object",
             "required": [
@@ -1294,14 +1323,14 @@ const docTemplate = `{
         "schemas.GiveRideRequest": {
             "type": "object",
             "required": [
-                "points"
+                "place_list"
             ],
             "properties": {
-                "points": {
-                    "description": "List of points for the route",
+                "place_list": {
+                    "description": "Points []Point ` + "`" + `json:\"points\" binding:\"required\"` + "`" + ` // List of points for the route",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/schemas.Point"
+                        "type": "string"
                     }
                 }
             }
@@ -1510,14 +1539,14 @@ const docTemplate = `{
         "schemas.HitchRideRequest": {
             "type": "object",
             "required": [
-                "points"
+                "place_list"
             ],
             "properties": {
-                "points": {
-                    "description": "List of points for the route",
+                "place_list": {
+                    "description": "Points []Point ` + "`" + `json:\"points\" binding:\"required\"` + "`" + ` // List of points for the route",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/schemas.Point"
+                        "type": "string"
                     }
                 }
             }
@@ -2000,6 +2029,13 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`

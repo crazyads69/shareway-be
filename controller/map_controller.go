@@ -31,7 +31,6 @@ func NewMapController(mapsService service.IMapService, validate *validator.Valid
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param Authorization header string true "Bearer <access_token>"
 // @Param input query string true "Input string to search for"
 // @Param limit query int false "Limit the number of results"
 // @Param location query string false "Location coordinates (lat,lng)"
@@ -81,7 +80,6 @@ func (ctrl *MapController) GetAutoComplete(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param Authorization header string true "Bearer <access_token>"
 // @Param request body schemas.GiveRideRequest true "Give ride request details"
 // @Success 200 {object} helper.Response{data=schemas.GoongDirectionsResponse} "Successfully created route"
 // @Failure 400 {object} helper.Response "Invalid request body"
@@ -155,7 +153,6 @@ func (ctrl *MapController) CreateGiveRide(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param Authorization header string true "Bearer <access_token>"
 // @Param request body schemas.HitchRideRequest true "Hitch ride request details"
 // @Success 200 {object} helper.Response{data=schemas.GoongDirectionsResponse} "Successfully created route"
 // @Failure 400 {object} helper.Response "Invalid request body"
@@ -216,6 +213,75 @@ func (ctrl *MapController) CreateHitchRide(ctx *gin.Context) {
 		route,
 		"Successfully created route",
 		"Tạo tuyến đường thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
+}
+
+// GetGeoCode returns the geocode information for a given point
+// GetGeoCode godoc
+// @Summary Get geocode data for a given point
+// @Description Retrieves geocode information for a specified latitude and longitude
+// @Tags map
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body schemas.GeoCodeRequest true "Geocode request parameters"
+// @Success 200 {object} helper.Response{data=schemas.GeoCodeLocationResponse} "Successfully retrieved geocode data"
+// @Failure 400 {object} helper.Response "Invalid request body"
+// @Failure 500 {object} helper.Response "Failed to get geocode data"
+// @Router /map/geocode [post]
+func (ctrl *MapController) GetGeoCode(ctx *gin.Context) {
+	var req schemas.GeoCodeRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid request body",
+			"Dữ liệu không hợp lệ",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Validate the request body
+	if err := ctrl.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid request body",
+			"Dữ liệu không hợp lệ",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	geocode, err := ctrl.MapsService.GetGeoCode(ctx.Request.Context(), req.Point)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get geocode data",
+			"Không thể lấy dữ liệu geocode",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	optimizedResults := schemas.GeoCodeLocationResponse{
+		Results: make([]schemas.GeoCodeLocation, 0, len(geocode.Results)),
+	}
+
+	for _, result := range geocode.Results {
+		optimizedResult := schemas.GeoCodeLocation{
+			PlaceID:          result.PlaceID,
+			FormattedAddress: result.FormattedAddress,
+			Latitude:         result.Geometry.Location.Lat,
+			Longitude:        result.Geometry.Location.Lng,
+		}
+		optimizedResults.Results = append(optimizedResults.Results, optimizedResult)
+	}
+
+	response := helper.SuccessResponse(
+		optimizedResults,
+		"Successfully retrieved geocode data",
+		"Lấy dữ liệu geocode thành công",
 	)
 	helper.GinResponse(ctx, 200, response)
 }

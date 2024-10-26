@@ -766,7 +766,6 @@ func (ctrl *AuthController) LoginWithOAuth(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param Authorization header string true "Bearer <refresh_token>"
 // @Success 200 {object} helper.Response{data=schemas.RefreshTokenResponse} "Access token refreshed successfully"
 // @Failure 400 {object} helper.Response "Invalid refresh token or authorization header"
 // @Failure 500 {object} helper.Response "Internal server error"
@@ -864,7 +863,6 @@ func (ctrl *AuthController) RefreshToken(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param Authorization header string true "Bearer {refresh_token}"
 // @Success 200 {object} helper.Response "Logout successful"
 // @Failure 400 {object} helper.Response "Bad request"
 // @Failure 401 {object} helper.Response "Unauthorized"

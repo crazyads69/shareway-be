@@ -18,6 +18,33 @@ definitions:
     required:
     - phone_number
     type: object
+  schemas.GeoCodeLocation:
+    properties:
+      formatted_address:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      place_id:
+        type: string
+    type: object
+  schemas.GeoCodeLocationResponse:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/schemas.GeoCodeLocation'
+        type: array
+    type: object
+  schemas.GeoCodeRequest:
+    properties:
+      point:
+        allOf:
+        - $ref: '#/definitions/schemas.Point'
+        description: Point for which the geocode is performed
+    required:
+    - point
+    type: object
   schemas.GetUserProfileResponse:
     properties:
       user:
@@ -34,13 +61,14 @@ definitions:
     type: object
   schemas.GiveRideRequest:
     properties:
-      points:
-        description: List of points for the route
+      place_list:
+        description: Points []Point `json:"points" binding:"required"` // List of
+          points for the route
         items:
-          $ref: '#/definitions/schemas.Point'
+          type: string
         type: array
     required:
-    - points
+    - place_list
     type: object
   schemas.GoongAutoCompleteResponse:
     properties:
@@ -173,13 +201,14 @@ definitions:
     type: object
   schemas.HitchRideRequest:
     properties:
-      points:
-        description: List of points for the route
+      place_list:
+        description: Points []Point `json:"points" binding:"required"` // List of
+          points for the route
         items:
-          $ref: '#/definitions/schemas.Point'
+          type: string
         type: array
     required:
-    - points
+    - place_list
     type: object
   schemas.InitRegisterRequest:
     properties:
@@ -666,12 +695,6 @@ paths:
       consumes:
       - application/json
       description: Logs out the user by revoking their refresh token from the database
-      parameters:
-      - description: Bearer {refresh_token}
-        in: header
-        name: Authorization
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -701,12 +724,6 @@ paths:
       consumes:
       - application/json
       description: Validates the refresh token and issues a new access token
-      parameters:
-      - description: Bearer <refresh_token>
-        in: header
-        name: Authorization
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -934,11 +951,6 @@ paths:
       - application/json
       description: Returns a list of places that match the query string
       parameters:
-      - description: Bearer <access_token>
-        in: header
-        name: Authorization
-        required: true
-        type: string
       - description: Input string to search for
         in: query
         name: input
@@ -985,6 +997,43 @@ paths:
       summary: Get autocomplete suggestions for places
       tags:
       - map
+  /map/geocode:
+    post:
+      consumes:
+      - application/json
+      description: Retrieves geocode information for a specified latitude and longitude
+      parameters:
+      - description: Geocode request parameters
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.GeoCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved geocode data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GeoCodeLocationResponse'
+              type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Failed to get geocode data
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get geocode data for a given point
+      tags:
+      - map
   /map/give-ride:
     post:
       consumes:
@@ -992,11 +1041,6 @@ paths:
       description: Receives a list of points and returns a route and polyline encoded
         string for the driver
       parameters:
-      - description: Bearer <access_token>
-        in: header
-        name: Authorization
-        required: true
-        type: string
       - description: Give ride request details
         in: body
         name: request
@@ -1035,11 +1079,6 @@ paths:
       description: Receives a list of points and returns a route and polyline encoded
         string for the passenger
       parameters:
-      - description: Bearer <access_token>
-        in: header
-        name: Authorization
-        required: true
-        type: string
       - description: Hitch ride request details
         in: body
         name: request
@@ -1100,12 +1139,6 @@ paths:
       consumes:
       - application/json
       description: Retrieves the profile information of the authenticated user
-      parameters:
-      - description: Bearer <access_token>
-        in: header
-        name: Authorization
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -1129,11 +1162,6 @@ paths:
       description: Registers the device token for the authenticated user to enable
         push notifications via Firebase Cloud Messaging
       parameters:
-      - description: Bearer <access_token>
-        in: header
-        name: Authorization
-        required: true
-        type: string
       - description: Device token registration request
         in: body
         name: request
@@ -1166,11 +1194,6 @@ paths:
       - application/json
       description: Update the profile information of the authenticated user
       parameters:
-      - description: Bearer <access_token>
-        in: header
-        name: Authorization
-        required: true
-        type: string
       - description: User profile update information
         in: body
         name: request
@@ -1208,11 +1231,6 @@ paths:
       - application/json
       description: Register a new vehicle for the authenticated user
       parameters:
-      - description: Bearer <access_token>
-        in: header
-        name: Authorization
-        required: true
-        type: string
       - description: Vehicle registration details
         in: body
         name: request
@@ -1245,12 +1263,6 @@ paths:
       - application/json
       description: Retrieves and returns the list of vehicles for user to select when
         registering a vehicle
-      parameters:
-      - description: Bearer <access_token>
-        in: header
-        name: Authorization
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -1272,4 +1284,9 @@ paths:
       summary: Get list of vehicles
       tags:
       - vehicle
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

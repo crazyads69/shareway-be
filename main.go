@@ -24,6 +24,9 @@ func init() {
 	time.Local = time.UTC
 }
 
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	// Validator
 	validate := validator.New()

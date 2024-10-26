@@ -63,7 +63,8 @@ type Point struct {
 
 // Define GiveRideRequest struct
 type GiveRideRequest struct {
-	Points []Point `json:"points" binding:"required"` // List of points for the route
+	// Points []Point `json:"points" binding:"required"` // List of points for the route
+	PlaceList []string `json:"place_list" binding:"required"` // List of places for the route (place_id) from goong api
 }
 
 // Define
@@ -130,5 +131,69 @@ type GoongDirectionsResponse struct {
 
 // Define HitchRideRequest struct
 type HitchRideRequest struct {
-	Points []Point `json:"points" binding:"required"` // List of points for the route
+	// Points []Point `json:"points" binding:"required"` // List of points for the route
+	PlaceList []string `json:"place_list" binding:"required"` // List of places for the route (place_id) from goong api
+}
+
+// Type GeoCodeRequest struct
+type GeoCodeRequest struct {
+	Point Point `json:"point" binding:"required"` // Point for which the geocode is performed
+}
+
+// Define GoongGeocodeResponse struct
+type GoongReverseGeocodeResponse struct {
+	PlusCode PlusCode `json:"plus_code"`
+	Results  []Result `json:"results"`
+	Status   string   `json:"status"`
+}
+
+type Result struct {
+	AddressComponents []AddressComponent `json:"address_components"`
+	FormattedAddress  string             `json:"formatted_address"`
+	Geometry          Geometry           `json:"geometry"`
+	PlaceID           string             `json:"place_id"`
+	Reference         string             `json:"reference"`
+	PlusCode          PlusCode           `json:"plus_code"`
+	Types             []string           `json:"types"`
+}
+
+type AddressComponent struct {
+	LongName  string `json:"long_name"`
+	ShortName string `json:"short_name"`
+}
+
+type Geometry struct {
+	Location Location `json:"location"`
+	Boundary string   `json:"boundary,omitempty"`
+}
+
+type Location struct {
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
+}
+
+// Define GeoCodeLocationResponse struct for the response of the geocode location endpoint
+type GeoCodeLocation struct {
+	PlaceID          string  `json:"place_id"`
+	FormattedAddress string  `json:"formatted_address"`
+	Latitude         float64 `json:"latitude"`
+	Longitude        float64 `json:"longitude"`
+}
+
+// Define GeoCodeLocationResponse struct
+type GeoCodeLocationResponse struct {
+	Results []GeoCodeLocation `json:"results"`
+}
+
+// Define GoongPlaceDetailResponse struct
+type GoongPlaceDetailResponse struct {
+	Result PlaceDetail `json:"result"`
+	Status string      `json:"status"`
+}
+
+type PlaceDetail struct {
+	PlaceID          string   `json:"place_id"`
+	FormattedAddress string   `json:"formatted_address"`
+	Geometry         Geometry `json:"geometry"`
+	Name             string   `json:"name"`
 }

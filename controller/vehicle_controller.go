@@ -31,7 +31,6 @@ func NewVehicleController(service service.IVehicleService, validate *validator.V
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param Authorization header string true "Bearer <access_token>"
 // @Success 200 {object} helper.Response{data=schemas.GetVehiclesResponse} "Successfully retrieved vehicles"
 // @Failure 500 {object} helper.Response "Failed to get vehicles"
 // @Router /vehicle/vehicles [get]
@@ -65,7 +64,6 @@ func (ctrl *VehicleController) GetVehicles(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param Authorization header string true "Bearer <access_token>"
 // @Param request body schemas.RegisterVehicleRequest true "Vehicle registration details"
 // @Success 200 {object} helper.Response "Successfully registered vehicle"
 // @Failure 400 {object} helper.Response "Bad request"

@@ -31,7 +31,6 @@ func NewUserController(userService service.IUsersService, validate *validator.Va
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param Authorization header string true "Bearer <access_token>"
 // @Success 200 {object} schemas.GetUserProfileResponse
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /user/get-profile [get]
@@ -92,7 +91,6 @@ func (ctrl *UserController) GetUserProfile(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param Authorization header string true "Bearer <access_token>"
 // @Param request body schemas.RegisterDeviceTokenRequest true "Device token registration request"
 // @Success 200 {object} helper.Response "Successfully registered device token"
 // @Failure 400 {object} helper.Response "Invalid request or validation error"
@@ -163,7 +161,6 @@ func (ctrl *UserController) RegisterDeviceToken(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param Authorization header string true "Bearer <access_token>"
 // @Param request body schemas.UpdateUserProfileRequest true "User profile update information"
 // @Success 200 {object} helper.Response{data=schemas.UpdateUserProfileResponse} "Successfully updated user profile"
 // @Failure 400 {object} helper.Response "Invalid input"
