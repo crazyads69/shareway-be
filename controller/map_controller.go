@@ -81,7 +81,7 @@ func (ctrl *MapController) GetAutoComplete(ctx *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body schemas.GiveRideRequest true "Give ride request details"
-// @Success 200 {object} helper.Response{data=schemas.GoongDirectionsResponse} "Successfully created route"
+// @Success 200 {object} helper.Response{data=schemas.GiveRideResponse} "Successfully created route"
 // @Failure 400 {object} helper.Response "Invalid request body"
 // @Failure 500 {object} helper.Response "Failed to create route"
 // @Router /map/give-ride [post]
@@ -125,7 +125,7 @@ func (ctrl *MapController) CreateGiveRide(ctx *gin.Context) {
 	}
 
 	// Create a route for the driver
-	route, err := ctrl.MapsService.CreateGiveRide(ctx.Request.Context(), req, data.UserID)
+	route, rideOfferID, err := ctrl.MapsService.CreateGiveRide(ctx.Request.Context(), req, data.UserID)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -136,13 +136,18 @@ func (ctrl *MapController) CreateGiveRide(ctx *gin.Context) {
 		return
 	}
 
+	// Create a response with the route and ride offer ID
+	res := schemas.GiveRideResponse{
+		Route:       route,
+		RideOfferID: rideOfferID,
+	}
+
 	response := helper.SuccessResponse(
-		route,
+		res,
 		"Successfully created route",
 		"Tạo tuyến đường thành công",
 	)
 	helper.GinResponse(ctx, 200, response)
-
 }
 
 // CreateHitchRide receives a list of points and returns a route and polyline encoded string for the hitcher
@@ -154,7 +159,7 @@ func (ctrl *MapController) CreateGiveRide(ctx *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body schemas.HitchRideRequest true "Hitch ride request details"
-// @Success 200 {object} helper.Response{data=schemas.GoongDirectionsResponse} "Successfully created route"
+// @Success 200 {object} helper.Response{data=schemas.HitchRideResponse} "Successfully created route"
 // @Failure 400 {object} helper.Response "Invalid request body"
 // @Failure 500 {object} helper.Response "Failed to create route"
 // @Router /map/hitch-ride [post]
@@ -198,7 +203,7 @@ func (ctrl *MapController) CreateHitchRide(ctx *gin.Context) {
 	}
 
 	// Create a route for the hitcher
-	route, err := ctrl.MapsService.CreateHitchRide(ctx.Request.Context(), req, data.UserID)
+	route, rideRequestID, err := ctrl.MapsService.CreateHitchRide(ctx.Request.Context(), req, data.UserID)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -209,8 +214,14 @@ func (ctrl *MapController) CreateHitchRide(ctx *gin.Context) {
 		return
 	}
 
+	// Create a response with the route and ride request ID
+	res := schemas.HitchRideResponse{
+		Route:         route,
+		RideRequestID: rideRequestID,
+	}
+
 	response := helper.SuccessResponse(
-		route,
+		res,
 		"Successfully created route",
 		"Tạo tuyến đường thành công",
 	)

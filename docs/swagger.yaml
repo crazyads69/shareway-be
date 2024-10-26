@@ -70,6 +70,13 @@ definitions:
     required:
     - place_list
     type: object
+  schemas.GiveRideResponse:
+    properties:
+      ride_offer_id:
+        type: string
+      route:
+        $ref: '#/definitions/schemas.GoongDirectionsResponse'
+    type: object
   schemas.GoongAutoCompleteResponse:
     properties:
       executed_time:
@@ -209,6 +216,13 @@ definitions:
         type: array
     required:
     - place_list
+    type: object
+  schemas.HitchRideResponse:
+    properties:
+      ride_request_id:
+        type: string
+      route:
+        $ref: '#/definitions/schemas.GoongDirectionsResponse'
     type: object
   schemas.InitRegisterRequest:
     properties:
@@ -1057,7 +1071,7 @@ paths:
             - $ref: '#/definitions/helper.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/schemas.GoongDirectionsResponse'
+                  $ref: '#/definitions/schemas.GiveRideResponse'
               type: object
         "400":
           description: Invalid request body
@@ -1095,7 +1109,7 @@ paths:
             - $ref: '#/definitions/helper.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/schemas.GoongDirectionsResponse'
+                  $ref: '#/definitions/schemas.HitchRideResponse'
               type: object
         "400":
           description: Invalid request body

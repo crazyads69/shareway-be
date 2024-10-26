@@ -19,8 +19,8 @@ import (
 
 type IMapService interface {
 	GetAutoComplete(ctx context.Context, input string, limit int, location string, radius int, moreCompound bool) (schemas.GoongAutoCompleteResponse, error)
-	CreateGiveRide(ctx context.Context, input schemas.GiveRideRequest, userID uuid.UUID) (schemas.GoongDirectionsResponse, error)
-	CreateHitchRide(ctx context.Context, input schemas.HitchRideRequest, userID uuid.UUID) (schemas.GoongDirectionsResponse, error)
+	CreateGiveRide(ctx context.Context, input schemas.GiveRideRequest, userID uuid.UUID) (schemas.GoongDirectionsResponse, uuid.UUID, error)
+	CreateHitchRide(ctx context.Context, input schemas.HitchRideRequest, userID uuid.UUID) (schemas.GoongDirectionsResponse, uuid.UUID, error)
 	GetGeoCode(ctx context.Context, point schemas.Point) (schemas.GoongReverseGeocodeResponse, error)
 	GetLocationFromPlaceID(ctx context.Context, placeID string) (schemas.Point, error)
 }
@@ -174,12 +174,12 @@ func (s *MapService) GetAutoComplete(ctx context.Context, input string, limit in
 	return response, nil
 }
 
-func (s *MapService) CreateGiveRide(ctx context.Context, input schemas.GiveRideRequest, userID uuid.UUID) (schemas.GoongDirectionsResponse, error) {
+func (s *MapService) CreateGiveRide(ctx context.Context, input schemas.GiveRideRequest, userID uuid.UUID) (schemas.GoongDirectionsResponse, uuid.UUID, error) {
 	var points []schemas.Point
 	for _, placeID := range input.PlaceList {
 		point, err := s.GetLocationFromPlaceID(ctx, placeID)
 		if err != nil {
-			return schemas.GoongDirectionsResponse{}, fmt.Errorf("failed to get location for place ID %s: %w", placeID, err)
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to get location for place ID %s: %w", placeID, err)
 		}
 		points = append(points, point)
 	}
@@ -187,7 +187,7 @@ func (s *MapService) CreateGiveRide(ctx context.Context, input schemas.GiveRideR
 	// Build the request URL
 	baseURL, err := url.Parse(fmt.Sprintf("%s/direction", s.cfg.GoongApiURL))
 	if err != nil {
-		return schemas.GoongDirectionsResponse{}, fmt.Errorf("invalid base URL: %w", err)
+		return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("invalid base URL: %w", err)
 	}
 
 	params := url.Values{}
@@ -218,38 +218,47 @@ func (s *MapService) CreateGiveRide(ctx context.Context, input schemas.GiveRideR
 	if err == nil {
 		var response schemas.GoongDirectionsResponse
 		if err := json.Unmarshal(cachedData, &response); err != nil {
-			return schemas.GoongDirectionsResponse{}, err
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, err
 		}
-		return response, nil
+		// Store the create rideoffer in the database
+		currentLocation := schemas.Point{
+			Lat: optimizedPoints[0].Lat,
+			Lng: optimizedPoints[0].Lng,
+		}
+		rideOfferID, err := s.repo.CreateGiveRide(response, userID, currentLocation)
+		if err != nil {
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, err
+		}
+		return response, rideOfferID, nil
 	}
 
 	// If cache miss, fetch data from Goong API
 	resp, err := http.Get(url)
 	if err != nil {
-		return schemas.GoongDirectionsResponse{}, err
+		return schemas.GoongDirectionsResponse{}, uuid.Nil, err
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return schemas.GoongDirectionsResponse{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	// Parse the response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return schemas.GoongDirectionsResponse{}, err
+		return schemas.GoongDirectionsResponse{}, uuid.Nil, err
 	}
 
 	// Cache the response
 	err = s.redisClient.Set(ctx, cacheKey, body, time.Second*time.Duration(s.cfg.GoongCacheRouteDuration)).Err()
 	if err != nil {
-		return schemas.GoongDirectionsResponse{}, err
+		return schemas.GoongDirectionsResponse{}, uuid.Nil, err
 	}
 
 	var response schemas.GoongDirectionsResponse
 	if err := json.Unmarshal(body, &response); err != nil {
-		return schemas.GoongDirectionsResponse{}, err
+		return schemas.GoongDirectionsResponse{}, uuid.Nil, err
 	}
 
 	currentLocation := schemas.Point{
@@ -257,20 +266,20 @@ func (s *MapService) CreateGiveRide(ctx context.Context, input schemas.GiveRideR
 		Lng: optimizedPoints[0].Lng,
 	}
 	// Store the create rideoffer in the database
-	err = s.repo.CreateGiveRide(response, userID, currentLocation)
+	rideOfferID, err := s.repo.CreateGiveRide(response, userID, currentLocation)
 	if err != nil {
-		return schemas.GoongDirectionsResponse{}, err
+		return schemas.GoongDirectionsResponse{}, uuid.Nil, err
 	}
 
-	return response, nil
+	return response, rideOfferID, nil
 }
 
-func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRideRequest, userID uuid.UUID) (schemas.GoongDirectionsResponse, error) {
+func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRideRequest, userID uuid.UUID) (schemas.GoongDirectionsResponse, uuid.UUID, error) {
 	var points []schemas.Point
 	for _, placeID := range input.PlaceList {
 		point, err := s.GetLocationFromPlaceID(ctx, placeID)
 		if err != nil {
-			return schemas.GoongDirectionsResponse{}, fmt.Errorf("failed to get location for place ID %s: %w", placeID, err)
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to get location for place ID %s: %w", placeID, err)
 		}
 		points = append(points, point)
 	}
@@ -278,7 +287,7 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 	// Build the request URL
 	baseURL, err := url.Parse(fmt.Sprintf("%s/direction", s.cfg.GoongApiURL))
 	if err != nil {
-		return schemas.GoongDirectionsResponse{}, fmt.Errorf("invalid base URL: %w", err)
+		return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("invalid base URL: %w", err)
 	}
 
 	params := url.Values{}
@@ -310,38 +319,46 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 	if err == nil {
 		var response schemas.GoongDirectionsResponse
 		if err := json.Unmarshal(cachedData, &response); err != nil {
-			return schemas.GoongDirectionsResponse{}, err
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, err
 		}
-		return response, nil
+		currentLocation := schemas.Point{
+			Lat: optimizedPoints[0].Lat,
+			Lng: optimizedPoints[0].Lng,
+		}
+		rideRequestID, err := s.repo.CreateHitchRide(response, userID, currentLocation)
+		if err != nil {
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, err
+		}
+		return response, rideRequestID, nil
 	}
 
 	// If cache miss, fetch data from Goong API
 	resp, err := http.Get(url)
 	if err != nil {
-		return schemas.GoongDirectionsResponse{}, err
+		return schemas.GoongDirectionsResponse{}, uuid.Nil, err
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return schemas.GoongDirectionsResponse{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	// Parse the response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return schemas.GoongDirectionsResponse{}, err
+		return schemas.GoongDirectionsResponse{}, uuid.Nil, err
 	}
 
 	// Cache the response
 	err = s.redisClient.Set(ctx, cacheKey, body, time.Second*time.Duration(s.cfg.GoongCacheRouteDuration)).Err()
 	if err != nil {
-		return schemas.GoongDirectionsResponse{}, err
+		return schemas.GoongDirectionsResponse{}, uuid.Nil, err
 	}
 
 	var response schemas.GoongDirectionsResponse
 	if err := json.Unmarshal(body, &response); err != nil {
-		return schemas.GoongDirectionsResponse{}, err
+		return schemas.GoongDirectionsResponse{}, uuid.Nil, err
 	}
 
 	currentLocation := schemas.Point{
@@ -350,13 +367,13 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 	}
 
 	// Store the create ride request in the database
-	err = s.repo.CreateHitchRide(response, userID, currentLocation)
+	rideRequestID, err := s.repo.CreateHitchRide(response, userID, currentLocation)
 
 	if err != nil {
-		return schemas.GoongDirectionsResponse{}, err
+		return schemas.GoongDirectionsResponse{}, uuid.Nil, err
 	}
 
-	return response, nil
+	return response, rideRequestID, nil
 }
 
 func (s *MapService) GetGeoCode(ctx context.Context, point schemas.Point) (schemas.GoongReverseGeocodeResponse, error) {

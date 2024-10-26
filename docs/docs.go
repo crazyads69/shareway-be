@@ -855,7 +855,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/schemas.GoongDirectionsResponse"
+                                            "$ref": "#/definitions/schemas.GiveRideResponse"
                                         }
                                     }
                                 }
@@ -918,7 +918,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/schemas.GoongDirectionsResponse"
+                                            "$ref": "#/definitions/schemas.HitchRideResponse"
                                         }
                                     }
                                 }
@@ -1335,6 +1335,17 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.GiveRideResponse": {
+            "type": "object",
+            "properties": {
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "route": {
+                    "$ref": "#/definitions/schemas.GoongDirectionsResponse"
+                }
+            }
+        },
         "schemas.GoongAutoCompleteResponse": {
             "type": "object",
             "properties": {
@@ -1548,6 +1559,17 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "schemas.HitchRideResponse": {
+            "type": "object",
+            "properties": {
+                "ride_request_id": {
+                    "type": "string"
+                },
+                "route": {
+                    "$ref": "#/definitions/schemas.GoongDirectionsResponse"
                 }
             }
         },

@@ -10,8 +10,8 @@ import (
 )
 
 type IMapsRepository interface {
-	CreateGiveRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point) error
-	CreateHitchRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point) error
+	CreateGiveRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point) (uuid.UUID, error)
+	CreateHitchRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point) (uuid.UUID, error)
 }
 
 type MapsRepository struct {
@@ -22,14 +22,14 @@ func NewMapsRepository(db *gorm.DB) IMapsRepository {
 	return &MapsRepository{db: db}
 }
 
-func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point) error {
+func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point) (uuid.UUID, error) {
 	if len(route.Routes) == 0 {
-		return errors.New("no routes found in the response")
+		return uuid.Nil, errors.New("no routes found in the response")
 	}
 
 	firstRoute := route.Routes[0]
 	if len(firstRoute.Legs) == 0 {
-		return errors.New("no legs found in the first route")
+		return uuid.Nil, errors.New("no legs found in the first route")
 	}
 
 	firstLeg := firstRoute.Legs[0]
@@ -51,17 +51,21 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 		Status:                 "created", // Initial status is "created"
 	}
 
-	return r.db.Create(&rideOffer).Error
+	if err := r.db.Create(&rideOffer).Error; err != nil {
+		return uuid.Nil, err
+	}
+
+	return rideOffer.ID, nil
 }
 
-func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point) error {
+func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point) (uuid.UUID, error) {
 	if len(route.Routes) == 0 {
-		return errors.New("no routes found")
+		return uuid.Nil, errors.New("no routes found")
 	}
 
 	firstRoute := route.Routes[0]
 	if len(firstRoute.Legs) == 0 {
-		return errors.New("no legs found in the route")
+		return uuid.Nil, errors.New("no legs found in the route")
 	}
 
 	firstLeg := firstRoute.Legs[0]
@@ -83,5 +87,8 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 		Duration:              firstRoute.Legs[0].Duration.Value,
 	}
 
-	return r.db.Create(rideRequest).Error
+	if err := r.db.Create(rideRequest).Error; err != nil {
+		return uuid.Nil, err
+	}
+	return rideRequest.ID, nil
 }

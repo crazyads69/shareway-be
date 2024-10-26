@@ -1,5 +1,7 @@
 package schemas
 
+import "github.com/google/uuid"
+
 // Define AutoCompleteRequest struct
 type AutoCompleteRequest struct {
 	Input        string `form:"input" binding:"required"`
@@ -129,10 +131,22 @@ type GoongDirectionsResponse struct {
 	} `json:"routes"`
 }
 
+// Define GiveRideResponse struct
+type GiveRideResponse struct {
+	Route       GoongDirectionsResponse `json:"route"`
+	RideOfferID uuid.UUID               `json:"ride_offer_id"`
+}
+
 // Define HitchRideRequest struct
 type HitchRideRequest struct {
 	// Points []Point `json:"points" binding:"required"` // List of points for the route
 	PlaceList []string `json:"place_list" binding:"required"` // List of places for the route (place_id) from goong api
+}
+
+// Define HitchRideResponse struct
+type HitchRideResponse struct {
+	Route         GoongDirectionsResponse `json:"route"`
+	RideRequestID uuid.UUID               `json:"ride_request_id"`
 }
 
 // Type GeoCodeRequest struct
