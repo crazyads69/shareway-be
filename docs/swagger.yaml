@@ -20,13 +20,22 @@ definitions:
     type: object
   schemas.GeoCodeLocation:
     properties:
+      distance:
+        description: Distance from the location (in kilometers) for which the geocode
+          is performed
+        type: number
       formatted_address:
         type: string
       latitude:
         type: number
       longitude:
         type: number
+      main_address:
+        description: Main address of the location
+        type: string
       place_id:
+        type: string
+      secondary_address:
         type: string
     type: object
   schemas.GeoCodeLocationResponse:
@@ -38,11 +47,15 @@ definitions:
     type: object
   schemas.GeoCodeRequest:
     properties:
+      current_location:
+        description: Current location of the user
+        type: string
       point:
         allOf:
         - $ref: '#/definitions/schemas.Point'
         description: Point for which the geocode is performed
     required:
+    - current_location
     - point
     type: object
   schemas.GetUserProfileResponse:

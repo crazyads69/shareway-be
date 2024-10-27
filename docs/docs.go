@@ -1263,6 +1263,10 @@ const docTemplate = `{
         "schemas.GeoCodeLocation": {
             "type": "object",
             "properties": {
+                "distance": {
+                    "description": "Distance from the location (in kilometers) for which the geocode is performed",
+                    "type": "number"
+                },
                 "formatted_address": {
                     "type": "string"
                 },
@@ -1272,7 +1276,14 @@ const docTemplate = `{
                 "longitude": {
                     "type": "number"
                 },
+                "main_address": {
+                    "description": "Main address of the location",
+                    "type": "string"
+                },
                 "place_id": {
+                    "type": "string"
+                },
+                "secondary_address": {
                     "type": "string"
                 }
             }
@@ -1291,9 +1302,14 @@ const docTemplate = `{
         "schemas.GeoCodeRequest": {
             "type": "object",
             "required": [
+                "current_location",
                 "point"
             ],
             "properties": {
+                "current_location": {
+                    "description": "Current location of the user",
+                    "type": "string"
+                },
                 "point": {
                     "description": "Point for which the geocode is performed",
                     "allOf": [
