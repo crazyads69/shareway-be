@@ -32,7 +32,7 @@ type Prediction struct {
 	DisplayType          string               `json:"display_type"`
 	Score                float64              `json:"score"`
 	PlusCode             PlusCode             `json:"plus_code"`
-	Distance             float64              `json:"distance"` // Distance from the location (in kilometers) for which the autocomplete is performed
+	Distance             float64              `json:"distance,omitempty"` // Distance from the location (in kilometers) for which the autocomplete is performed
 }
 
 // Define MatchedSubstring struct

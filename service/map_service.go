@@ -111,12 +111,16 @@ func (s *MapService) GetAutoComplete(ctx context.Context, input string, limit in
 
 	if limit > 0 {
 		params.Set("limit", strconv.Itoa(limit))
+	} else {
+		params.Set("limit", strconv.Itoa(4))
 	}
 	if location != "" {
 		params.Set("location", location)
 	}
 	if radius > 0 {
 		params.Set("radius", strconv.Itoa(radius))
+	} else {
+		params.Set("radius", strconv.Itoa(50))
 	}
 	if moreCompound {
 		params.Set("more_compound", "true")
@@ -415,7 +419,7 @@ func (s *MapService) GetDistanceFromCurrentLocation(ctx context.Context, current
 	for i, point := range destinationPoints {
 		destinations[i] = fmt.Sprintf("%f,%f", point.Lat, point.Lng)
 	}
-	params.Set("destinations", strings.Join(destinations, ";"))
+	params.Set("destinations", strings.Join(destinations, "|"))
 
 	baseURL.RawQuery = params.Encode()
 	url := baseURL.String()
