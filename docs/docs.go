@@ -1725,6 +1725,10 @@ const docTemplate = `{
                 "display_type": {
                     "type": "string"
                 },
+                "distance": {
+                    "description": "Distance from the location (in kilometers) for which the autocomplete is performed",
+                    "type": "number"
+                },
                 "has_children": {
                     "type": "boolean"
                 },
