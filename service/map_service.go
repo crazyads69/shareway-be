@@ -23,7 +23,7 @@ type IMapService interface {
 	GetAutoComplete(ctx context.Context, input string, limit int, location string, radius int, moreCompound bool, currentLocation string) (schemas.GoongAutoCompleteResponse, error)
 	CreateGiveRide(ctx context.Context, input schemas.GiveRideRequest, userID uuid.UUID) (schemas.GoongDirectionsResponse, uuid.UUID, error)
 	CreateHitchRide(ctx context.Context, input schemas.HitchRideRequest, userID uuid.UUID) (schemas.GoongDirectionsResponse, uuid.UUID, error)
-	GetGeoCode(ctx context.Context, point schemas.Point) (schemas.GeoCodeLocationResponse, error)
+	GetGeoCode(ctx context.Context, point schemas.Point, currentLocation schemas.Point) (schemas.GeoCodeLocationResponse, error)
 	GetLocationFromPlaceID(ctx context.Context, placeID string) (schemas.Point, error)
 	GetDistanceFromCurrentLocation(ctx context.Context, currentLocation schemas.Point, destinationPoint []schemas.Point) (schemas.GoongDistanceMatrixResponse, error)
 }
@@ -352,7 +352,7 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 }
 
 // GetGeoCode returns the geocode information for the given point
-func (s *MapService) GetGeoCode(ctx context.Context, point schemas.Point) (schemas.GeoCodeLocationResponse, error) {
+func (s *MapService) GetGeoCode(ctx context.Context, point schemas.Point, currentLocation schemas.Point) (schemas.GeoCodeLocationResponse, error) {
 	baseURL, err := url.Parse(fmt.Sprintf("%s/geocode", s.cfg.GoongApiURL))
 	if err != nil {
 		return schemas.GeoCodeLocationResponse{}, fmt.Errorf("invalid base URL: %w", err)
@@ -403,27 +403,40 @@ func (s *MapService) GetGeoCode(ctx context.Context, point schemas.Point) (schem
 	}
 
 	optimizedResults := schemas.GeoCodeLocationResponse{
-		Results: make([]schemas.GeoCodeLocation, 0, len(response.Results)),
+		Results: make([]schemas.GeoCodeLocation, len(response.Results)),
 	}
+	destinationPoints := make([]schemas.Point, len(response.Results))
 
-	for _, result := range response.Results {
+	for i, result := range response.Results {
 		addressParts := strings.SplitN(result.FormattedAddress, ",", 2)
-		mainAddress := strings.TrimSpace(addressParts[0])
-		secondaryAddress := ""
-		if len(addressParts) > 1 {
-			secondaryAddress = strings.TrimSpace(addressParts[1])
-		}
-
-		optimizedResults.Results = append(optimizedResults.Results, schemas.GeoCodeLocation{
+		optimizedResults.Results[i] = schemas.GeoCodeLocation{
 			PlaceID:          result.PlaceID,
 			FormattedAddress: result.FormattedAddress,
 			Latitude:         result.Geometry.Location.Lat,
 			Longitude:        result.Geometry.Location.Lng,
-			SecondaryAddress: secondaryAddress,
-			MainAddress:      mainAddress,
-		})
+			MainAddress:      strings.TrimSpace(addressParts[0]),
+			SecondaryAddress: strings.TrimSpace(strings.Join(addressParts[1:], ",")),
+		}
+		destinationPoints[i] = schemas.Point{
+			Lat: result.Geometry.Location.Lat,
+			Lng: result.Geometry.Location.Lng,
+		}
 	}
 
+	// Calculate the distance from the current
+	distanceMatrix, err := s.GetDistanceFromCurrentLocation(ctx, currentLocation, destinationPoints)
+	if err != nil {
+		return schemas.GeoCodeLocationResponse{}, err
+	}
+
+	// Check if the distance matrix has the same number of rows as the number of results
+	if len(distanceMatrix.Rows) != len(optimizedResults.Results) {
+		return schemas.GeoCodeLocationResponse{}, fmt.Errorf("distance matrix has %d rows, but there are %d results", len(distanceMatrix.Rows), len(optimizedResults.Results))
+	}
+
+	for i := range optimizedResults.Results {
+		optimizedResults.Results[i].Distance = float64(distanceMatrix.Rows[0].Elements[i].Distance.Value)
+	}
 	return optimizedResults, nil
 }
 
