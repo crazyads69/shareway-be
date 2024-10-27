@@ -990,6 +990,10 @@ paths:
         in: query
         name: more_compound
         type: boolean
+      - description: Current location coordinates (lat,lng)
+        in: query
+        name: current_location
+        type: string
       produces:
       - application/json
       responses:

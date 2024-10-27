@@ -715,6 +715,12 @@ const docTemplate = `{
                         "description": "Include more compound results",
                         "name": "more_compound",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Current location coordinates (lat,lng)",
+                        "name": "current_location",
+                        "in": "query"
                     }
                 ],
                 "responses": {

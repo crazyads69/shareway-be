@@ -36,6 +36,7 @@ func NewMapController(mapsService service.IMapService, validate *validator.Valid
 // @Param location query string false "Location coordinates (lat,lng)"
 // @Param radius query int false "Search radius in meters"
 // @Param more_compound query bool false "Include more compound results"
+// @Param current_location query string false "Current location coordinates (lat,lng)"
 // @Success 200 {object} helper.Response{data=schemas.GoongAutoCompleteResponse} "Successfully retrieved autocomplete data"
 // @Failure 400 {object} helper.Response "Invalid request query"
 // @Failure 500 {object} helper.Response "Failed to get autocomplete data"
