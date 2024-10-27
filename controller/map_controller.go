@@ -265,7 +265,7 @@ func (ctrl *MapController) GetGeoCode(ctx *gin.Context) {
 		return
 	}
 
-	geocode, err := ctrl.MapsService.GetGeoCode(ctx.Request.Context(), req.Point)
+	optimizedResults, err := ctrl.MapsService.GetGeoCode(ctx.Request.Context(), req.Point)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -274,20 +274,6 @@ func (ctrl *MapController) GetGeoCode(ctx *gin.Context) {
 		)
 		helper.GinResponse(ctx, 500, response)
 		return
-	}
-
-	optimizedResults := schemas.GeoCodeLocationResponse{
-		Results: make([]schemas.GeoCodeLocation, 0, len(geocode.Results)),
-	}
-
-	for _, result := range geocode.Results {
-		optimizedResult := schemas.GeoCodeLocation{
-			PlaceID:          result.PlaceID,
-			FormattedAddress: result.FormattedAddress,
-			Latitude:         result.Geometry.Location.Lat,
-			Longitude:        result.Geometry.Location.Lng,
-		}
-		optimizedResults.Results = append(optimizedResults.Results, optimizedResult)
 	}
 
 	response := helper.SuccessResponse(

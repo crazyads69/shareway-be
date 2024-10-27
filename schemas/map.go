@@ -194,6 +194,9 @@ type GeoCodeLocation struct {
 	FormattedAddress string  `json:"formatted_address"`
 	Latitude         float64 `json:"latitude"`
 	Longitude        float64 `json:"longitude"`
+	MainAddress      string  `json:"main_address"` // Main address of the location
+	SecondaryAddress string  `json:"secondary_address"`
+	Distance         float64 `json:"distance,omitempty"` // Distance from the location (in kilometers) for which the geocode is performed
 }
 
 // Define GeoCodeLocationResponse struct

@@ -23,7 +23,7 @@ type IMapService interface {
 	GetAutoComplete(ctx context.Context, input string, limit int, location string, radius int, moreCompound bool, currentLocation string) (schemas.GoongAutoCompleteResponse, error)
 	CreateGiveRide(ctx context.Context, input schemas.GiveRideRequest, userID uuid.UUID) (schemas.GoongDirectionsResponse, uuid.UUID, error)
 	CreateHitchRide(ctx context.Context, input schemas.HitchRideRequest, userID uuid.UUID) (schemas.GoongDirectionsResponse, uuid.UUID, error)
-	GetGeoCode(ctx context.Context, point schemas.Point) (schemas.GoongReverseGeocodeResponse, error)
+	GetGeoCode(ctx context.Context, point schemas.Point) (schemas.GeoCodeLocationResponse, error)
 	GetLocationFromPlaceID(ctx context.Context, placeID string) (schemas.Point, error)
 	GetDistanceFromCurrentLocation(ctx context.Context, currentLocation schemas.Point, destinationPoint []schemas.Point) (schemas.GoongDistanceMatrixResponse, error)
 }
@@ -352,10 +352,10 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 }
 
 // GetGeoCode returns the geocode information for the given point
-func (s *MapService) GetGeoCode(ctx context.Context, point schemas.Point) (schemas.GoongReverseGeocodeResponse, error) {
+func (s *MapService) GetGeoCode(ctx context.Context, point schemas.Point) (schemas.GeoCodeLocationResponse, error) {
 	baseURL, err := url.Parse(fmt.Sprintf("%s/geocode", s.cfg.GoongApiURL))
 	if err != nil {
-		return schemas.GoongReverseGeocodeResponse{}, fmt.Errorf("invalid base URL: %w", err)
+		return schemas.GeoCodeLocationResponse{}, fmt.Errorf("invalid base URL: %w", err)
 	}
 
 	params := url.Values{
@@ -369,37 +369,62 @@ func (s *MapService) GetGeoCode(ctx context.Context, point schemas.Point) (schem
 	var response schemas.GoongReverseGeocodeResponse
 
 	cachedData, err := s.redisClient.Get(ctx, cacheKey).Bytes()
-	if err == nil {
-		if err := json.Unmarshal(cachedData, &response); err != nil {
-			return schemas.GoongReverseGeocodeResponse{}, err
+	if err != nil && err != redis.Nil {
+		return schemas.GeoCodeLocationResponse{}, fmt.Errorf("redis get error: %w", err)
+	}
+
+	if err == redis.Nil {
+		resp, err := http.Get(url)
+		if err != nil {
+			return schemas.GeoCodeLocationResponse{}, fmt.Errorf("http get error: %w", err)
 		}
-		return response, nil
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return schemas.GeoCodeLocationResponse{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return schemas.GeoCodeLocationResponse{}, fmt.Errorf("read body error: %w", err)
+		}
+
+		if err := json.Unmarshal(body, &response); err != nil {
+			return schemas.GeoCodeLocationResponse{}, fmt.Errorf("unmarshal error: %w", err)
+		}
+
+		if err := s.redisClient.Set(ctx, cacheKey, body, time.Second*time.Duration(s.cfg.GoongCachePlaceDetailDuration)).Err(); err != nil {
+			return schemas.GeoCodeLocationResponse{}, fmt.Errorf("redis set error: %w", err)
+		}
+	} else {
+		if err := json.Unmarshal(cachedData, &response); err != nil {
+			return schemas.GeoCodeLocationResponse{}, fmt.Errorf("unmarshal cached data error: %w", err)
+		}
 	}
 
-	resp, err := http.Get(url)
-	if err != nil {
-		return schemas.GoongReverseGeocodeResponse{}, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return schemas.GoongReverseGeocodeResponse{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	optimizedResults := schemas.GeoCodeLocationResponse{
+		Results: make([]schemas.GeoCodeLocation, 0, len(response.Results)),
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return schemas.GoongReverseGeocodeResponse{}, err
+	for _, result := range response.Results {
+		addressParts := strings.SplitN(result.FormattedAddress, ",", 2)
+		mainAddress := strings.TrimSpace(addressParts[0])
+		secondaryAddress := ""
+		if len(addressParts) > 1 {
+			secondaryAddress = strings.TrimSpace(addressParts[1])
+		}
+
+		optimizedResults.Results = append(optimizedResults.Results, schemas.GeoCodeLocation{
+			PlaceID:          result.PlaceID,
+			FormattedAddress: result.FormattedAddress,
+			Latitude:         result.Geometry.Location.Lat,
+			Longitude:        result.Geometry.Location.Lng,
+			SecondaryAddress: secondaryAddress,
+			MainAddress:      mainAddress,
+		})
 	}
 
-	if err := json.Unmarshal(body, &response); err != nil {
-		return schemas.GoongReverseGeocodeResponse{}, err
-	}
-
-	if err := s.redisClient.Set(ctx, cacheKey, body, time.Second*time.Duration(s.cfg.GoongCachePlaceDetailDuration)).Err(); err != nil {
-		return schemas.GoongReverseGeocodeResponse{}, err
-	}
-
-	return response, nil
+	return optimizedResults, nil
 }
 
 // GetDistanceFromCurrentLocation returns the distance matrix from the current location to the destination points
