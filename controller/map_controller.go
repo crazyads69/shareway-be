@@ -53,7 +53,7 @@ func (ctrl *MapController) GetAutoComplete(ctx *gin.Context) {
 		return
 	}
 
-	places, err := ctrl.MapsService.GetAutoComplete(ctx.Request.Context(), req.Input, req.Limit, req.Location, req.Radius, req.MoreCompound)
+	places, err := ctrl.MapsService.GetAutoComplete(ctx.Request.Context(), req.Input, req.Limit, req.Location, req.Radius, req.MoreCompound, req.CurrentLocation)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,

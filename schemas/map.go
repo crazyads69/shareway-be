@@ -4,11 +4,12 @@ import "github.com/google/uuid"
 
 // Define AutoCompleteRequest struct
 type AutoCompleteRequest struct {
-	Input        string `form:"input" binding:"required"`
-	Location     string `form:"location"`      // Location (latitude,longitude) for which the autocomplete is performed
-	Limit        int    `form:"limit"`         // Limit the number of results returned default is 10
-	Radius       int    `form:"radius"`        // The distance (in kilometers) within which to return place results (default: 50 km)
-	MoreCompound bool   `form:"more_compound"` // If true, the API will return more compound results (autocomplete returns fields like district, commune, province. Defaults to false.)
+	Input           string `form:"input" binding:"required"`
+	Location        string `form:"location"`         // Location (latitude,longitude) for which the autocomplete is performed
+	Limit           int    `form:"limit"`            // Limit the number of results returned default is 10
+	Radius          int    `form:"radius"`           // The distance (in kilometers) within which to return place results (default: 50 km)
+	MoreCompound    bool   `form:"more_compound"`    // If true, the API will return more compound results (autocomplete returns fields like district, commune, province. Defaults to false.)
+	CurrentLocation string `form:"current_location"` // Current location of the user
 }
 
 // Define GoongAutoCompleteResponse struct
@@ -31,6 +32,7 @@ type Prediction struct {
 	DisplayType          string               `json:"display_type"`
 	Score                float64              `json:"score"`
 	PlusCode             PlusCode             `json:"plus_code"`
+	Distance             float64              `json:"distance"` // Distance from the location (in kilometers) for which the autocomplete is performed
 }
 
 // Define MatchedSubstring struct
@@ -210,4 +212,21 @@ type PlaceDetail struct {
 	FormattedAddress string   `json:"formatted_address"`
 	Geometry         Geometry `json:"geometry"`
 	Name             string   `json:"name"`
+}
+
+// Define GoongDistanceMatrixResponse struct
+type GoongDistanceMatrixResponse struct {
+	Rows []struct {
+		Elements []struct {
+			Status   string `json:"status"`
+			Duration struct {
+				Text  string `json:"text"`
+				Value int    `json:"value"`
+			} `json:"duration"`
+			Distance struct {
+				Text  string `json:"text"`
+				Value int    `json:"value"`
+			} `json:"distance"`
+		} `json:"elements"`
+	} `json:"rows"`
 }

@@ -3,6 +3,8 @@ package helper
 import (
 	"math"
 	"shareway/schemas"
+	"strconv"
+	"strings"
 
 	"github.com/twpayne/go-polyline"
 )
@@ -61,4 +63,16 @@ func DecodePolyline(encodedPolyline string) []schemas.Point {
 	}
 
 	return points
+}
+
+func ConvertStringToLocation(point string) schemas.Point {
+	// Split the string into latitude and longitude
+	latLng := strings.Split(point, ",")
+	lat, _ := strconv.ParseFloat(latLng[0], 64)
+	lng, _ := strconv.ParseFloat(latLng[1], 64)
+
+	return schemas.Point{
+		Lat: lat,
+		Lng: lng,
+	}
 }
