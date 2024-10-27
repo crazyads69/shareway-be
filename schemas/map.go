@@ -153,8 +153,8 @@ type HitchRideResponse struct {
 
 // Type GeoCodeRequest struct
 type GeoCodeRequest struct {
-	Point           Point  `json:"point" binding:"required"`            // Point for which the geocode is performed
-	CurrentLocation string `json:"current_location" binding:"required"` // Current location of the user
+	Point           Point `json:"point" binding:"required"`            // Point for which the geocode is performed
+	CurrentLocation Point `json:"current_location" binding:"required"` // Current location of the user
 }
 
 // Define GoongGeocodeResponse struct

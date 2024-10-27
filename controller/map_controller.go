@@ -265,7 +265,7 @@ func (ctrl *MapController) GetGeoCode(ctx *gin.Context) {
 		return
 	}
 
-	optimizedResults, err := ctrl.MapsService.GetGeoCode(ctx.Request.Context(), req.Point)
+	optimizedResults, err := ctrl.MapsService.GetGeoCode(ctx.Request.Context(), req.Point, req.CurrentLocation)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
