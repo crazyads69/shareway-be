@@ -1308,7 +1308,11 @@ const docTemplate = `{
             "properties": {
                 "current_location": {
                     "description": "Current location of the user",
-                    "type": "string"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/schemas.Point"
+                        }
+                    ]
                 },
                 "point": {
                     "description": "Point for which the geocode is performed",

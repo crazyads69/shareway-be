@@ -429,14 +429,10 @@ func (s *MapService) GetGeoCode(ctx context.Context, point schemas.Point, curren
 		return schemas.GeoCodeLocationResponse{}, err
 	}
 
-	// Check if the distance matrix has the same number of rows as the number of results
-	if len(distanceMatrix.Rows) != len(optimizedResults.Results) {
-		return schemas.GeoCodeLocationResponse{}, fmt.Errorf("distance matrix has %d rows, but there are %d results", len(distanceMatrix.Rows), len(optimizedResults.Results))
-	}
-
 	for i := range optimizedResults.Results {
 		optimizedResults.Results[i].Distance = float64(distanceMatrix.Rows[0].Elements[i].Distance.Value)
 	}
+
 	return optimizedResults, nil
 }
 

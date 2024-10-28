@@ -48,8 +48,9 @@ definitions:
   schemas.GeoCodeRequest:
     properties:
       current_location:
+        allOf:
+        - $ref: '#/definitions/schemas.Point'
         description: Current location of the user
-        type: string
       point:
         allOf:
         - $ref: '#/definitions/schemas.Point'
