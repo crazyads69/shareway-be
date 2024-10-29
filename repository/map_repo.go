@@ -2,19 +2,20 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"shareway/helper"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
 type IMapsRepository interface {
 	CreateGiveRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point, startTime time.Time, vehicleID uuid.UUID) (uuid.UUID, error)
 	CreateHitchRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point, startTime time.Time) (uuid.UUID, error)
-	CalculateFareForRideOffer(rideOfferID uuid.UUID, vehicleID uuid.UUID) (float64, error)
 	GetRideOfferDetails(rideOfferID uuid.UUID) (migration.RideOffer, error)
 	GetRideRequestDetails(rideRequestID uuid.UUID) (migration.RideRequest, error)
 	SuggestRideRequests(userID uuid.UUID, rideOfferID uuid.UUID) ([]migration.RideRequest, error)
@@ -28,34 +29,17 @@ func NewMapsRepository(db *gorm.DB) IMapsRepository {
 	return &MapsRepository{db: db}
 }
 
-func (r *MapsRepository) CalculateFareForRideOffer(rideOfferID uuid.UUID, vehicleID uuid.UUID) (float64, error) {
-	// Optimize by using a single query to fetch all required data
-	var result struct {
-		FuelConsumed float64
-		Distance     int
-		FuelPrice    float64
-	}
-
-	err := r.db.Table("vehicles").
-		Select("vehicle_types.fuel_consumed, ride_offers.distance, fuel_prices.price").
-		Joins("JOIN vehicle_types ON vehicles.vehicle_type_id = vehicle_types.id").
-		Joins("JOIN ride_offers ON ride_offers.id = ?", rideOfferID).
-		Joins("JOIN fuel_prices ON fuel_prices.fuel_type = ?", "Xăng RON 95-III").
-		Where("vehicles.id = ?", vehicleID).
-		First(&result).Error
-
-	if err != nil {
-		return 0, err
-	}
-
-	// Calculate and return the fare
-	return result.FuelConsumed / 100 * float64(result.Distance) * result.FuelPrice, nil
-}
-
 func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point, startTime time.Time, vehicleID uuid.UUID) (uuid.UUID, error) {
 	// Validate route data
 	if len(route.Routes) == 0 || len(route.Routes[0].Legs) == 0 {
+		log.Error().Msg("Invalid route data")
 		return uuid.Nil, errors.New("invalid route data")
+	}
+
+	// Check if the vehicle exists and belongs to the user
+	var vehicle migration.Vehicle
+	if err := r.db.Preload("VehicleType").Where("id = ? AND user_id = ?", vehicleID, userID).First(&vehicle).Error; err != nil {
+		return uuid.Nil, err
 	}
 
 	firstRoute := route.Routes[0]
@@ -69,6 +53,15 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 		totalDuration += leg.Duration.Value
 	}
 	totalDistance /= 1000 // Convert to kilometers
+
+	// Calculate fare
+	var fuelPrice migration.FuelPrice
+	if err := r.db.Where("fuel_type = ?", "Xăng RON 95-III").First(&fuelPrice).Error; err != nil {
+		return uuid.Nil, fmt.Errorf("failed to fetch fuel price: %w", err)
+	}
+
+	fuelConsumed := vehicle.VehicleType.FuelConsumed / 100
+	fare := fuelConsumed * fuelPrice.Price * float64(totalDistance)
 
 	// Create ride offer
 	rideOffer := migration.RideOffer{
@@ -88,20 +81,17 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 		StartTime:              startTime,
 		EndTime:                startTime.Add(time.Duration(totalDuration) * time.Second),
 		VehicleID:              vehicleID,
+		Fare:                   fare,
 	}
 
 	// Use a transaction to ensure atomicity
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&rideOffer).Error; err != nil {
+			log.Error().Err(err).Msg("Failed to create ride offer")
 			return err
 		}
 
-		fare, err := r.CalculateFareForRideOffer(rideOffer.ID, vehicleID)
-		if err != nil {
-			return err
-		}
-
-		return tx.Model(&rideOffer).Update("fare", fare).Error
+		return nil
 	})
 
 	if err != nil {
@@ -110,7 +100,6 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 
 	return rideOffer.ID, nil
 }
-
 func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point, startTime time.Time) (uuid.UUID, error) {
 	// Validate route data
 	if len(route.Routes) == 0 || len(route.Routes[0].Legs) == 0 {
