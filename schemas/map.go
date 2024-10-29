@@ -288,3 +288,35 @@ type RideRequestDetail struct {
 	StartTime             time.Time `json:"start_time"`
 	EndTime               time.Time `json:"end_time"`
 }
+
+// Define SuggestRideOfferRequest struct
+type SuggestRideOfferRequest struct {
+	RideRequestID uuid.UUID `json:"ride_request_id" binding:"required,uuid"` // Ride request ID for which the user wants to suggest a ride offer
+}
+
+// Define SuggestRideOfferResponse struct
+type SuggestRideOfferResponse struct {
+	RideOffers []RideOfferDetail `json:"ride_offers"`
+}
+
+// Define RideOfferDetail struct
+type RideOfferDetail struct {
+	ID                     uuid.UUID     `json:"ride_offer_id"`
+	User                   UserInfo      `json:"user"`
+	Vehicle                VehicleDetail `json:"vehicle"`
+	StartLatitude          float64       `json:"start_latitude"`
+	StartLongitude         float64       `json:"start_longitude"`
+	EndLatitude            float64       `json:"end_latitude"`
+	EndLongitude           float64       `json:"end_longitude"`
+	StartAddress           string        `json:"start_address"`
+	EndAddress             string        `json:"end_address"`
+	EncodedPolyline        string        `json:"encoded_polyline"`
+	Distance               float64       `json:"distance"`
+	Duration               int           `json:"duration"`
+	DriverCurrentLatitude  float64       `json:"driver_current_latitude"`
+	DriverCurrentLongitude float64       `json:"driver_current_longitude"`
+	StartTime              time.Time     `json:"start_time"`
+	EndTime                time.Time     `json:"end_time"`
+	Status                 string        `json:"status"`
+	Fare                   float64       `json:"fare"`
+}

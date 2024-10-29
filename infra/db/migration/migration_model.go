@@ -101,27 +101,6 @@ type Vehicle struct {
 	RideOffers    []RideOffer // One-to-many relationship with RideOffer
 }
 
-// RideOffer represents a ride offer in the system
-// type RideOffer struct {
-// 	ID                     uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-// 	CreatedAt              time.Time `gorm:"autoCreateTime"`
-// 	UpdatedAt              time.Time `gorm:"autoUpdateTime"`
-// 	UserID                 uuid.UUID `gorm:"type:uuid"` // user who offered the ride
-// 	User                   User      `gorm:"foreignKey:UserID"`
-// 	VehicleID              uuid.UUID `gorm:"type:uuid"` // vehicle used for the ride
-// 	Vehicle                Vehicle   `gorm:"foreignKey:VehicleID"`
-// 	StartLatitude          float64
-// 	StartLongitude         float64
-// 	EndLatitude            float64
-// 	EndLongitude           float64
-// 	Waypoints              []Waypoint `gorm:"foreignKey:RideOfferID"` // One-to-many relationship with Waypoint
-// 	DriverCurrentLatitude  float64
-// 	DriverCurrentLongitude float64
-// 	Status                 string    `gorm:"default:'active'"` // active, completed, cancelled
-// 	Rides                  []Ride    `gorm:"foreignKey:RideOfferID"`
-// 	StartTime              time.Time // Time to start the ride (could be in the future or right now)
-// }
-
 type RideOffer struct {
 	ID                     uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
 	CreatedAt              time.Time `gorm:"autoCreateTime"`

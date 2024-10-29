@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"shareway/helper"
@@ -30,6 +31,7 @@ type IMapService interface {
 	GetRideRequestDetails(ctx context.Context, rideRequestID uuid.UUID) (migration.RideRequest, error)
 	GetDistanceFromCurrentLocation(ctx context.Context, currentLocation schemas.Point, destinationPoint []schemas.Point) (schemas.GoongDistanceMatrixResponse, error)
 	SuggestRideRequests(ctx context.Context, userID uuid.UUID, rideOfferID uuid.UUID) ([]migration.RideRequest, error)
+	// SuggestRideOffers(ctx context.Context, userID uuid.UUID, rideRequestID uuid.UUID) ([]migration.RideOffer, error)
 }
 
 type MapService struct {
@@ -138,59 +140,59 @@ func (s *MapService) GetAutoComplete(ctx context.Context, input string, limit in
 	var response schemas.GoongAutoCompleteResponse
 	cachedData, err := s.redisClient.Get(ctx, cacheKey).Bytes()
 	if err == nil {
-		if err := json.Unmarshal(cachedData, &response); err != nil {
-			return schemas.GoongAutoCompleteResponse{}, err
+		if err := json.Unmarshal(cachedData, &response); err == nil {
+			return response, nil
 		}
-	} else {
-		// If cache miss, fetch data from Goong API
-		resp, err := http.Get(url)
-		if err != nil {
-			return schemas.GoongAutoCompleteResponse{}, err
-		}
-		defer resp.Body.Close()
+	}
 
-		if resp.StatusCode != http.StatusOK {
-			return schemas.GoongAutoCompleteResponse{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-		}
+	// If cache miss or unmarshal failed, fetch data from Goong API
+	resp, err := http.Get(url)
+	if err != nil {
+		return schemas.GoongAutoCompleteResponse{}, fmt.Errorf("failed to fetch from Goong API: %w", err)
+	}
+	defer resp.Body.Close()
 
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return schemas.GoongAutoCompleteResponse{}, err
-		}
+	if resp.StatusCode != http.StatusOK {
+		return schemas.GoongAutoCompleteResponse{}, fmt.Errorf("unexpected status code from Goong API: %d", resp.StatusCode)
+	}
 
-		if err := json.Unmarshal(body, &response); err != nil {
-			return schemas.GoongAutoCompleteResponse{}, err
-		}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return schemas.GoongAutoCompleteResponse{}, fmt.Errorf("failed to read response body: %w", err)
+	}
 
-		// Cache the response
-		if err := s.redisClient.Set(ctx, cacheKey, body, time.Second*time.Duration(s.cfg.GoongCacheAutocompleteDuration)).Err(); err != nil {
-			return schemas.GoongAutoCompleteResponse{}, err
-		}
+	if err := json.Unmarshal(body, &response); err != nil {
+		return schemas.GoongAutoCompleteResponse{}, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	// Cache the response
+	if err := s.redisClient.Set(ctx, cacheKey, body, time.Second*time.Duration(s.cfg.GoongCacheAutocompleteDuration)).Err(); err != nil {
+		// Log the error but don't return it
+		log.Printf("Failed to cache response: %v", err)
 	}
 
 	if currentLocation != "" {
 		currentLocationPoint := helper.ConvertStringToLocation(currentLocation)
-		if err != nil {
-			return schemas.GoongAutoCompleteResponse{}, err
-		}
 
 		destinationPoints := make([]schemas.Point, len(response.Predictions))
 		for i, prediction := range response.Predictions {
 			point, err := s.GetLocationFromPlaceID(ctx, prediction.PlaceID)
 			if err != nil {
-				return schemas.GoongAutoCompleteResponse{}, fmt.Errorf("failed to get location for place ID %s: %w", prediction.PlaceID, err)
+				log.Printf("Failed to get location for place ID %s: %v", prediction.PlaceID, err)
+				continue
 			}
 			destinationPoints[i] = point
 		}
 
 		distanceMatrix, err := s.GetDistanceFromCurrentLocation(ctx, currentLocationPoint, destinationPoints)
 		if err != nil {
-			return schemas.GoongAutoCompleteResponse{}, err
-		}
-
-		for i := range response.Predictions {
-			// Explicitly convert int to float64
-			response.Predictions[i].Distance = float64(distanceMatrix.Rows[0].Elements[i].Distance.Value) / 1000 // Convert to km
+			log.Printf("Failed to get distance matrix: %v", err)
+		} else {
+			for i := range response.Predictions {
+				if i < len(distanceMatrix.Rows[0].Elements) {
+					response.Predictions[i].Distance = float64(distanceMatrix.Rows[0].Elements[i].Distance.Value) / 1000 // Convert to km
+				}
+			}
 		}
 	}
 
@@ -539,6 +541,11 @@ func (s *MapService) GetRideRequestDetails(ctx context.Context, rideRequestID uu
 func (s *MapService) SuggestRideRequests(ctx context.Context, userID uuid.UUID, rideOfferID uuid.UUID) ([]migration.RideRequest, error) {
 	return s.repo.SuggestRideRequests(userID, rideOfferID)
 }
+
+// // SuggestRideOffers returns the suggested ride offers for the given user and ride request
+// func (s *MapService) SuggestRideOffers(ctx context.Context, userID uuid.UUID, rideRequestID uuid.UUID) ([]migration.RideOffer, error) {
+// 	return s.repo.SuggestRideOffers(userID, rideRequestID)
+// }
 
 // Make sure MapsService implements IMapsService
 var _ IMapService = (*MapService)(nil)
