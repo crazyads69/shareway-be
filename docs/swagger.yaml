@@ -81,15 +81,34 @@ definitions:
         items:
           type: string
         type: array
+      start_time:
+        description: Start time of the ride (if not provided, the ride is immediate)
+        type: string
+      vehicle_id:
+        description: Vehicle ID for the ride that user has registered
+        type: string
     required:
     - place_list
+    - vehicle_id
     type: object
   schemas.GiveRideResponse:
     properties:
+      distance:
+        type: number
+      duration:
+        type: integer
+      end_time:
+        type: string
+      fare:
+        type: number
       ride_offer_id:
         type: string
       route:
         $ref: '#/definitions/schemas.GoongDirectionsResponse'
+      start_time:
+        type: string
+      vehicle:
+        $ref: '#/definitions/schemas.VehicleDetail'
     type: object
   schemas.GoongAutoCompleteResponse:
     properties:
@@ -228,15 +247,26 @@ definitions:
         items:
           type: string
         type: array
+      start_time:
+        description: Start time of the ride (if not provided, the ride is immediate)
+        type: string
     required:
     - place_list
     type: object
   schemas.HitchRideResponse:
     properties:
+      distance:
+        type: number
+      duration:
+        type: integer
+      end_time:
+        type: string
       ride_request_id:
         type: string
       route:
         $ref: '#/definitions/schemas.GoongDirectionsResponse'
+      start_time:
+        type: string
     type: object
   schemas.InitRegisterRequest:
     properties:
@@ -509,6 +539,21 @@ definitions:
     type: object
   schemas.Vehicle:
     properties:
+      fuel_consumed:
+        type: number
+      name:
+        type: string
+      vehicle_id:
+        type: string
+    required:
+    - vehicle_id
+    type: object
+  schemas.VehicleDetail:
+    properties:
+      fuel_consumed:
+        type: number
+      license_plate:
+        type: string
       name:
         type: string
       vehicle_id:

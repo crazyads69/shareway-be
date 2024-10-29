@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"shareway/helper"
+	"shareway/infra/db/migration"
 	"shareway/repository"
 	"shareway/schemas"
 	"shareway/util"
@@ -25,6 +26,8 @@ type IMapService interface {
 	CreateHitchRide(ctx context.Context, input schemas.HitchRideRequest, userID uuid.UUID) (schemas.GoongDirectionsResponse, uuid.UUID, error)
 	GetGeoCode(ctx context.Context, point schemas.Point, currentLocation schemas.Point) (schemas.GeoCodeLocationResponse, error)
 	GetLocationFromPlaceID(ctx context.Context, placeID string) (schemas.Point, error)
+	GetRideOfferDetails(ctx context.Context, rideOfferID uuid.UUID) (migration.RideOffer, error)
+	GetRideRequestDetails(ctx context.Context, rideRequestID uuid.UUID) (migration.RideRequest, error)
 	GetDistanceFromCurrentLocation(ctx context.Context, currentLocation schemas.Point, destinationPoint []schemas.Point) (schemas.GoongDistanceMatrixResponse, error)
 }
 
@@ -186,7 +189,7 @@ func (s *MapService) GetAutoComplete(ctx context.Context, input string, limit in
 
 		for i := range response.Predictions {
 			// Explicitly convert int to float64
-			response.Predictions[i].Distance = float64(distanceMatrix.Rows[0].Elements[i].Distance.Value)
+			response.Predictions[i].Distance = float64(distanceMatrix.Rows[0].Elements[i].Distance.Value) / 1000 // Convert to km
 		}
 	}
 
@@ -264,7 +267,20 @@ func (s *MapService) CreateGiveRide(ctx context.Context, input schemas.GiveRideR
 		Lng: optimizedPoints[0].Lng,
 	}
 
-	rideOfferID, err := s.repo.CreateGiveRide(response, userID, currentLocation)
+	// Check start_time from input and set the ride request status accordingly
+	// If start_time is not provided, the ride is immediate
+	var startTime time.Time
+	if input.StartTime != "" {
+		// Parse the start time to UTC time
+		startTime, err = time.Parse(time.RFC3339, input.StartTime)
+		if err != nil {
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to parse start time: %w", err)
+		}
+	} else {
+		startTime = time.Now().UTC()
+	}
+
+	rideOfferID, err := s.repo.CreateGiveRide(response, userID, currentLocation, startTime, input.VehicleID)
 	if err != nil {
 		return schemas.GoongDirectionsResponse{}, uuid.Nil, err
 	}
@@ -343,7 +359,20 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 		Lng: optimizedPoints[0].Lng,
 	}
 
-	rideRequestID, err := s.repo.CreateHitchRide(response, userID, currentLocation)
+	// Check start_time from input and set the ride request status accordingly
+	// If start_time is not provided, the ride is immediate
+	var startTime time.Time
+	if input.StartTime != "" {
+		// Parse the start time to UTC time
+		startTime, err = time.Parse(time.RFC3339, input.StartTime)
+		if err != nil {
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to parse start time: %w", err)
+		}
+	} else {
+		startTime = time.Now().UTC()
+	}
+
+	rideRequestID, err := s.repo.CreateHitchRide(response, userID, currentLocation, startTime)
 	if err != nil {
 		return schemas.GoongDirectionsResponse{}, uuid.Nil, err
 	}
@@ -430,7 +459,7 @@ func (s *MapService) GetGeoCode(ctx context.Context, point schemas.Point, curren
 	}
 
 	for i := range optimizedResults.Results {
-		optimizedResults.Results[i].Distance = float64(distanceMatrix.Rows[0].Elements[i].Distance.Value)
+		optimizedResults.Results[i].Distance = float64(distanceMatrix.Rows[0].Elements[i].Distance.Value) / 1000 // Convert to km
 	}
 
 	return optimizedResults, nil
@@ -493,6 +522,16 @@ func (s *MapService) GetDistanceFromCurrentLocation(ctx context.Context, current
 	}
 
 	return response, nil
+}
+
+// GetRideOfferDetails returns the ride offer details for the given ride offer ID
+func (s *MapService) GetRideOfferDetails(ctx context.Context, rideOfferID uuid.UUID) (migration.RideOffer, error) {
+	return s.repo.GetRideOfferDetails(rideOfferID)
+}
+
+// GetRideRequestDetails returns the ride request details for the given ride request ID
+func (s *MapService) GetRideRequestDetails(ctx context.Context, rideRequestID uuid.UUID) (migration.RideRequest, error) {
+	return s.repo.GetRideRequestDetails(rideRequestID)
 }
 
 // Make sure MapsService implements IMapsService

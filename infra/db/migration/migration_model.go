@@ -137,13 +137,15 @@ type RideOffer struct {
 	EncodedPolyline        string `gorm:"type:text"` // Store the overview_polyline here
 	DriverCurrentLatitude  float64
 	DriverCurrentLongitude float64
-	StartAddress           string `gorm:"type:text"`
-	EndAddress             string `gorm:"type:text"`
-	Distance               int    // in meters
-	Duration               int    // in seconds
-	Status                 string `gorm:"default:'created'"` // created, active, matched, completed, cancelled
-	Rides                  []Ride `gorm:"foreignKey:RideOfferID"`
+	StartAddress           string  `gorm:"type:text"`
+	EndAddress             string  `gorm:"type:text"`
+	Distance               float64 // in kilometers
+	Duration               int     // in seconds
+	Status                 string  `gorm:"default:'created'"` // created, active, matched, completed, cancelled
+	Rides                  []Ride  `gorm:"foreignKey:RideOfferID"`
 	StartTime              time.Time
+	EndTime                time.Time // Time to end the ride (end time = start time + duration)
+	Fare                   float64   // Total price of the ride offer (to show to the hitchhiker)
 }
 
 // Waypoint represents a point in the route of a RideOffer
@@ -171,13 +173,15 @@ type RideRequest struct {
 	EndLongitude          float64
 	RiderCurrentLatitude  float64
 	RiderCurrentLongitude float64
-	StartAddress          string `gorm:"type:text"`
-	EndAddress            string `gorm:"type:text"`
-	Status                string `gorm:"default:'created'"` // created, active, matched, completed, cancelled
-	Rides                 []Ride `gorm:"foreignKey:RideRequestID"`
-	EncodedPolyline       string `gorm:"type:text"`
-	Distance              int    // in meters
-	Duration              int    // in seconds
+	StartAddress          string  `gorm:"type:text"`
+	EndAddress            string  `gorm:"type:text"`
+	Status                string  `gorm:"default:'created'"` // created, active, matched, completed, cancelled
+	Rides                 []Ride  `gorm:"foreignKey:RideRequestID"`
+	EncodedPolyline       string  `gorm:"type:text"`
+	Distance              float64 // in kilometers
+	Duration              int     // in seconds
+	StartTime             time.Time
+	EndTime               time.Time // Time to end the ride (end time = start time + duration)
 }
 
 // Ride represents a matched ride between an offer and a request

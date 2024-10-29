@@ -14,12 +14,14 @@ import (
 type MapController struct {
 	MapsService service.IMapService
 	validate    *validator.Validate
+	Vehicle     service.IVehicleService
 }
 
-func NewMapController(mapsService service.IMapService, validate *validator.Validate) *MapController {
+func NewMapController(mapsService service.IMapService, validate *validator.Validate, vehicleService service.IVehicleService) *MapController {
 	return &MapController{
 		MapsService: mapsService,
 		validate:    validate,
+		Vehicle:     vehicleService,
 	}
 }
 
@@ -137,10 +139,40 @@ func (ctrl *MapController) CreateGiveRide(ctx *gin.Context) {
 		return
 	}
 
+	// Get the ride offer details
+	rideOffer, err := ctrl.MapsService.GetRideOfferDetails(ctx.Request.Context(), rideOfferID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get ride offer details",
+			"Không thể lấy thông tin chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get the vehicle details
+	vehicle, err := ctrl.Vehicle.GetVehicleFromID(rideOffer.VehicleID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get vehicle details",
+			"Không thể lấy thông tin xe",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	// Create a response with the route and ride offer ID
 	res := schemas.GiveRideResponse{
 		Route:       route,
 		RideOfferID: rideOfferID,
+		Distance:    rideOffer.Distance,
+		Duration:    rideOffer.Duration,
+		StartTime:   rideOffer.StartTime,
+		EndTime:     rideOffer.EndTime,
+		Fare:        rideOffer.Fare,
+		Vehicle:     vehicle,
 	}
 
 	response := helper.SuccessResponse(
@@ -215,10 +247,26 @@ func (ctrl *MapController) CreateHitchRide(ctx *gin.Context) {
 		return
 	}
 
+	// Get the ride request details
+	rideRequest, err := ctrl.MapsService.GetRideRequestDetails(ctx.Request.Context(), rideRequestID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get ride request details",
+			"Không thể lấy thông tin chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	// Create a response with the route and ride request ID
 	res := schemas.HitchRideResponse{
 		Route:         route,
 		RideRequestID: rideRequestID,
+		Distance:      rideRequest.Distance,
+		Duration:      rideRequest.Duration,
+		StartTime:     rideRequest.StartTime,
+		EndTime:       rideRequest.EndTime,
 	}
 
 	response := helper.SuccessResponse(

@@ -9,8 +9,9 @@ type GetVehiclesResponse struct {
 
 // Define the Vehicle schema
 type Vehicle struct {
-	VehicleID uuid.UUID `json:"vehicle_id" binding:"required"`
-	Name      string    `json:"name"`
+	VehicleID    uuid.UUID `json:"vehicle_id" binding:"required"`
+	Name         string    `json:"name"`
+	FuelConsumed float64   `json:"fuel_consumed"`
 }
 
 // Define the RegisterVehicleRequest schema
@@ -19,4 +20,12 @@ type RegisterVehicleRequest struct {
 	UserID       uuid.UUID `json:"user_id" binding:"required,uuid" validate:"required,uuid"`
 	LicensePlate string    `json:"license_plate" binding:"required" validate:"required"`
 	CaVet        string    `json:"ca_vet" binding:"required" validate:"required"`
+}
+
+// Define the VehicleDetail schema
+type VehicleDetail struct {
+	VehicleID    uuid.UUID `json:"vehicle_id" binding:"required"`
+	Name         string    `json:"name"`
+	FuelConsumed float64   `json:"fuel_consumed"`
+	LicensePlate string    `json:"license_plate"`
 }

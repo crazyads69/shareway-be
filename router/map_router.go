@@ -10,6 +10,7 @@ func SetupMapRouter(group *gin.RouterGroup, server *APIServer) {
 	mapController := controller.NewMapController(
 		server.Service.MapService,
 		server.Validate,
+		server.Service.VehicleService,
 	)
 	// GetAutoComplete request
 	group.GET("/autocomplete", mapController.GetAutoComplete)

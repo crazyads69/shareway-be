@@ -1349,7 +1349,8 @@ const docTemplate = `{
         "schemas.GiveRideRequest": {
             "type": "object",
             "required": [
-                "place_list"
+                "place_list",
+                "vehicle_id"
             ],
             "properties": {
                 "place_list": {
@@ -1358,17 +1359,43 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "start_time": {
+                    "description": "Start time of the ride (if not provided, the ride is immediate)",
+                    "type": "string"
+                },
+                "vehicle_id": {
+                    "description": "Vehicle ID for the ride that user has registered",
+                    "type": "string"
                 }
             }
         },
         "schemas.GiveRideResponse": {
             "type": "object",
             "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "fare": {
+                    "type": "number"
+                },
                 "ride_offer_id": {
                     "type": "string"
                 },
                 "route": {
                     "$ref": "#/definitions/schemas.GoongDirectionsResponse"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/schemas.VehicleDetail"
                 }
             }
         },
@@ -1585,17 +1612,33 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "start_time": {
+                    "description": "Start time of the ride (if not provided, the ride is immediate)",
+                    "type": "string"
                 }
             }
         },
         "schemas.HitchRideResponse": {
             "type": "object",
             "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "end_time": {
+                    "type": "string"
+                },
                 "ride_request_id": {
                     "type": "string"
                 },
                 "route": {
                     "$ref": "#/definitions/schemas.GoongDirectionsResponse"
+                },
+                "start_time": {
+                    "type": "string"
                 }
             }
         },
@@ -1998,6 +2041,29 @@ const docTemplate = `{
                 "vehicle_id"
             ],
             "properties": {
+                "fuel_consumed": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "vehicle_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.VehicleDetail": {
+            "type": "object",
+            "required": [
+                "vehicle_id"
+            ],
+            "properties": {
+                "fuel_consumed": {
+                    "type": "number"
+                },
+                "license_plate": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },

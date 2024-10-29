@@ -13,6 +13,7 @@ type IVehicleRepository interface {
 	RegisterVehicle(userID uuid.UUID, vehicleID uuid.UUID, licensePlate string, caVet string) error
 	LicensePlateExists(licensePlate string) (bool, error)
 	CaVetExists(caVet string) (bool, error)
+	GetVehicleFromID(vehicleID uuid.UUID) (schemas.VehicleDetail, error)
 }
 
 type VehicleRepository struct {
@@ -38,8 +39,9 @@ func (r *VehicleRepository) GetVehicles() ([]schemas.Vehicle, error) {
 	// Convert the vehicles to the schema type
 	for i, vehicle := range vehicles {
 		schemaVehicles[i] = schemas.Vehicle{
-			VehicleID: vehicle.ID,
-			Name:      vehicle.Name,
+			VehicleID:    vehicle.ID,
+			Name:         vehicle.Name,
+			FuelConsumed: vehicle.FuelConsumed,
 		}
 	}
 
@@ -90,4 +92,19 @@ func (r *VehicleRepository) CaVetExists(caVet string) (bool, error) {
 		return false, err
 	}
 	return count > 0, nil
+}
+
+// GetVehicleFromID retrieves a vehicle from the database using the vehicle ID
+func (r *VehicleRepository) GetVehicleFromID(vehicleID uuid.UUID) (schemas.VehicleDetail, error) {
+	var vehicle migration.Vehicle
+	if err := r.db.First(&vehicle, vehicleID).Error; err != nil {
+		return schemas.VehicleDetail{}, err
+	}
+
+	return schemas.VehicleDetail{
+		VehicleID:    vehicle.ID,
+		Name:         vehicle.Name,
+		FuelConsumed: vehicle.FuelConsumed,
+		LicensePlate: vehicle.LicensePlate,
+	}, nil
 }

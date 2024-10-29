@@ -1,6 +1,10 @@
 package schemas
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // Define AutoCompleteRequest struct
 type AutoCompleteRequest struct {
@@ -68,7 +72,9 @@ type Point struct {
 // Define GiveRideRequest struct
 type GiveRideRequest struct {
 	// Points []Point `json:"points" binding:"required"` // List of points for the route
-	PlaceList []string `json:"place_list" binding:"required"` // List of places for the route (place_id) from goong api
+	PlaceList []string  `json:"place_list" binding:"required"`      // List of places for the route (place_id) from goong api
+	StartTime string    `json:"start_time,omitempty"`               // Start time of the ride (if not provided, the ride is immediate)
+	VehicleID uuid.UUID `json:"vehicle_id" binding:"required,uuid"` // Vehicle ID for the ride that user has registered
 }
 
 // Define
@@ -137,18 +143,29 @@ type GoongDirectionsResponse struct {
 type GiveRideResponse struct {
 	Route       GoongDirectionsResponse `json:"route"`
 	RideOfferID uuid.UUID               `json:"ride_offer_id"`
+	Distance    float64                 `json:"distance"`
+	Duration    int                     `json:"duration"`
+	StartTime   time.Time               `json:"start_time"`
+	EndTime     time.Time               `json:"end_time"`
+	Fare        float64                 `json:"fare"`
+	Vehicle     VehicleDetail           `json:"vehicle"`
 }
 
 // Define HitchRideRequest struct
 type HitchRideRequest struct {
 	// Points []Point `json:"points" binding:"required"` // List of points for the route
 	PlaceList []string `json:"place_list" binding:"required"` // List of places for the route (place_id) from goong api
+	StartTime string   `json:"start_time,omitempty"`          // Start time of the ride (if not provided, the ride is immediate)
 }
 
 // Define HitchRideResponse struct
 type HitchRideResponse struct {
 	Route         GoongDirectionsResponse `json:"route"`
 	RideRequestID uuid.UUID               `json:"ride_request_id"`
+	StartTime     time.Time               `json:"start_time"`
+	EndTime       time.Time               `json:"end_time"`
+	Distance      float64                 `json:"distance"`
+	Duration      int                     `json:"duration"`
 }
 
 // Type GeoCodeRequest struct
