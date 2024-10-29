@@ -271,7 +271,7 @@ type UserInfo struct {
 
 // Define RideRequestDetail struct
 type RideRequestDetail struct {
-	ID                    uuid.UUID `json:"id"`
+	ID                    uuid.UUID `json:"ride_request_id"`
 	User                  UserInfo  `json:"user"`
 	StartLatitude         float64   `json:"start_latitude"`
 	StartLongitude        float64   `json:"start_longitude"`

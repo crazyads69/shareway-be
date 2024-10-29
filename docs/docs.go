@@ -2090,7 +2090,7 @@ const docTemplate = `{
                 "end_time": {
                     "type": "string"
                 },
-                "id": {
+                "ride_request_id": {
                     "type": "string"
                 },
                 "rider_current_latitude": {
