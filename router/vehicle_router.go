@@ -13,6 +13,7 @@ func SetupVehicleRouter(group *gin.RouterGroup, server *APIServer) {
 	)
 	group.GET("/vehicles", vehicleController.GetVehicles)
 	group.POST("/register-vehicle", vehicleController.RegisterVehicle)
+	group.GET("/get-vehicle", vehicleController.GetVehicle)
 	// group.GET("/vehicles/:id", vehicleController.GetVehicle)
 	// group.POST("/vehicles", vehicleController.CreateVehicle)
 	// group.PUT("/vehicles/:id", vehicleController.UpdateVehicle)

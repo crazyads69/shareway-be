@@ -168,3 +168,54 @@ func (ctrl *VehicleController) RegisterVehicle(ctx *gin.Context) {
 	response := helper.SuccessResponse(nil, "Successfully registered vehicle", "Đăng ký xe thành công")
 	helper.GinResponse(ctx, 200, response)
 }
+
+// GetVehicle retrieves and returns a detailed list of vehicles for the user using the userID
+// GetVehicle godoc
+// @Summary Get user's vehicles
+// @Description Retrieves and returns a detailed list of vehicles for the authenticated user
+// @Tags vehicle
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} helper.Response{data=schemas.GetVehicleResponse} "Successfully retrieved vehicles"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /vehicle/get-vehicle [get]
+func (ctrl *VehicleController) GetVehicle(ctx *gin.Context) {
+	// Fetch the user ID from the payload from middleware
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get the vehicle ID from the payload data
+	vehicles, err := ctrl.service.GetAllVehiclesFromUserID(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get vehicle",
+			"Không thể lấy thông tin xe",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	res := schemas.GetVehicleResponse{
+		Vehicle: vehicles,
+	}
+
+	response := helper.SuccessResponse(res, "Successfully retrieved vehicle", "Đã lấy thông tin xe thành công")
+	helper.GinResponse(ctx, 200, response)
+
+}

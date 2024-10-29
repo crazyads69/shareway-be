@@ -1132,6 +1132,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/vehicle/get-vehicle": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves and returns a detailed list of vehicles for the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "vehicle"
+                ],
+                "summary": "Get user's vehicles",
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved vehicles",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GetVehicleResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/vehicle/register-vehicle": {
             "post": {
                 "security": [
@@ -1332,6 +1378,18 @@ const docTemplate = `{
             "properties": {
                 "user": {
                     "$ref": "#/definitions/schemas.UserResponse"
+                }
+            }
+        },
+        "schemas.GetVehicleResponse": {
+            "type": "object",
+            "properties": {
+                "vehicle": {
+                    "description": "this is an array because a user can have multiple vehicles",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.VehicleDetail"
+                    }
                 }
             }
         },

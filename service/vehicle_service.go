@@ -14,6 +14,7 @@ type IVehicleService interface {
 	LicensePlateExists(licensePlate string) (bool, error)
 	CaVetExists(caVet string) (bool, error)
 	GetVehicleFromID(vehicleID uuid.UUID) (schemas.VehicleDetail, error)
+	GetAllVehiclesFromUserID(userID uuid.UUID) ([]schemas.VehicleDetail, error)
 }
 
 type VehicleService struct {
@@ -51,4 +52,8 @@ func (s *VehicleService) CaVetExists(caVet string) (bool, error) {
 
 func (s *VehicleService) GetVehicleFromID(vehicleID uuid.UUID) (schemas.VehicleDetail, error) {
 	return s.repo.GetVehicleFromID(vehicleID)
+}
+
+func (s *VehicleService) GetAllVehiclesFromUserID(userID uuid.UUID) ([]schemas.VehicleDetail, error) {
+	return s.repo.GetAllVehiclesFromUserID(userID)
 }

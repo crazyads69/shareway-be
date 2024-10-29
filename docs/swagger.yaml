@@ -66,6 +66,14 @@ definitions:
     required:
     - user
     type: object
+  schemas.GetVehicleResponse:
+    properties:
+      vehicle:
+        description: this is an array because a user can have multiple vehicles
+        items:
+          $ref: '#/definitions/schemas.VehicleDetail'
+        type: array
+    type: object
   schemas.GetVehiclesResponse:
     properties:
       vehicles:
@@ -1306,6 +1314,33 @@ paths:
       summary: Update user profile
       tags:
       - user
+  /vehicle/get-vehicle:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves and returns a detailed list of vehicles for the authenticated
+        user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved vehicles
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GetVehicleResponse'
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get user's vehicles
+      tags:
+      - vehicle
   /vehicle/register-vehicle:
     post:
       consumes:

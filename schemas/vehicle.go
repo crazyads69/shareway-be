@@ -29,3 +29,13 @@ type VehicleDetail struct {
 	FuelConsumed float64   `json:"fuel_consumed"`
 	LicensePlate string    `json:"license_plate"`
 }
+
+// Define the GetVehicleRequest schema
+type GetVehicleRequest struct {
+	UserID uuid.UUID `json:"user_id" binding:"required,uuid" validate:"required,uuid"`
+}
+
+// Define the GetVehicleResponse schema
+type GetVehicleResponse struct {
+	Vehicle []VehicleDetail `json:"vehicle"` // this is an array because a user can have multiple vehicles
+}

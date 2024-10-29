@@ -23,4 +23,5 @@ func SetupMapRouter(group *gin.RouterGroup, server *APIServer) {
 
 	// GetGeoCode request
 	group.POST("/geocode", mapController.GetGeoCode)
+
 }

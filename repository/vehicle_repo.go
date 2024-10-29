@@ -14,6 +14,7 @@ type IVehicleRepository interface {
 	LicensePlateExists(licensePlate string) (bool, error)
 	CaVetExists(caVet string) (bool, error)
 	GetVehicleFromID(vehicleID uuid.UUID) (schemas.VehicleDetail, error)
+	GetAllVehiclesFromUserID(userID uuid.UUID) ([]schemas.VehicleDetail, error)
 }
 
 type VehicleRepository struct {
@@ -107,4 +108,23 @@ func (r *VehicleRepository) GetVehicleFromID(vehicleID uuid.UUID) (schemas.Vehic
 		FuelConsumed: vehicle.FuelConsumed,
 		LicensePlate: vehicle.LicensePlate,
 	}, nil
+}
+
+// GetAllVehiclesFromUserID retrieves all vehicles for a user using the user ID
+func (r *VehicleRepository) GetAllVehiclesFromUserID(userID uuid.UUID) ([]schemas.VehicleDetail, error) {
+	var vehicles []migration.Vehicle
+	if err := r.db.Where("user_id = ?", userID).Find(&vehicles).Error; err != nil {
+		return nil, err
+	}
+
+	schemaVehicles := make([]schemas.VehicleDetail, len(vehicles))
+	for i, vehicle := range vehicles {
+		schemaVehicles[i] = schemas.VehicleDetail{
+			VehicleID:    vehicle.ID,
+			Name:         vehicle.Name,
+			FuelConsumed: vehicle.FuelConsumed,
+			LicensePlate: vehicle.LicensePlate,
+		}
+	}
+	return schemaVehicles, nil
 }
