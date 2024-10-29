@@ -11,6 +11,7 @@ func SetupMapRouter(group *gin.RouterGroup, server *APIServer) {
 		server.Service.MapService,
 		server.Validate,
 		server.Service.VehicleService,
+		server.Service.UserService,
 	)
 	// GetAutoComplete request
 	group.GET("/autocomplete", mapController.GetAutoComplete)
@@ -23,5 +24,8 @@ func SetupMapRouter(group *gin.RouterGroup, server *APIServer) {
 
 	// GetGeoCode request
 	group.POST("/geocode", mapController.GetGeoCode)
+
+	// SuggestRideRequests request
+	group.POST("/suggest-ride-requests", mapController.SuggestRideRequests)
 
 }

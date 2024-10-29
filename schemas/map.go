@@ -251,3 +251,40 @@ type GoongDistanceMatrixResponse struct {
 		} `json:"elements"`
 	} `json:"rows"`
 }
+
+// Define SuggestRideRequestRequest struct
+type SuggestRideRequestRequest struct {
+	RideOfferID uuid.UUID `json:"ride_offer_id" binding:"required,uuid"` // Ride offer ID for which the user wants to suggest a ride request
+}
+
+// Define SuggestRideRequestResponse struct
+type SuggestRideRequestResponse struct {
+	RideRequests []RideRequestDetail `json:"ride_requests"`
+}
+
+// Define UserInfo struct
+type UserInfo struct {
+	ID          uuid.UUID `json:"user_id"`
+	PhoneNumber string    `json:"phone_number"`
+	FullName    string    `json:"full_name"`
+}
+
+// Define RideRequestDetail struct
+type RideRequestDetail struct {
+	ID                    uuid.UUID `json:"id"`
+	User                  UserInfo  `json:"user"`
+	StartLatitude         float64   `json:"start_latitude"`
+	StartLongitude        float64   `json:"start_longitude"`
+	EndLatitude           float64   `json:"end_latitude"`
+	EndLongitude          float64   `json:"end_longitude"`
+	RiderCurrentLatitude  float64   `json:"rider_current_latitude"`
+	RiderCurrentLongitude float64   `json:"rider_current_longitude"`
+	StartAddress          string    `json:"start_address"`
+	EndAddress            string    `json:"end_address"`
+	Status                string    `json:"status"`
+	EncodedPolyline       string    `json:"encoded_polyline"`
+	Distance              float64   `json:"distance"`
+	Duration              int       `json:"duration"`
+	StartTime             time.Time `json:"start_time"`
+	EndTime               time.Time `json:"end_time"`
+}

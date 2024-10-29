@@ -12,16 +12,18 @@ import (
 )
 
 type MapController struct {
-	MapsService service.IMapService
-	validate    *validator.Validate
-	Vehicle     service.IVehicleService
+	MapsService    service.IMapService
+	validate       *validator.Validate
+	VehicleService service.IVehicleService
+	UserService    service.IUsersService
 }
 
-func NewMapController(mapsService service.IMapService, validate *validator.Validate, vehicleService service.IVehicleService) *MapController {
+func NewMapController(mapsService service.IMapService, validate *validator.Validate, vehicleService service.IVehicleService, userService service.IUsersService) *MapController {
 	return &MapController{
-		MapsService: mapsService,
-		validate:    validate,
-		Vehicle:     vehicleService,
+		MapsService:    mapsService,
+		validate:       validate,
+		VehicleService: vehicleService,
+		UserService:    userService,
 	}
 }
 
@@ -152,7 +154,7 @@ func (ctrl *MapController) CreateGiveRide(ctx *gin.Context) {
 	}
 
 	// Get the vehicle details
-	vehicle, err := ctrl.Vehicle.GetVehicleFromID(rideOffer.VehicleID)
+	vehicle, err := ctrl.VehicleService.GetVehicleFromID(rideOffer.VehicleID)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -328,6 +330,121 @@ func (ctrl *MapController) GetGeoCode(ctx *gin.Context) {
 		optimizedResults,
 		"Successfully retrieved geocode data",
 		"Lấy dữ liệu geocode thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
+}
+
+// SuggestRideRequests returns a list of ride requests that match the business rules for the rider (ride offer)
+// @Summary Suggest ride requests for a ride offer
+// @Description Returns a list of ride requests that match the business rules for the rider (ride offer)
+// @Tags map
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body schemas.SuggestRideRequestRequest true "Ride offer ID"
+// @Success 200 {object} helper.Response{data=schemas.SuggestRideRequestResponse} "Successfully retrieved suggested ride requests"
+// @Failure 400 {object} helper.Response "Invalid request body"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /map/suggest-ride-requests [post]
+func (ctrl *MapController) SuggestRideRequests(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	var req schemas.SuggestRideRequestRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid request body",
+			"Dữ liệu không hợp lệ",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Validate the request body
+	if err := ctrl.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid request body",
+			"Dữ liệu không hợp lệ",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Get the ride requests that match the business rules
+	rideRequests, err := ctrl.MapsService.SuggestRideRequests(ctx.Request.Context(), data.UserID, req.RideOfferID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get suggested ride requests",
+			"Không thể lấy danh sách chuyến đi gợi ý",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Convert the ride requests to the RideRequestDetail
+	var rideRequestDetails []schemas.RideRequestDetail
+	for _, rideRequest := range rideRequests {
+		// Get the user details
+		user, err := ctrl.UserService.GetUserByID(rideRequest.UserID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get user details",
+				"Không thể lấy thông tin người dùng",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+		rideRequestDetail := schemas.RideRequestDetail{
+			ID: rideRequest.ID,
+			User: schemas.UserInfo{
+				ID:          user.ID,
+				FullName:    user.FullName,
+				PhoneNumber: user.PhoneNumber,
+			},
+			EncodedPolyline:       rideRequest.EncodedPolyline,
+			Distance:              rideRequest.Distance,
+			Duration:              rideRequest.Duration,
+			StartTime:             rideRequest.StartTime,
+			EndTime:               rideRequest.EndTime,
+			StartLatitude:         rideRequest.StartLatitude,
+			StartLongitude:        rideRequest.StartLongitude,
+			EndLatitude:           rideRequest.EndLatitude,
+			EndLongitude:          rideRequest.EndLongitude,
+			StartAddress:          rideRequest.StartAddress,
+			EndAddress:            rideRequest.EndAddress,
+			RiderCurrentLatitude:  rideRequest.RiderCurrentLatitude,
+			RiderCurrentLongitude: rideRequest.RiderCurrentLongitude,
+		}
+		rideRequestDetails = append(rideRequestDetails, rideRequestDetail)
+	}
+
+	res := schemas.SuggestRideRequestResponse{
+		RideRequests: rideRequestDetails,
+	}
+
+	response := helper.SuccessResponse(
+		res,
+		"Successfully retrieved suggested ride requests",
+		"Lấy danh sách chuyến đi gợi ý thành công",
 	)
 	helper.GinResponse(ctx, 200, response)
 }

@@ -29,6 +29,7 @@ type IMapService interface {
 	GetRideOfferDetails(ctx context.Context, rideOfferID uuid.UUID) (migration.RideOffer, error)
 	GetRideRequestDetails(ctx context.Context, rideRequestID uuid.UUID) (migration.RideRequest, error)
 	GetDistanceFromCurrentLocation(ctx context.Context, currentLocation schemas.Point, destinationPoint []schemas.Point) (schemas.GoongDistanceMatrixResponse, error)
+	SuggestRideRequests(ctx context.Context, userID uuid.UUID, rideOfferID uuid.UUID) ([]migration.RideRequest, error)
 }
 
 type MapService struct {
@@ -532,6 +533,11 @@ func (s *MapService) GetRideOfferDetails(ctx context.Context, rideOfferID uuid.U
 // GetRideRequestDetails returns the ride request details for the given ride request ID
 func (s *MapService) GetRideRequestDetails(ctx context.Context, rideRequestID uuid.UUID) (migration.RideRequest, error) {
 	return s.repo.GetRideRequestDetails(rideRequestID)
+}
+
+// SuggestRideRequests returns the suggested ride requests for the given user and ride offer
+func (s *MapService) SuggestRideRequests(ctx context.Context, userID uuid.UUID, rideOfferID uuid.UUID) ([]migration.RideRequest, error) {
+	return s.repo.SuggestRideRequests(userID, rideOfferID)
 }
 
 // Make sure MapsService implements IMapsService

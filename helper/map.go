@@ -2,6 +2,7 @@ package helper
 
 import (
 	"math"
+	"shareway/infra/db/migration"
 	"shareway/schemas"
 	"strconv"
 	"strings"
@@ -75,4 +76,72 @@ func ConvertStringToLocation(point string) schemas.Point {
 		Lat: lat,
 		Lng: lng,
 	}
+}
+
+func IsRouteMatching(offerPolyline, requestPolyline []schemas.Point, maxDistance float64) bool {
+	// Check if the request route is a subset of the offer route
+	if IsSubRoute(offerPolyline, requestPolyline) {
+		return true
+	}
+
+	// Calculate the radius
+	startDist := HaversineDistance(
+		offerPolyline[0].Lat, offerPolyline[0].Lng,
+		requestPolyline[0].Lat, requestPolyline[0].Lng,
+	)
+
+	minEndDist := math.Inf(1)
+	for i := 0; i < len(offerPolyline); i++ {
+		endDist := HaversineDistance(
+			offerPolyline[i].Lat, offerPolyline[i].Lng,
+			requestPolyline[len(requestPolyline)-1].Lat,
+			requestPolyline[len(requestPolyline)-1].Lng,
+		)
+		if endDist < minEndDist {
+			minEndDist = endDist
+		}
+	}
+
+	totalRadius := math.Abs(startDist - minEndDist)
+	return totalRadius <= maxDistance
+}
+
+func IsSubRoute(offerPolyline, requestPolyline []schemas.Point) bool {
+	if len(requestPolyline) > len(offerPolyline) {
+		return false
+	}
+
+	for i := 0; i <= len(offerPolyline)-len(requestPolyline); i++ {
+		if IsMatchingSegment(offerPolyline[i:i+len(requestPolyline)], requestPolyline) {
+			return true
+		}
+	}
+	return false
+}
+
+func IsMatchingSegment(segment, requestPolyline []schemas.Point) bool {
+	const epsilon = 0.0001 // Small threshold for floating-point comparison
+	for i := range requestPolyline {
+		if math.Abs(segment[i].Lat-requestPolyline[i].Lat) > epsilon ||
+			math.Abs(segment[i].Lng-requestPolyline[i].Lng) > epsilon {
+			return false
+		}
+	}
+	return true
+}
+
+func HaversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
+	const earthRadius = 6371 // km
+
+	dLat := (lat2 - lat1) * math.Pi / 180
+	dLon := (lon2 - lon1) * math.Pi / 180
+	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
+		math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*
+			math.Sin(dLon/2)*math.Sin(dLon/2)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	return earthRadius * c
+}
+
+func IsTimeOverlap(offer migration.RideOffer, request migration.RideRequest) bool {
+	return offer.StartTime.Before(request.EndTime) && offer.EndTime.After(request.StartTime)
 }

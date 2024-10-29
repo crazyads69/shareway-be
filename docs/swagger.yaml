@@ -485,12 +485,62 @@ definitions:
     required:
     - phone_number
     type: object
+  schemas.RideRequestDetail:
+    properties:
+      distance:
+        type: number
+      duration:
+        type: integer
+      encoded_polyline:
+        type: string
+      end_address:
+        type: string
+      end_latitude:
+        type: number
+      end_longitude:
+        type: number
+      end_time:
+        type: string
+      id:
+        type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
+      start_address:
+        type: string
+      start_latitude:
+        type: number
+      start_longitude:
+        type: number
+      start_time:
+        type: string
+      status:
+        type: string
+      user:
+        $ref: '#/definitions/schemas.UserInfo'
+    type: object
   schemas.StructuredFormatting:
     properties:
       main_text:
         type: string
       secondary_text:
         type: string
+    type: object
+  schemas.SuggestRideRequestRequest:
+    properties:
+      ride_offer_id:
+        description: Ride offer ID for which the user wants to suggest a ride request
+        type: string
+    required:
+    - ride_offer_id
+    type: object
+  schemas.SuggestRideRequestResponse:
+    properties:
+      ride_requests:
+        items:
+          $ref: '#/definitions/schemas.RideRequestDetail'
+        type: array
     type: object
   schemas.Term:
     properties:
@@ -521,6 +571,15 @@ definitions:
         $ref: '#/definitions/schemas.UserResponse'
     required:
     - user
+    type: object
+  schemas.UserInfo:
+    properties:
+      full_name:
+        type: string
+      phone_number:
+        type: string
+      user_id:
+        type: string
     type: object
   schemas.UserResponse:
     properties:
@@ -1197,6 +1256,44 @@ paths:
       security:
       - BearerAuth: []
       summary: Create a route for a passenger's hitch ride
+      tags:
+      - map
+  /map/suggest-ride-requests:
+    post:
+      consumes:
+      - application/json
+      description: Returns a list of ride requests that match the business rules for
+        the rider (ride offer)
+      parameters:
+      - description: Ride offer ID
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.SuggestRideRequestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved suggested ride requests
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.SuggestRideRequestResponse'
+              type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Suggest ride requests for a ride offer
       tags:
       - map
   /protected/test:

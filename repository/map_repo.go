@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"shareway/helper"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
 	"time"
@@ -16,6 +17,7 @@ type IMapsRepository interface {
 	CalculateFareForRideOffer(rideOfferID uuid.UUID, vehicleID uuid.UUID) (float64, error)
 	GetRideOfferDetails(rideOfferID uuid.UUID) (migration.RideOffer, error)
 	GetRideRequestDetails(rideRequestID uuid.UUID) (migration.RideRequest, error)
+	SuggestRideRequests(userID uuid.UUID, rideOfferID uuid.UUID) ([]migration.RideRequest, error)
 }
 
 type MapsRepository struct {
@@ -166,6 +168,35 @@ func (r *MapsRepository) GetRideRequestDetails(rideRequestID uuid.UUID) (migrati
 		return migration.RideRequest{}, err
 	}
 	return rideRequest, nil
+}
+
+func (r *MapsRepository) SuggestRideRequests(userID uuid.UUID, rideOfferID uuid.UUID) ([]migration.RideRequest, error) {
+	// Fetch the ride offer details
+	rideOffer, err := r.GetRideOfferDetails(rideOfferID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch the ride requests that have status "created"
+	var rideRequests []migration.RideRequest
+	if err := r.db.Where("status = ?", "created").Find(&rideRequests).Error; err != nil {
+		return nil, err
+	}
+
+	var filteredRideRequests []migration.RideRequest
+	offerPolyline := helper.DecodePolyline(rideOffer.EncodedPolyline)
+	const maxDistance = 2.0 // km
+
+	for _, rideRequest := range rideRequests {
+		requestPolyline := helper.DecodePolyline(rideRequest.EncodedPolyline)
+
+		if rideRequest.UserID != userID && helper.IsRouteMatching(offerPolyline, requestPolyline, maxDistance) &&
+			helper.IsTimeOverlap(rideOffer, rideRequest) {
+			filteredRideRequests = append(filteredRideRequests, rideRequest)
+		}
+	}
+
+	return filteredRideRequests, nil
 }
 
 // Make sure to implement the IMapsRepository interface

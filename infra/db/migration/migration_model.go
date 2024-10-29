@@ -148,18 +148,6 @@ type RideOffer struct {
 	Fare                   float64   // Total price of the ride offer (to show to the hitchhiker)
 }
 
-// Waypoint represents a point in the route of a RideOffer
-// type Waypoint struct {
-// 	ID          uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-// 	CreatedAt   time.Time `gorm:"autoCreateTime"`
-// 	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
-// 	RideOfferID uuid.UUID `gorm:"type:uuid"`
-// 	RideOffer   RideOffer `gorm:"foreignKey:RideOfferID"`
-// 	Latitude    float64
-// 	Longitude   float64
-// 	Order       int // To maintain the order of waypoints
-// }
-
 // RideRequest represents a ride request in the system
 type RideRequest struct {
 	ID                    uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
@@ -186,14 +174,16 @@ type RideRequest struct {
 
 // Ride represents a matched ride between an offer and a request
 type Ride struct {
-	ID            uuid.UUID     `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	CreatedAt     time.Time     `gorm:"autoCreateTime"`
-	UpdatedAt     time.Time     `gorm:"autoUpdateTime"`
-	RideOfferID   uuid.UUID     `gorm:"type:uuid"`
-	RideOffer     RideOffer     `gorm:"foreignKey:RideOfferID"`
-	RideRequestID uuid.UUID     `gorm:"type:uuid"`
-	RideRequest   RideRequest   `gorm:"foreignKey:RideRequestID"`
-	Status        string        `gorm:"default:'scheduled'"` // scheduled, ongoing, completed, cancelled
+	ID            uuid.UUID   `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt     time.Time   `gorm:"autoCreateTime"`
+	UpdatedAt     time.Time   `gorm:"autoUpdateTime"`
+	RideOfferID   uuid.UUID   `gorm:"type:uuid"`
+	RideOffer     RideOffer   `gorm:"foreignKey:RideOfferID"`
+	RideRequestID uuid.UUID   `gorm:"type:uuid"`
+	RideRequest   RideRequest `gorm:"foreignKey:RideRequestID"`
+	Status        string      `gorm:"default:'scheduled'"` // scheduled, ongoing, completed, cancelled
+	StartTime     time.Time
+	EndTime       time.Time
 	Transactions  []Transaction `gorm:"foreignKey:RideID"`
 	Ratings       []Rating      `gorm:"foreignKey:RideID"`
 }
