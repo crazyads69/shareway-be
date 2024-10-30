@@ -3,6 +3,14 @@ package schemas
 import "github.com/google/uuid"
 
 // Define the GetVehiclesResponse schema
+
+// Define the GetVehiclesRequest schema
+type GetVehiclesRequest struct {
+	Limit int    `form:"limit" binding:"required" validate:"required"`
+	Page  int    `form:"page" binding:"required" validate:"required"`
+	Input string `form:"input" binding:"required" validate:"required"`
+}
+
 type GetVehiclesResponse struct {
 	Vehicles []Vehicle `json:"vehicles"`
 }

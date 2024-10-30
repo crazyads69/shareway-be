@@ -60,7 +60,7 @@ func (f *RepositoryFactory) createOTPRepository() IOTPRepository {
 
 // createVehicleRepository initializes and returns the Vehicle repository
 func (f *RepositoryFactory) createVehicleRepository() IVehicleRepository {
-	return NewVehicleRepository(f.db)
+	return NewVehicleRepository(f.db, f.redisClient)
 }
 
 // Add methods for creating other repositories as needed

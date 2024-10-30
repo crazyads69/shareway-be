@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"shareway/repository"
 	"shareway/schemas"
 	"shareway/util"
@@ -9,7 +10,7 @@ import (
 )
 
 type IVehicleService interface {
-	GetVehicles() ([]schemas.Vehicle, error)
+	GetVehicles(ctx context.Context, limit int, page int, input string) ([]schemas.Vehicle, error)
 	RegisterVehicle(userID uuid.UUID, vehicleID uuid.UUID, licensePlate string, caVet string) error
 	LicensePlateExists(licensePlate string) (bool, error)
 	CaVetExists(caVet string) (bool, error)
@@ -29,8 +30,8 @@ func NewVehicleService(repo repository.IVehicleRepository, cfg util.Config) IVeh
 	}
 }
 
-func (s *VehicleService) GetVehicles() ([]schemas.Vehicle, error) {
-	vehicles, err := s.repo.GetVehicles()
+func (s *VehicleService) GetVehicles(ctx context.Context, limit int, page int, input string) ([]schemas.Vehicle, error) {
+	vehicles, err := s.repo.GetVehicles(ctx, limit, page, input)
 	if err != nil {
 		return nil, err
 	}

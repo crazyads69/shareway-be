@@ -1568,6 +1568,22 @@ paths:
       - application/json
       description: Retrieves and returns the list of vehicles for user to select when
         registering a vehicle
+      parameters:
+      - description: Input string to search for
+        in: query
+        name: input
+        required: true
+        type: string
+      - description: Limit the number of results
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: Page number for pagination purposes
+        in: query
+        name: page
+        required: true
+        type: integer
       produces:
       - application/json
       responses:

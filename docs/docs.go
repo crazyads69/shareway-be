@@ -1373,6 +1373,29 @@ const docTemplate = `{
                     "vehicle"
                 ],
                 "summary": "Get list of vehicles",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Input string to search for",
+                        "name": "input",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit the number of results",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number for pagination purposes",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successfully retrieved vehicles",

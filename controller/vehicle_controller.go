@@ -30,13 +30,38 @@ func NewVehicleController(service service.IVehicleService, validate *validator.V
 // @Tags vehicle
 // @Accept json
 // @Produce json
+// @Param input query string true "Input string to search for"
+// @Param limit query int true "Limit the number of results"
+// @Param page query int true "Page number for pagination purposes"
 // @Security BearerAuth
 // @Success 200 {object} helper.Response{data=schemas.GetVehiclesResponse} "Successfully retrieved vehicles"
 // @Failure 500 {object} helper.Response "Failed to get vehicles"
 // @Router /vehicle/vehicles [get]
 func (ctrl *VehicleController) GetVehicles(ctx *gin.Context) {
+	var req schemas.GetVehiclesRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind request",
+			"Không thể bind request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Validate the request body
+	if err := ctrl.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
 	// Get list of vehicles from database
-	vehicles, err := ctrl.service.GetVehicles()
+	vehicles, err := ctrl.service.GetVehicles(ctx.Request.Context(), req.Limit, req.Page, req.Input)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,

@@ -1,15 +1,17 @@
 package repository
 
 import (
+	"context"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
 
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 type IVehicleRepository interface {
-	GetVehicles() ([]schemas.Vehicle, error)
+	GetVehicles(ctx context.Context, limit int, page int, input string) ([]schemas.Vehicle, error)
 	RegisterVehicle(userID uuid.UUID, vehicleID uuid.UUID, licensePlate string, caVet string) error
 	LicensePlateExists(licensePlate string) (bool, error)
 	CaVetExists(caVet string) (bool, error)
@@ -18,26 +20,34 @@ type IVehicleRepository interface {
 }
 
 type VehicleRepository struct {
-	db *gorm.DB
+	db    *gorm.DB
+	redis *redis.Client
 }
 
-func NewVehicleRepository(db *gorm.DB) IVehicleRepository {
-	return &VehicleRepository{db: db}
+func NewVehicleRepository(db *gorm.DB, redis *redis.Client) IVehicleRepository {
+	return &VehicleRepository{db: db, redis: redis}
 }
 
 // GetVehicles retrieves all vehicles from the database and converts them to schema format
-func (r *VehicleRepository) GetVehicles() ([]schemas.Vehicle, error) {
+// GetVehicles retrieves all vehicles from the database and converts them to schema format
+func (r *VehicleRepository) GetVehicles(ctx context.Context, limit int, page int, input string) ([]schemas.Vehicle, error) {
 	var vehicles []migration.VehicleType
 
-	// Fetch all vehicles from the database
-	if err := r.db.Find(&vehicles).Error; err != nil {
-		return nil, err
+	// Query the database for the vehicles with the given limit and offset values and input (if not empty)
+	if input != "" {
+		if err := r.db.Limit(limit).Offset(page*limit).Where("name LIKE ?", "%"+input+"%").Find(&vehicles).Error; err != nil {
+			return nil, err
+		}
+	} else {
+		if err := r.db.Limit(limit).Offset(page * limit).Find(&vehicles).Error; err != nil {
+			return nil, err
+		}
 	}
 
 	// Preallocate the slice for better performance
 	schemaVehicles := make([]schemas.Vehicle, len(vehicles))
 
-	// Convert the vehicles to the schema type
+	// Directly assign the values from vehicles to schemaVehicles
 	for i, vehicle := range vehicles {
 		schemaVehicles[i] = schemas.Vehicle{
 			VehicleID:    vehicle.ID,
