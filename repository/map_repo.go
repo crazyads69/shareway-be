@@ -40,7 +40,7 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 	// Check if the vehicle exists and belongs to the user
 	var vehicle migration.Vehicle
 	if err := r.db.Preload("VehicleType").Where("id = ? AND user_id = ?", vehicleID, userID).First(&vehicle).Error; err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, fmt.Errorf("failed to fetch vehicle: %w", err)
 	}
 
 	firstRoute := route.Routes[0]
@@ -54,6 +54,25 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 		totalDuration += leg.Duration.Value
 	}
 	totalDistance /= 1000 // Convert to kilometers
+
+	endTime := startTime.Add(time.Duration(totalDuration) * time.Second)
+
+	// Check for overlapping ride offers
+	var existingRideOffer migration.RideOffer
+	err := r.db.Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
+		userID,
+		startTime, endTime,
+		startTime, endTime,
+		startTime, endTime).
+		First(&existingRideOffer).Error
+
+	if err == nil {
+		// An overlapping ride offer was found
+		return uuid.Nil, errors.New("ride offer already exists for the user in that time frame")
+	} else if err != gorm.ErrRecordNotFound {
+		// An actual error occurred
+		return uuid.Nil, fmt.Errorf("error checking for existing ride offers: %w", err)
+	}
 
 	// Calculate fare
 	var fuelPrice migration.FuelPrice
@@ -80,13 +99,13 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 		Duration:               totalDuration,
 		Status:                 "created",
 		StartTime:              startTime,
-		EndTime:                startTime.Add(time.Duration(totalDuration) * time.Second),
+		EndTime:                endTime,
 		VehicleID:              vehicleID,
 		Fare:                   fare,
 	}
 
 	// Use a transaction to ensure atomicity
-	err := r.db.Transaction(func(tx *gorm.DB) error {
+	err = r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&rideOffer).Error; err != nil {
 			log.Error().Err(err).Msg("Failed to create ride offer")
 			return err
@@ -96,11 +115,12 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 	})
 
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, fmt.Errorf("failed to create ride offer: %w", err)
 	}
 
 	return rideOffer.ID, nil
 }
+
 func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point, startTime time.Time) (uuid.UUID, error) {
 	// Validate route data
 	if len(route.Routes) == 0 || len(route.Routes[0].Legs) == 0 {
@@ -119,6 +139,28 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 	}
 	totalDistance /= 1000 // Convert to kilometers
 
+	endTime := startTime.Add(time.Duration(totalDuration) * time.Second)
+
+	// Check if any ride request exists for the user that overlaps with the new time frame
+	var existingRideRequest migration.RideRequest
+	err := r.db.Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
+		userID,
+		startTime, endTime,
+		startTime, endTime,
+		startTime, endTime).
+		First(&existingRideRequest).Error
+
+	if err != nil {
+		if err != gorm.ErrRecordNotFound {
+			// An actual error occurred
+			return uuid.Nil, fmt.Errorf("error checking for existing ride requests: %w", err)
+		}
+		// No overlapping ride request found, proceed with creating new ride request
+	} else {
+		// An overlapping ride request was found
+		return uuid.Nil, errors.New("ride request already exists for the user in that time frame")
+	}
+
 	// Create ride request
 	rideRequest := &migration.RideRequest{
 		UserID:                userID,
@@ -135,11 +177,11 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 		Distance:              float64(totalDistance),
 		Duration:              totalDuration,
 		StartTime:             startTime,
-		EndTime:               startTime.Add(time.Duration(totalDuration) * time.Second),
+		EndTime:               endTime,
 	}
 
 	if err := r.db.Create(rideRequest).Error; err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, fmt.Errorf("error creating ride request: %w", err)
 	}
 	return rideRequest.ID, nil
 }

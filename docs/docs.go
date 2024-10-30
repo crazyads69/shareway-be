@@ -946,7 +946,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/map/suggest-ride-offers": {
+        "/map/suggest-give-rides": {
             "post": {
                 "security": [
                     {
@@ -1009,7 +1009,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/map/suggest-ride-requests": {
+        "/map/suggest-hitch-rides": {
             "post": {
                 "security": [
                     {
@@ -1026,7 +1026,7 @@ const docTemplate = `{
                 "tags": [
                     "map"
                 ],
-                "summary": "Suggest ride requests for a ride offer",
+                "summary": "Suggest ride requests for a rider (ride offer)",
                 "parameters": [
                     {
                         "description": "Ride offer ID",

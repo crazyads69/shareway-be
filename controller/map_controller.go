@@ -334,9 +334,9 @@ func (ctrl *MapController) GetGeoCode(ctx *gin.Context) {
 	helper.GinResponse(ctx, 200, response)
 }
 
-// SuggestRideRequests returns a list of ride requests that match the business rules for the rider (ride offer)
-// SuggestRideRequests godoc
-// @Summary Suggest ride requests for a ride offer
+// SuggestHitchRides returns a list of ride requests that match the business rules for the rider (ride offer)
+// SuggestHitchRides godoc
+// @Summary Suggest ride requests for a rider (ride offer)
 // @Description Returns a list of ride requests that match the business rules for the rider (ride offer)
 // @Tags map
 // @Accept json
@@ -346,8 +346,8 @@ func (ctrl *MapController) GetGeoCode(ctx *gin.Context) {
 // @Success 200 {object} helper.Response{data=schemas.SuggestRideRequestResponse} "Successfully retrieved suggested ride requests"
 // @Failure 400 {object} helper.Response "Invalid request body"
 // @Failure 500 {object} helper.Response "Internal server error"
-// @Router /map/suggest-ride-requests [post]
-func (ctrl *MapController) SuggestRideRequests(ctx *gin.Context) {
+// @Router /map/suggest-hitch-rides [post]
+func (ctrl *MapController) SuggestHitchRides(ctx *gin.Context) {
 	// Get payload from context
 	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
 
@@ -450,8 +450,8 @@ func (ctrl *MapController) SuggestRideRequests(ctx *gin.Context) {
 	helper.GinResponse(ctx, 200, response)
 }
 
-// SuggestRideOffers returns a list of ride offers that match the business rules for the hitcher (ride request)
-// SuggestRideOffers godoc
+// SuggestGiveRides returns a list of ride offers that match the business rules for the hitcher (ride request)
+// SuggestGiveRides godoc
 // @Summary Suggest ride offers for a hitcher
 // @Description Returns a list of ride offers that match the business rules for the hitcher (ride request)
 // @Tags map
@@ -462,8 +462,8 @@ func (ctrl *MapController) SuggestRideRequests(ctx *gin.Context) {
 // @Success 200 {object} helper.Response{data=schemas.SuggestRideOfferResponse} "Successfully retrieved suggested ride offers"
 // @Failure 400 {object} helper.Response "Invalid request body"
 // @Failure 500 {object} helper.Response "Internal server error"
-// @Router /map/suggest-ride-offers [post]
-func (ctrl *MapController) SuggestRideOffers(ctx *gin.Context) {
+// @Router /map/suggest-give-rides [post]
+func (ctrl *MapController) SuggestGiveRides(ctx *gin.Context) {
 	// Get payload from context
 	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
 

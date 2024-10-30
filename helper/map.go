@@ -143,5 +143,5 @@ func HaversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
 }
 
 func IsTimeOverlap(offer migration.RideOffer, request migration.RideRequest) bool {
-	return offer.StartTime.Before(request.EndTime) && offer.EndTime.After(request.StartTime)
+	return offer.StartTime.Before(request.StartTime) && offer.EndTime.After(request.EndTime)
 }

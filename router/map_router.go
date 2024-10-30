@@ -26,9 +26,9 @@ func SetupMapRouter(group *gin.RouterGroup, server *APIServer) {
 	group.POST("/geocode", mapController.GetGeoCode)
 
 	// SuggestRideRequests request
-	group.POST("/suggest-ride-requests", mapController.SuggestRideRequests)
+	group.POST("/suggest-hitch-rides", mapController.SuggestHitchRides)
 
 	// SuggestRideOffers request
-	group.POST("/suggest-ride-offers", mapController.SuggestRideOffers)
+	group.POST("/suggest-give-rides", mapController.SuggestGiveRides)
 
 }
