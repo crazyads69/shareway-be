@@ -6,9 +6,10 @@ import "github.com/google/uuid"
 
 // Define the GetVehiclesRequest schema
 type GetVehiclesRequest struct {
-	Limit int    `form:"limit" binding:"required" validate:"required"`
-	Page  int    `form:"page" binding:"required" validate:"required"`
-	Input string `form:"input" binding:"required" validate:"required"`
+	Limit int `form:"limit" binding:"required" validate:"required"`
+	Page  int `form:"page" binding:"required" validate:"required"`
+	// Input is the search input for the vehicle name (optional)
+	Input string `form:"input,omitempty"`
 }
 
 type GetVehiclesResponse struct {

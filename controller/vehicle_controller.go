@@ -30,7 +30,7 @@ func NewVehicleController(service service.IVehicleService, validate *validator.V
 // @Tags vehicle
 // @Accept json
 // @Produce json
-// @Param input query string true "Input string to search for"
+// @Param input query string false "Search input for vehicle name"
 // @Param limit query int true "Limit the number of results"
 // @Param page query int true "Page number for pagination purposes"
 // @Security BearerAuth

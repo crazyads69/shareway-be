@@ -1376,10 +1376,9 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Input string to search for",
+                        "description": "Search input for vehicle name",
                         "name": "input",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "integer",

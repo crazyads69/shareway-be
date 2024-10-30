@@ -1569,10 +1569,9 @@ paths:
       description: Retrieves and returns the list of vehicles for user to select when
         registering a vehicle
       parameters:
-      - description: Input string to search for
+      - description: Search input for vehicle name
         in: query
         name: input
-        required: true
         type: string
       - description: Limit the number of results
         in: query
