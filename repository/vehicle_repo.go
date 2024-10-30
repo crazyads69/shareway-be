@@ -4,6 +4,7 @@ import (
 	"context"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -32,22 +33,19 @@ func NewVehicleRepository(db *gorm.DB, redis *redis.Client) IVehicleRepository {
 // GetVehicles retrieves all vehicles from the database and converts them to schema format
 func (r *VehicleRepository) GetVehicles(ctx context.Context, limit int, page int, input string) ([]schemas.Vehicle, error) {
 	var vehicles []migration.VehicleType
+	input = strings.ToLower(input)
+	query := r.db.Limit(limit).Offset(page * limit)
 
-	// Query the database for the vehicles with the given limit and offset values and input (if not empty)
 	if input != "" {
-		if err := r.db.Limit(limit).Offset(page*limit).Where("name LIKE ?", "%"+input+"%").Find(&vehicles).Error; err != nil {
-			return nil, err
-		}
-	} else {
-		if err := r.db.Limit(limit).Offset(page * limit).Find(&vehicles).Error; err != nil {
-			return nil, err
-		}
+		query = query.Where("LOWER(name) LIKE ?", "%"+input+"%")
 	}
 
-	// Preallocate the slice for better performance
-	schemaVehicles := make([]schemas.Vehicle, len(vehicles))
+	err := query.Find(&vehicles).Error
+	if err != nil {
+		return nil, err
+	}
 
-	// Directly assign the values from vehicles to schemaVehicles
+	schemaVehicles := make([]schemas.Vehicle, len(vehicles))
 	for i, vehicle := range vehicles {
 		schemaVehicles[i] = schemas.Vehicle{
 			VehicleID:    vehicle.ID,
