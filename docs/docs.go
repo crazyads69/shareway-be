@@ -946,6 +946,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/map/suggest-ride-offers": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a list of ride offers that match the business rules for the hitcher (ride request)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "map"
+                ],
+                "summary": "Suggest ride offers for a hitcher",
+                "parameters": [
+                    {
+                        "description": "Ride request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.SuggestRideOfferRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved suggested ride offers",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.SuggestRideOfferResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/map/suggest-ride-requests": {
             "post": {
                 "security": [
@@ -2066,6 +2129,65 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.RideOfferDetail": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "encoded_polyline": {
+                    "type": "string"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_latitude": {
+                    "type": "number"
+                },
+                "end_longitude": {
+                    "type": "number"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "fare": {
+                    "type": "number"
+                },
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_latitude": {
+                    "type": "number"
+                },
+                "start_longitude": {
+                    "type": "number"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/schemas.VehicleDetail"
+                }
+            }
+        },
         "schemas.RideRequestDetail": {
             "type": "object",
             "properties": {
@@ -2127,6 +2249,29 @@ const docTemplate = `{
                 },
                 "secondary_text": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.SuggestRideOfferRequest": {
+            "type": "object",
+            "required": [
+                "ride_request_id"
+            ],
+            "properties": {
+                "ride_request_id": {
+                    "description": "Ride request ID for which the user wants to suggest a ride offer",
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.SuggestRideOfferResponse": {
+            "type": "object",
+            "properties": {
+                "ride_offers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.RideOfferDetail"
+                    }
                 }
             }
         },

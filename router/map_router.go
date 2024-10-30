@@ -28,4 +28,7 @@ func SetupMapRouter(group *gin.RouterGroup, server *APIServer) {
 	// SuggestRideRequests request
 	group.POST("/suggest-ride-requests", mapController.SuggestRideRequests)
 
+	// SuggestRideOffers request
+	group.POST("/suggest-ride-offers", mapController.SuggestRideOffers)
+
 }

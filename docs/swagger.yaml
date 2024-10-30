@@ -485,6 +485,45 @@ definitions:
     required:
     - phone_number
     type: object
+  schemas.RideOfferDetail:
+    properties:
+      distance:
+        type: number
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
+      duration:
+        type: integer
+      encoded_polyline:
+        type: string
+      end_address:
+        type: string
+      end_latitude:
+        type: number
+      end_longitude:
+        type: number
+      end_time:
+        type: string
+      fare:
+        type: number
+      ride_offer_id:
+        type: string
+      start_address:
+        type: string
+      start_latitude:
+        type: number
+      start_longitude:
+        type: number
+      start_time:
+        type: string
+      status:
+        type: string
+      user:
+        $ref: '#/definitions/schemas.UserInfo'
+      vehicle:
+        $ref: '#/definitions/schemas.VehicleDetail'
+    type: object
   schemas.RideRequestDetail:
     properties:
       distance:
@@ -526,6 +565,21 @@ definitions:
         type: string
       secondary_text:
         type: string
+    type: object
+  schemas.SuggestRideOfferRequest:
+    properties:
+      ride_request_id:
+        description: Ride request ID for which the user wants to suggest a ride offer
+        type: string
+    required:
+    - ride_request_id
+    type: object
+  schemas.SuggestRideOfferResponse:
+    properties:
+      ride_offers:
+        items:
+          $ref: '#/definitions/schemas.RideOfferDetail'
+        type: array
     type: object
   schemas.SuggestRideRequestRequest:
     properties:
@@ -1256,6 +1310,44 @@ paths:
       security:
       - BearerAuth: []
       summary: Create a route for a passenger's hitch ride
+      tags:
+      - map
+  /map/suggest-ride-offers:
+    post:
+      consumes:
+      - application/json
+      description: Returns a list of ride offers that match the business rules for
+        the hitcher (ride request)
+      parameters:
+      - description: Ride request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.SuggestRideOfferRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved suggested ride offers
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.SuggestRideOfferResponse'
+              type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Suggest ride offers for a hitcher
       tags:
       - map
   /map/suggest-ride-requests:

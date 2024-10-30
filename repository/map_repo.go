@@ -19,6 +19,7 @@ type IMapsRepository interface {
 	GetRideOfferDetails(rideOfferID uuid.UUID) (migration.RideOffer, error)
 	GetRideRequestDetails(rideRequestID uuid.UUID) (migration.RideRequest, error)
 	SuggestRideRequests(userID uuid.UUID, rideOfferID uuid.UUID) ([]migration.RideRequest, error)
+	SuggestRideOffers(userID uuid.UUID, rideRequestID uuid.UUID) ([]migration.RideOffer, error)
 }
 
 type MapsRepository struct {
@@ -186,6 +187,36 @@ func (r *MapsRepository) SuggestRideRequests(userID uuid.UUID, rideOfferID uuid.
 	}
 
 	return filteredRideRequests, nil
+}
+
+// SuggestRideOffers suggests ride offers that match the given ride request
+func (r *MapsRepository) SuggestRideOffers(userID uuid.UUID, rideRequestID uuid.UUID) ([]migration.RideOffer, error) {
+	// Fetch the ride request details
+	rideRequest, err := r.GetRideRequestDetails(rideRequestID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch the ride offers that have status "created"
+	var rideOffers []migration.RideOffer
+	if err := r.db.Where("status = ?", "created").Find(&rideOffers).Error; err != nil {
+		return nil, err
+	}
+
+	var filteredRideOffers []migration.RideOffer
+	requestPolyline := helper.DecodePolyline(rideRequest.EncodedPolyline)
+	const maxDistance = 2.0 // km
+
+	for _, rideOffer := range rideOffers {
+		offerPolyline := helper.DecodePolyline(rideOffer.EncodedPolyline)
+
+		if rideOffer.UserID != userID && helper.IsRouteMatching(offerPolyline, requestPolyline, maxDistance) &&
+			helper.IsTimeOverlap(rideOffer, rideRequest) {
+			filteredRideOffers = append(filteredRideOffers, rideOffer)
+		}
+	}
+
+	return filteredRideOffers, nil
 }
 
 // Make sure to implement the IMapsRepository interface

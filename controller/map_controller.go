@@ -452,74 +452,131 @@ func (ctrl *MapController) SuggestRideRequests(ctx *gin.Context) {
 
 // SuggestRideOffers returns a list of ride offers that match the business rules for the hitcher (ride request)
 // SuggestRideOffers godoc
-// func (ctrl *MapController) SuggestRideOffers(ctx *gin.Context) {
-// 	// Get payload from context
-// 	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+// @Summary Suggest ride offers for a hitcher
+// @Description Returns a list of ride offers that match the business rules for the hitcher (ride request)
+// @Tags map
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body schemas.SuggestRideOfferRequest true "Ride request details"
+// @Success 200 {object} helper.Response{data=schemas.SuggestRideOfferResponse} "Successfully retrieved suggested ride offers"
+// @Failure 400 {object} helper.Response "Invalid request body"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /map/suggest-ride-offers [post]
+func (ctrl *MapController) SuggestRideOffers(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
 
-// 	// Convert payload to map
-// 	data, err := helper.ConvertToPayload(payload)
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
 
-// 	// If error occurs, return error response
-// 	if err != nil {
-// 		response := helper.ErrorResponseWithMessage(
-// 			fmt.Errorf("failed to convert payload"),
-// 			"Failed to convert payload",
-// 			"Không thể chuyển đổi payload",
-// 		)
-// 		helper.GinResponse(ctx, 500, response)
-// 		return
-// 	}
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
 
-// 	var req schemas.SuggestRideOfferRequest
+	var req schemas.SuggestRideOfferRequest
 
-// 	if err := ctx.ShouldBindJSON(&req); err != nil {
-// 		response := helper.ErrorResponseWithMessage(
-// 			err,
-// 			"Invalid request body",
-// 			"Dữ liệu không hợp lệ",
-// 		)
-// 		helper.GinResponse(ctx, 400, response)
-// 		return
-// 	}
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid request body",
+			"Dữ liệu không hợp lệ",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
 
-// 	// Validate the request body
-// 	if err := ctrl.validate.Struct(req); err != nil {
-// 		response := helper.ErrorResponseWithMessage(
-// 			err,
-// 			"Invalid request body",
-// 			"Dữ liệu không hợp lệ",
-// 		)
-// 		helper.GinResponse(ctx, 400, response)
-// 		return
-// 	}
+	// Validate the request body
+	if err := ctrl.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid request body",
+			"Dữ liệu không hợp lệ",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
 
-// 	// Get the ride offers that match the business rules
-// 	rideOffers, err := ctrl.MapsService.SuggestRideOffers(ctx.Request.Context(), data.UserID, req.RideRequestID)
-// 	if err != nil {
-// 		response := helper.ErrorResponseWithMessage(
-// 			err,
-// 			"Failed to get suggested ride offers",
-// 			"Không thể lấy danh sách chuyến đi gợi ý",
-// 		)
-// 		helper.GinResponse(ctx, 500, response)
-// 		return
-// 	}
+	// Get the ride offers that match the business rules
+	rideOffers, err := ctrl.MapsService.SuggestRideOffers(ctx.Request.Context(), data.UserID, req.RideRequestID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get suggested ride offers",
+			"Không thể lấy danh sách chuyến đi gợi ý",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
 
-// 	// Convert the ride offers to the RideOfferDetail
-// 	var rideOfferDetails []schemas.RideOfferDetail
-// 	for _, rideOffer := range rideOffers {
-// 		// Get the user details
-// 		user, err := ctrl.UserService.GetUserByID(rideOffer.UserID)
-// 		if err != nil {
-// 			response := helper.ErrorResponseWithMessage(
-// 				err,
-// 				"Failed to get user details",
-// 				"Không thể lấy thông tin người dùng",
-// 			)
-// 			helper.GinResponse(ctx, 500, response)
-// 			return
-// 		}
-// 		rideOfferDetail := schemas.RideOfferDetail{}
+	// Convert the ride offers to the RideOfferDetail
+	var rideOfferDetails []schemas.RideOfferDetail
+	for _, rideOffer := range rideOffers {
+		// Get the user details
+		user, err := ctrl.UserService.GetUserByID(rideOffer.UserID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get user details",
+				"Không thể lấy thông tin người dùng",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+		// Get the vehicle details
+		vehicle, err := ctrl.VehicleService.GetVehicleFromID(rideOffer.VehicleID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get vehicle details",
+				"Không thể lấy thông tin xe",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+		rideOfferDetail := schemas.RideOfferDetail{
+			ID: rideOffer.ID,
+			User: schemas.UserInfo{
+				ID:          user.ID,
+				FullName:    user.FullName,
+				PhoneNumber: user.PhoneNumber,
+			},
+			Vehicle:                vehicle,
+			EncodedPolyline:        rideOffer.EncodedPolyline,
+			Distance:               rideOffer.Distance,
+			Duration:               rideOffer.Duration,
+			StartTime:              rideOffer.StartTime,
+			EndTime:                rideOffer.EndTime,
+			StartLatitude:          rideOffer.StartLatitude,
+			StartLongitude:         rideOffer.StartLongitude,
+			EndLatitude:            rideOffer.EndLatitude,
+			EndLongitude:           rideOffer.EndLongitude,
+			StartAddress:           rideOffer.StartAddress,
+			EndAddress:             rideOffer.EndAddress,
+			DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+			DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+			Status:                 rideOffer.Status,
+			Fare:                   rideOffer.Fare,
+		}
+		// Append the ride offer detail to the list
+		rideOfferDetails = append(rideOfferDetails, rideOfferDetail)
+	}
 
-// 	}
-// }
+	res := schemas.SuggestRideOfferResponse{
+		RideOffers: rideOfferDetails,
+	}
+
+	response := helper.SuccessResponse(
+		res,
+		"Successfully retrieved suggested ride offers",
+		"Lấy danh sách chuyến đi gợi ý thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
+}
