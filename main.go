@@ -41,6 +41,10 @@ func main() {
 	// Set logger configuration
 	util.ConfigLogger(cfg)
 
+	// // Init websocket hub
+	// hub := ws.NewHub()
+	// go hub.Run()
+
 	// // Init RabbitMQ
 	// rabbitMQ, err := rabbitmq.NewRabbitMQ(cfg)
 	// if err != nil {

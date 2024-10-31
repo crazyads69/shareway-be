@@ -1,6 +1,7 @@
 package router
 
 import (
+	"shareway/infra/ws"
 	"shareway/middleware"
 	"shareway/service"
 	"shareway/util"
@@ -85,10 +86,17 @@ func (server *APIServer) SetupRouter() {
 	SetupMapRouter(server.router.Group("/map", middleware.AuthMiddleware(server.Maker)), server)
 	// Vehicle routes for vehicle management
 	SetupVehicleRouter(server.router.Group("/vehicle", middleware.AuthMiddleware(server.Maker)), server)
+	// WebSocket route
+	server.router.GET("/ws", middleware.AuthMiddleware(server.Maker), server.handleWebSocket)
 }
 
 // SetupSwagger configures the Swagger documentation route
 func (server *APIServer) SetupSwagger(swaggerURL string) {
 	docs.SwaggerInfo.BasePath = "/"
 	server.router.GET(swaggerURL+"/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+}
+
+// handleWebSocket handles WebSocket connections
+func (server *APIServer) handleWebSocket(ctx *gin.Context) {
+	ws.WebSocketHandler(ctx)
 }
