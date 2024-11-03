@@ -25,10 +25,11 @@ type APIServer struct {
 	Cfg      util.Config
 	Service  *service.ServiceContainer
 	Validate *validator.Validate
+	Hub      *ws.Hub
 }
 
 // NewAPIServer creates and initializes a new APIServer instance
-func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.ServiceContainer, Validate *validator.Validate) (*APIServer, error) {
+func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.ServiceContainer, Validate *validator.Validate, Hub *ws.Hub) (*APIServer, error) {
 	r := gin.Default()
 
 	if cfg.GinMode != "release" {
@@ -49,6 +50,7 @@ func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.Se
 		Cfg:      cfg,
 		Service:  service,
 		Validate: Validate,
+		Hub:      Hub,
 	}, nil
 }
 
@@ -87,7 +89,10 @@ func (server *APIServer) SetupRouter() {
 	// Vehicle routes for vehicle management
 	SetupVehicleRouter(server.router.Group("/vehicle", middleware.AuthMiddleware(server.Maker)), server)
 	// WebSocket route
-	server.router.GET("/ws", middleware.AuthMiddleware(server.Maker), server.handleWebSocket)
+	server.router.GET("/ws", server.HandleWebSocket)
+	// Ride routes for ride matching and engagement
+	SetupRideRouter(server.router.Group("/ride", middleware.AuthMiddleware(server.Maker)), server)
+
 }
 
 // SetupSwagger configures the Swagger documentation route
@@ -97,6 +102,6 @@ func (server *APIServer) SetupSwagger(swaggerURL string) {
 }
 
 // handleWebSocket handles WebSocket connections
-func (server *APIServer) handleWebSocket(ctx *gin.Context) {
-	ws.WebSocketHandler(ctx)
+func (server *APIServer) HandleWebSocket(ctx *gin.Context) {
+	ws.WebSocketHandler(ctx, server.Hub)
 }

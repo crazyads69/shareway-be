@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"shareway/infra/crawler"
 	"shareway/infra/db"
+	"shareway/infra/ws"
 	"shareway/router"
 	"shareway/service"
 	"shareway/util"
@@ -41,9 +42,9 @@ func main() {
 	// Set logger configuration
 	util.ConfigLogger(cfg)
 
-	// // Init websocket hub
-	// hub := ws.NewHub()
-	// go hub.Run()
+	// Init websocket hub
+	hub := ws.NewHub()
+	go hub.Run()
 
 	// // Init RabbitMQ
 	// rabbitMQ, err := rabbitmq.NewRabbitMQ(cfg)
@@ -137,7 +138,7 @@ func main() {
 	scheduler.Start()
 
 	// Initialize services using the service factory pattern (dependency injection also included repository pattern)
-	serviceFactory := service.NewServiceFactory(database, cfg, maker, redisClient)
+	serviceFactory := service.NewServiceFactory(database, cfg, maker, redisClient, hub)
 	services := serviceFactory.CreateServices()
 
 	// Create new API server
@@ -146,6 +147,7 @@ func main() {
 		cfg,
 		services,
 		validate,
+		hub,
 	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Could not create router")

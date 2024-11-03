@@ -13,6 +13,7 @@ type RepositoryContainer struct {
 	MapsRepository    IMapsRepository
 	OTPRepository     IOTPRepository
 	VehicleRepository IVehicleRepository
+	RideRepository    IRideRepository
 	// Add other repositories here as needed
 }
 
@@ -39,6 +40,7 @@ func (f *RepositoryFactory) CreateRepositories() *RepositoryContainer {
 		MapsRepository:    f.createMapsRepository(),
 		OTPRepository:     f.createOTPRepository(),
 		VehicleRepository: f.createVehicleRepository(),
+		RideRepository:    f.createRideRepository(),
 		// Initialize other repositories here
 	}
 }
@@ -61,6 +63,11 @@ func (f *RepositoryFactory) createOTPRepository() IOTPRepository {
 // createVehicleRepository initializes and returns the Vehicle repository
 func (f *RepositoryFactory) createVehicleRepository() IVehicleRepository {
 	return NewVehicleRepository(f.db, f.redisClient)
+}
+
+// createRideRepository initializes and returns the Ride repository
+func (f *RepositoryFactory) createRideRepository() IRideRepository {
+	return NewRideRepository(f.db, f.redisClient)
 }
 
 // Add methods for creating other repositories as needed

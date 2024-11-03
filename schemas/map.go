@@ -72,9 +72,9 @@ type Point struct {
 // Define GiveRideRequest struct
 type GiveRideRequest struct {
 	// Points []Point `json:"points" binding:"required"` // List of points for the route
-	PlaceList []string  `json:"place_list" binding:"required"`      // List of places for the route (place_id) from goong api
-	StartTime string    `json:"start_time,omitempty"`               // Start time of the ride (if not provided, the ride is immediate)
-	VehicleID uuid.UUID `json:"vehicle_id" binding:"required,uuid"` // Vehicle ID for the ride that user has registered
+	PlaceList []string  `json:"place_list" binding:"required"`                               // List of places for the route (place_id) from goong api
+	StartTime string    `json:"start_time,omitempty"`                                        // Start time of the ride (if not provided, the ride is immediate)
+	VehicleID uuid.UUID `json:"vehicle_id" binding:"required,uuid" validate:"required,uuid"` // Vehicle ID for the ride that user has registered
 }
 
 // Define
@@ -254,7 +254,7 @@ type GoongDistanceMatrixResponse struct {
 
 // Define SuggestRideRequestRequest struct
 type SuggestRideRequestRequest struct {
-	RideOfferID uuid.UUID `json:"ride_offer_id" binding:"required,uuid"` // Ride offer ID for which the user wants to suggest a ride request
+	RideOfferID uuid.UUID `json:"ride_offer_id" binding:"required,uuid" validate:"required,uuid"` // Ride offer ID for which the user wants to suggest a ride request
 }
 
 // Define SuggestRideRequestResponse struct
@@ -291,7 +291,7 @@ type RideRequestDetail struct {
 
 // Define SuggestRideOfferRequest struct
 type SuggestRideOfferRequest struct {
-	RideRequestID uuid.UUID `json:"ride_request_id" binding:"required,uuid"` // Ride request ID for which the user wants to suggest a ride offer
+	RideRequestID uuid.UUID `json:"ride_request_id" binding:"required,uuid" validate:"required,uuid"` // Ride request ID for which the user wants to suggest a ride offer
 }
 
 // Define SuggestRideOfferResponse struct

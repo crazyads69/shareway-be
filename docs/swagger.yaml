@@ -11,6 +11,160 @@ definitions:
       success:
         type: boolean
     type: object
+  schemas.AcceptGiveRideRequestRequest:
+    properties:
+      receiverID:
+        description: The ID of the receiver (the user who received the request) aka
+          the hitcher
+        type: string
+      rideOfferID:
+        description: The ID of the ride offer (current user is the driver)
+        type: string
+      rideRequestID:
+        description: The ID of the ride request (the user received request is the
+          hitcher)
+        type: string
+      vehicleID:
+        description: The ID of the vehicle
+        type: string
+    required:
+    - receiverID
+    - rideOfferID
+    - rideRequestID
+    - vehicleID
+    type: object
+  schemas.AcceptGiveRideRequestResponse:
+    properties:
+      distance:
+        type: number
+      duration:
+        type: integer
+      encoded_polyline:
+        type: string
+      end_address:
+        type: string
+      end_latitude:
+        type: number
+      end_longitude:
+        type: number
+      end_time:
+        type: string
+      fare:
+        type: number
+      ride_id:
+        type: string
+      ride_offer_id:
+        type: string
+      ride_request_id:
+        type: string
+      start_address:
+        type: string
+      start_latitude:
+        type: number
+      start_longitude:
+        type: number
+      start_time:
+        type: string
+      status:
+        type: string
+      transaction:
+        $ref: '#/definitions/schemas.TransactionDetail'
+      vehicle:
+        $ref: '#/definitions/schemas.VehicleDetail'
+    type: object
+  schemas.AcceptHitchRideRequestRequest:
+    properties:
+      receiverID:
+        description: The ID of the receiver (the user who received the request) aka
+          the driver
+        type: string
+      rideOfferID:
+        description: The ID of the ride offer (the user who received request is the
+          driver)
+        type: string
+      rideRequestID:
+        description: The ID of the ride request (current user is the hitcher)
+        type: string
+      vehicleID:
+        description: The ID of the vehicle
+        type: string
+    required:
+    - receiverID
+    - rideOfferID
+    - rideRequestID
+    - vehicleID
+    type: object
+  schemas.AcceptHitchRideRequestResponse:
+    properties:
+      distance:
+        type: number
+      duration:
+        type: integer
+      encoded_polyline:
+        type: string
+      end_address:
+        type: string
+      end_latitude:
+        type: number
+      end_longitude:
+        type: number
+      end_time:
+        type: string
+      fare:
+        type: number
+      ride_id:
+        type: string
+      ride_offer_id:
+        type: string
+      ride_request_id:
+        type: string
+      start_address:
+        type: string
+      start_latitude:
+        type: number
+      start_longitude:
+        type: number
+      start_time:
+        type: string
+      status:
+        type: string
+      transaction:
+        $ref: '#/definitions/schemas.TransactionDetail'
+      vehicle:
+        $ref: '#/definitions/schemas.VehicleDetail'
+    type: object
+  schemas.CancelGiveRideRequestRequest:
+    properties:
+      receiverID:
+        description: The driver who received the cancel request
+        type: string
+      rideOfferID:
+        description: The hitcher who want to cancel the ride offer
+        type: string
+      rideRequestID:
+        description: The driver who received the request
+        type: string
+    required:
+    - receiverID
+    - rideOfferID
+    - rideRequestID
+    type: object
+  schemas.CancelHitchRideRequestRequest:
+    properties:
+      receiverID:
+        description: The hitcher who received the cancel request
+        type: string
+      rideOfferID:
+        description: The hitcher who received the request
+        type: string
+      rideRequestID:
+        description: The driver who want to cancel the ride request
+        type: string
+    required:
+    - receiverID
+    - rideOfferID
+    - rideRequestID
+    type: object
   schemas.DeleteUserRequest:
     properties:
       phone_number:
@@ -559,6 +713,45 @@ definitions:
       user:
         $ref: '#/definitions/schemas.UserInfo'
     type: object
+  schemas.SendGiveRideRequestRequest:
+    properties:
+      receiverID:
+        description: The ID of the receiver (the user who received the request) aka
+          the hitcher
+        type: string
+      rideOfferID:
+        description: The ID of the ride offer (current user is the driver)
+        type: string
+      rideRequestID:
+        description: The ID of the ride request (the user received request is the
+          hitcher)
+        type: string
+      vehicleID:
+        type: string
+    required:
+    - receiverID
+    - rideOfferID
+    - rideRequestID
+    - vehicleID
+    type: object
+  schemas.SendHitchRideRequestRequest:
+    properties:
+      receiverID:
+        description: The ID of the receiver (the user who received the request) aka
+          the driver
+        type: string
+      rideOfferID:
+        description: The ID of the ride offer (the user who received request is the
+          driver)
+        type: string
+      rideRequestID:
+        description: The ID of the ride request (current user is the hitcher)
+        type: string
+    required:
+    - receiverID
+    - rideOfferID
+    - rideRequestID
+    type: object
   schemas.StructuredFormatting:
     properties:
       main_text:
@@ -601,6 +794,17 @@ definitions:
       offset:
         type: integer
       value:
+        type: string
+    type: object
+  schemas.TransactionDetail:
+    properties:
+      amount:
+        type: number
+      payment_method:
+        type: string
+      status:
+        type: string
+      transaction_id:
         type: string
     type: object
   schemas.UpdateUserProfileRequest:
@@ -1412,6 +1616,208 @@ paths:
       summary: Test protected endpoint
       tags:
       - Protected
+  /ride/accept-give-ride-request:
+    post:
+      consumes:
+      - application/json
+      description: Accept a ride offer request from the driver
+      parameters:
+      - description: Accept give ride request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.AcceptGiveRideRequestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully accepted ride offer request
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.AcceptGiveRideRequestResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Accept a ride offer request from the driver
+      tags:
+      - ride
+  /ride/accept-hitch-ride-request:
+    post:
+      consumes:
+      - application/json
+      description: Accept a ride request from the hitcher
+      parameters:
+      - description: Accept hitch ride request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.AcceptHitchRideRequestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully accepted ride request
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.AcceptHitchRideRequestResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Accept a ride request from the hitcher
+      tags:
+      - ride
+  /ride/cancel-give-ride-request:
+    post:
+      consumes:
+      - application/json
+      description: Cancel a ride offer request from the driver
+      parameters:
+      - description: Cancel give ride request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CancelGiveRideRequestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully canceled ride offer request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Cancel a ride offer request from the driver
+      tags:
+      - ride
+  /ride/cancel-hitch-ride-request:
+    post:
+      consumes:
+      - application/json
+      description: Cancel a ride request from the hitcher
+      parameters:
+      - description: Cancel hitch ride request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CancelHitchRideRequestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully canceled ride request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Cancel a ride request from the hitcher
+      tags:
+      - ride
+  /ride/give-ride-request:
+    post:
+      consumes:
+      - application/json
+      description: Send a ride offer request from the driver to the hitcher
+      parameters:
+      - description: Give ride request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.SendGiveRideRequestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully sent ride offer request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Send a ride offer request from the driver to the hitcher
+      tags:
+      - ride
+  /ride/hitch-ride-request:
+    post:
+      consumes:
+      - application/json
+      description: Send a ride request from the hitcher to the driver
+      parameters:
+      - description: Hitch ride request details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.SendHitchRideRequestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully sent ride request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Send a ride request from the hitcher to the driver
+      tags:
+      - ride
   /user/get-profile:
     get:
       consumes:

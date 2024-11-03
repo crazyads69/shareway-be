@@ -1,11 +1,11 @@
 package ws
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"shareway/helper"
-	"shareway/middleware"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -36,30 +36,43 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request, userID string) {
 }
 
 // WebSocketHandler is the Gin handler for WebSocket connections
-func WebSocketHandler(ctx *gin.Context) {
-	// Get payload from context
-	payload := ctx.MustGet(middleware.AuthorizationPayloadKey)
+func WebSocketHandler(ctx *gin.Context, hub *Hub) {
+	// Get the user ID from the query parameters
+	userID := ctx.Query("user_id")
 
-	// Convert payload to map
-	data, err := helper.ConvertToPayload(payload)
-	if err != nil {
+	// Check if userID is provided
+	if userID == "" {
 		response := helper.ErrorResponseWithMessage(
-			fmt.Errorf("failed to convert payload"),
-			"Failed to convert payload",
-			"Không thể chuyển đổi payload",
+			fmt.Errorf("user_id is required"),
+			"User ID is required",
+			"Yêu cầu ID người dùng",
 		)
-		helper.GinResponse(ctx, http.StatusInternalServerError, response)
-		return
+		helper.GinResponse(
+			ctx,
+			http.StatusBadRequest,
+			response,
+		)
 	}
 
-	// Convert userid from uuid to string
-	userIDString := data.UserID.String()
-
 	// Serve WebSocket connection
-	ServeWs(hub, ctx.Writer, ctx.Request, userIDString)
+	ServeWs(hub, ctx.Writer, ctx.Request, userID)
+}
+
+type Message struct {
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
 }
 
 // BroadcastMessage sends a message to all connected clients
-func BroadcastMessage(message []byte) {
-	hub.broadcast <- message
+func BroadcastMessage(hub *Hub, messageType string, data interface{}) {
+	message := Message{
+		Type: messageType,
+		Data: data,
+	}
+	jsonMessage, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("error marshalling broadcast message: %v", err)
+		return
+	}
+	hub.broadcast <- jsonMessage
 }

@@ -1099,6 +1099,336 @@
                 }
             }
         },
+        "/ride/accept-give-ride-request": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Accept a ride offer request from the driver",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Accept a ride offer request from the driver",
+                "parameters": [
+                    {
+                        "description": "Accept give ride request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.AcceptGiveRideRequestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully accepted ride offer request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.AcceptGiveRideRequestResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ride/accept-hitch-ride-request": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Accept a ride request from the hitcher",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Accept a ride request from the hitcher",
+                "parameters": [
+                    {
+                        "description": "Accept hitch ride request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.AcceptHitchRideRequestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully accepted ride request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.AcceptHitchRideRequestResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ride/cancel-give-ride-request": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancel a ride offer request from the driver",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Cancel a ride offer request from the driver",
+                "parameters": [
+                    {
+                        "description": "Cancel give ride request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.CancelGiveRideRequestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully canceled ride offer request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ride/cancel-hitch-ride-request": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancel a ride request from the hitcher",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Cancel a ride request from the hitcher",
+                "parameters": [
+                    {
+                        "description": "Cancel hitch ride request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.CancelHitchRideRequestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully canceled ride request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ride/give-ride-request": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Send a ride offer request from the driver to the hitcher",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Send a ride offer request from the driver to the hitcher",
+                "parameters": [
+                    {
+                        "description": "Give ride request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.SendGiveRideRequestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully sent ride offer request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ride/hitch-ride-request": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Send a ride request from the hitcher to the driver",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Send a ride request from the hitcher to the driver",
+                "parameters": [
+                    {
+                        "description": "Hitch ride request details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.SendHitchRideRequestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully sent ride request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/user/get-profile": {
             "get": {
                 "security": [
@@ -1429,6 +1759,222 @@
                 },
                 "success": {
                     "type": "boolean"
+                }
+            }
+        },
+        "schemas.AcceptGiveRideRequestRequest": {
+            "type": "object",
+            "required": [
+                "receiverID",
+                "rideOfferID",
+                "rideRequestID",
+                "vehicleID"
+            ],
+            "properties": {
+                "receiverID": {
+                    "description": "The ID of the receiver (the user who received the request) aka the hitcher",
+                    "type": "string"
+                },
+                "rideOfferID": {
+                    "description": "The ID of the ride offer (current user is the driver)",
+                    "type": "string"
+                },
+                "rideRequestID": {
+                    "description": "The ID of the ride request (the user received request is the hitcher)",
+                    "type": "string"
+                },
+                "vehicleID": {
+                    "description": "The ID of the vehicle",
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.AcceptGiveRideRequestResponse": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "encoded_polyline": {
+                    "type": "string"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_latitude": {
+                    "type": "number"
+                },
+                "end_longitude": {
+                    "type": "number"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "fare": {
+                    "type": "number"
+                },
+                "ride_id": {
+                    "type": "string"
+                },
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "ride_request_id": {
+                    "type": "string"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_latitude": {
+                    "type": "number"
+                },
+                "start_longitude": {
+                    "type": "number"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction": {
+                    "$ref": "#/definitions/schemas.TransactionDetail"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/schemas.VehicleDetail"
+                }
+            }
+        },
+        "schemas.AcceptHitchRideRequestRequest": {
+            "type": "object",
+            "required": [
+                "receiverID",
+                "rideOfferID",
+                "rideRequestID",
+                "vehicleID"
+            ],
+            "properties": {
+                "receiverID": {
+                    "description": "The ID of the receiver (the user who received the request) aka the driver",
+                    "type": "string"
+                },
+                "rideOfferID": {
+                    "description": "The ID of the ride offer (the user who received request is the driver)",
+                    "type": "string"
+                },
+                "rideRequestID": {
+                    "description": "The ID of the ride request (current user is the hitcher)",
+                    "type": "string"
+                },
+                "vehicleID": {
+                    "description": "The ID of the vehicle",
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.AcceptHitchRideRequestResponse": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "encoded_polyline": {
+                    "type": "string"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_latitude": {
+                    "type": "number"
+                },
+                "end_longitude": {
+                    "type": "number"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "fare": {
+                    "type": "number"
+                },
+                "ride_id": {
+                    "type": "string"
+                },
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "ride_request_id": {
+                    "type": "string"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_latitude": {
+                    "type": "number"
+                },
+                "start_longitude": {
+                    "type": "number"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction": {
+                    "$ref": "#/definitions/schemas.TransactionDetail"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/schemas.VehicleDetail"
+                }
+            }
+        },
+        "schemas.CancelGiveRideRequestRequest": {
+            "type": "object",
+            "required": [
+                "receiverID",
+                "rideOfferID",
+                "rideRequestID"
+            ],
+            "properties": {
+                "receiverID": {
+                    "description": "The driver who received the cancel request",
+                    "type": "string"
+                },
+                "rideOfferID": {
+                    "description": "The hitcher who want to cancel the ride offer",
+                    "type": "string"
+                },
+                "rideRequestID": {
+                    "description": "The driver who received the request",
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.CancelHitchRideRequestRequest": {
+            "type": "object",
+            "required": [
+                "receiverID",
+                "rideOfferID",
+                "rideRequestID"
+            ],
+            "properties": {
+                "receiverID": {
+                    "description": "The hitcher who received the cancel request",
+                    "type": "string"
+                },
+                "rideOfferID": {
+                    "description": "The hitcher who received the request",
+                    "type": "string"
+                },
+                "rideRequestID": {
+                    "description": "The driver who want to cancel the ride request",
+                    "type": "string"
                 }
             }
         },
@@ -2252,6 +2798,54 @@
                 }
             }
         },
+        "schemas.SendGiveRideRequestRequest": {
+            "type": "object",
+            "required": [
+                "receiverID",
+                "rideOfferID",
+                "rideRequestID",
+                "vehicleID"
+            ],
+            "properties": {
+                "receiverID": {
+                    "description": "The ID of the receiver (the user who received the request) aka the hitcher",
+                    "type": "string"
+                },
+                "rideOfferID": {
+                    "description": "The ID of the ride offer (current user is the driver)",
+                    "type": "string"
+                },
+                "rideRequestID": {
+                    "description": "The ID of the ride request (the user received request is the hitcher)",
+                    "type": "string"
+                },
+                "vehicleID": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.SendHitchRideRequestRequest": {
+            "type": "object",
+            "required": [
+                "receiverID",
+                "rideOfferID",
+                "rideRequestID"
+            ],
+            "properties": {
+                "receiverID": {
+                    "description": "The ID of the receiver (the user who received the request) aka the driver",
+                    "type": "string"
+                },
+                "rideOfferID": {
+                    "description": "The ID of the ride offer (the user who received request is the driver)",
+                    "type": "string"
+                },
+                "rideRequestID": {
+                    "description": "The ID of the ride request (current user is the hitcher)",
+                    "type": "string"
+                }
+            }
+        },
         "schemas.StructuredFormatting": {
             "type": "object",
             "properties": {
@@ -2316,6 +2910,23 @@
                     "type": "integer"
                 },
                 "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.TransactionDetail": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "payment_method": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction_id": {
                     "type": "string"
                 }
             }

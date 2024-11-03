@@ -72,17 +72,18 @@ type PasetoToken struct {
 
 // Transaction represents a payment transaction
 type Transaction struct {
-	ID         uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	CreatedAt  time.Time `gorm:"autoCreateTime"`
-	UpdatedAt  time.Time `gorm:"autoUpdateTime"`
-	PayerID    uuid.UUID `gorm:"type:uuid"`
-	Payer      User      `gorm:"foreignKey:PayerID"`
-	ReceiverID uuid.UUID `gorm:"type:uuid"`
-	Receiver   User      `gorm:"foreignKey:ReceiverID"`
-	Amount     float64
-	Status     string    `gorm:"default:'pending'"` // pending, completed, failed
-	RideID     uuid.UUID `gorm:"type:uuid"`
-	Ride       Ride      `gorm:"foreignKey:RideID"`
+	ID            uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt     time.Time `gorm:"autoCreateTime"`
+	UpdatedAt     time.Time `gorm:"autoUpdateTime"`
+	PayerID       uuid.UUID `gorm:"type:uuid"`
+	Payer         User      `gorm:"foreignKey:PayerID"`
+	ReceiverID    uuid.UUID `gorm:"type:uuid"`
+	Receiver      User      `gorm:"foreignKey:ReceiverID"`
+	Amount        float64
+	PaymentMethod string    `gorm:"default:'cash'"`    // cash, wallet, credit_card
+	Status        string    `gorm:"default:'pending'"` // pending, completed, failed, refunded
+	RideID        uuid.UUID `gorm:"type:uuid"`
+	Ride          Ride      `gorm:"foreignKey:RideID"`
 }
 
 // Vehicle represents a vehicle in the system
@@ -120,7 +121,7 @@ type RideOffer struct {
 	EndAddress             string  `gorm:"type:text"`
 	Distance               float64 // in kilometers
 	Duration               int     // in seconds
-	Status                 string  `gorm:"default:'created'"` // created, active, matched, completed, cancelled
+	Status                 string  `gorm:"default:'created'"` // created, matched, completed, cancelled
 	Rides                  []Ride  `gorm:"foreignKey:RideOfferID"`
 	StartTime              time.Time
 	EndTime                time.Time // Time to end the ride (end time = start time + duration)
@@ -142,7 +143,7 @@ type RideRequest struct {
 	RiderCurrentLongitude float64
 	StartAddress          string  `gorm:"type:text"`
 	EndAddress            string  `gorm:"type:text"`
-	Status                string  `gorm:"default:'created'"` // created, active, matched, completed, cancelled
+	Status                string  `gorm:"default:'created'"` // created, matched, completed, cancelled
 	Rides                 []Ride  `gorm:"foreignKey:RideRequestID"`
 	EncodedPolyline       string  `gorm:"type:text"`
 	Distance              float64 // in kilometers
@@ -153,18 +154,30 @@ type RideRequest struct {
 
 // Ride represents a matched ride between an offer and a request
 type Ride struct {
-	ID            uuid.UUID   `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	CreatedAt     time.Time   `gorm:"autoCreateTime"`
-	UpdatedAt     time.Time   `gorm:"autoUpdateTime"`
-	RideOfferID   uuid.UUID   `gorm:"type:uuid"`
-	RideOffer     RideOffer   `gorm:"foreignKey:RideOfferID"`
-	RideRequestID uuid.UUID   `gorm:"type:uuid"`
-	RideRequest   RideRequest `gorm:"foreignKey:RideRequestID"`
-	Status        string      `gorm:"default:'scheduled'"` // scheduled, ongoing, completed, cancelled
-	StartTime     time.Time
-	EndTime       time.Time
-	Transactions  []Transaction `gorm:"foreignKey:RideID"`
-	Ratings       []Rating      `gorm:"foreignKey:RideID"`
+	ID              uuid.UUID   `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt       time.Time   `gorm:"autoCreateTime"`
+	UpdatedAt       time.Time   `gorm:"autoUpdateTime"`
+	RideOfferID     uuid.UUID   `gorm:"type:uuid"`
+	RideOffer       RideOffer   `gorm:"foreignKey:RideOfferID"`
+	RideRequestID   uuid.UUID   `gorm:"type:uuid"`
+	RideRequest     RideRequest `gorm:"foreignKey:RideRequestID"`
+	Status          string      `gorm:"default:'scheduled'"` // scheduled, ongoing, completed, cancelled
+	StartTime       time.Time
+	EndTime         time.Time
+	Fare            float64
+	StartAddress    string `gorm:"type:text"`
+	EndAddress      string `gorm:"type:text"`
+	EncodedPolyline string `gorm:"type:text"`
+	Distance        float64
+	Duration        int
+	StartLatitude   float64
+	StartLongitude  float64
+	EndLatitude     float64
+	EndLongitude    float64
+	VehicleID       uuid.UUID     `gorm:"type:uuid"`
+	Vehicle         Vehicle       `gorm:"foreignKey:VehicleID"`
+	Transactions    []Transaction `gorm:"foreignKey:RideID"`
+	Ratings         []Rating      `gorm:"foreignKey:RideID"`
 }
 
 // Rating represents a rating given by a user to another user

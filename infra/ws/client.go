@@ -45,7 +45,8 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-		// Process the message here (e.g., broadcast to all clients or handle specific commands)
+
+		// Broadcast the received message to the hub
 		c.hub.broadcast <- message
 	}
 }

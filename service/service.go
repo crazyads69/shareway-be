@@ -2,6 +2,7 @@ package service
 
 import (
 	"shareway/infra/fpt"
+	"shareway/infra/ws"
 	"shareway/repository"
 	"shareway/util"
 	"shareway/util/token"
@@ -15,6 +16,7 @@ type ServiceContainer struct {
 	UserService    IUsersService
 	MapService     IMapService
 	VehicleService IVehicleService
+	RideService    IRideService
 }
 
 type ServiceFactory struct {
@@ -24,9 +26,10 @@ type ServiceFactory struct {
 	encryptor util.IEncryptor
 	maker     *token.PasetoMaker
 	redis     *redis.Client
+	hub       *ws.Hub
 }
 
-func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, redisClient *redis.Client) *ServiceFactory {
+func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, redisClient *redis.Client, hub *ws.Hub) *ServiceFactory {
 	repoFactory := repository.NewRepositoryFactory(db, redisClient, cfg)
 	repos := repoFactory.CreateRepositories()
 
@@ -42,6 +45,7 @@ func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, r
 		encryptor: encryptor,
 		maker:     token,
 		redis:     redisClient,
+		hub:       hub,
 	}
 }
 
@@ -51,6 +55,7 @@ func (f *ServiceFactory) CreateServices() *ServiceContainer {
 		UserService:    f.createUserService(),
 		MapService:     f.createMapsService(),
 		VehicleService: f.createVehicleService(),
+		RideService:    f.createRideService(),
 	}
 }
 
@@ -68,4 +73,8 @@ func (f *ServiceFactory) createMapsService() IMapService {
 
 func (f *ServiceFactory) createVehicleService() IVehicleService {
 	return NewVehicleService(f.repos.VehicleRepository, f.cfg)
+}
+
+func (f *ServiceFactory) createRideService() IRideService {
+	return NewRideService(f.repos.RideRepository, f.hub, f.cfg)
 }

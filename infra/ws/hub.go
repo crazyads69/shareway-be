@@ -1,5 +1,7 @@
 package ws
 
+import "encoding/json"
+
 // Hub maintains the set of active clients and broadcasts messages
 type Hub struct {
 	clients    map[string]*Client // Use userID as key for quick lookups
@@ -8,14 +10,14 @@ type Hub struct {
 	unregister chan *Client
 }
 
-// Global hub instance
-var hub *Hub
+// // Global hub instance
+// var hub *Hub
 
-// Initialize the hub and start its main loop
-func init() {
-	hub = NewHub()
-	go hub.Run()
-}
+// // Initialize the hub and start its main loop
+// func init() {
+// 	hub = NewHub()
+// 	go hub.Run()
+// }
 
 // NewHub creates a new Hub instance
 func NewHub() *Hub {
@@ -53,13 +55,18 @@ func (h *Hub) Run() {
 }
 
 // SendToUser sends a message to a specific user
-func (h *Hub) SendToUser(userID string, message []byte) {
+func (h *Hub) SendToUser(userID string, messageType string, data interface{}) {
 	if client, ok := h.clients[userID]; ok {
+		message := map[string]interface{}{
+			"type": messageType,
+			"data": data,
+		}
+		jsonMessage, _ := json.Marshal(message)
 		select {
-		case client.send <- message:
+		case client.send <- jsonMessage:
 		default:
 			close(client.send)
-			delete(h.clients, client.userID)
+			delete(h.clients, userID)
 		}
 	}
 }

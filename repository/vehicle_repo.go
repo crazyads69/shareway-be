@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
 	"strings"
@@ -29,12 +30,18 @@ func NewVehicleRepository(db *gorm.DB, redis *redis.Client) IVehicleRepository {
 	return &VehicleRepository{db: db, redis: redis}
 }
 
-// GetVehicles retrieves all vehicles from the database and converts them to schema format
+var (
+	ErrVehicleNotFound = errors.New("vehicle not found")
+)
+
 // GetVehicles retrieves all vehicles from the database and converts them to schema format
 func (r *VehicleRepository) GetVehicles(ctx context.Context, limit int, page int, input string) ([]schemas.Vehicle, error) {
 	var vehicles []migration.VehicleType
 	input = strings.ToLower(input)
-	query := r.db.Limit(limit).Offset(page * limit)
+	query := r.db.Model(&migration.VehicleType{}).
+		Select("id", "name", "fuel_consumed").
+		Limit(limit).
+		Offset(page * limit)
 
 	if input != "" {
 		query = query.Where("LOWER(name) LIKE ?", "%"+input+"%")
@@ -58,55 +65,59 @@ func (r *VehicleRepository) GetVehicles(ctx context.Context, limit int, page int
 }
 
 // RegisterVehicle registers a vehicle for a user
-func (r *VehicleRepository) RegisterVehicle(userID uuid.UUID, vehicleID uuid.UUID, licensePlate string, caVet string) error {
-	// Get the vehicle type from the database
-	var vehicle migration.VehicleType
-	if err := r.db.First(&vehicle, vehicleID).Error; err != nil {
-		return err
-	}
+func (r *VehicleRepository) RegisterVehicle(userID, vehicleID uuid.UUID, licensePlate, caVet string) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var vehicle migration.VehicleType
+		if err := tx.Select("name", "fuel_consumed").First(&vehicle, vehicleID).Error; err != nil {
+			return err
+		}
 
-	// Create a new vehicle registration record
-	vehicleRegistration := migration.Vehicle{
-		UserID:        userID,
-		VehicleTypeID: vehicleID,
-		LicensePlate:  licensePlate,
-		Name:          vehicle.Name,
-		FuelConsumed:  vehicle.FuelConsumed,
-		CaVet:         caVet,
-	}
+		vehicleRegistration := migration.Vehicle{
+			UserID:        userID,
+			VehicleTypeID: vehicleID,
+			LicensePlate:  licensePlate,
+			Name:          vehicle.Name,
+			FuelConsumed:  vehicle.FuelConsumed,
+			CaVet:         caVet,
+		}
 
-	// Insert the new record into the database
-	if err := r.db.Create(&vehicleRegistration).Error; err != nil {
-		return err
-	}
-
-	return nil
+		return tx.Create(&vehicleRegistration).Error
+	})
 }
 
 // LicensePlateExists checks if a given license plate already exists in the database
 func (r *VehicleRepository) LicensePlateExists(licensePlate string) (bool, error) {
-	var count int64
-	err := r.db.Model(&migration.Vehicle{}).Where("license_plate = ?", licensePlate).Count(&count).Error
-	if err != nil {
-		return false, err
-	}
-	return count > 0, nil
+	var exists bool
+	err := r.db.Model(&migration.Vehicle{}).
+		Select("1").
+		Where("license_plate = ?", licensePlate).
+		Limit(1).
+		Find(&exists).
+		Error
+	return exists, err
 }
 
 // CaVetExists checks if a given CA VET already exists in the database
 func (r *VehicleRepository) CaVetExists(caVet string) (bool, error) {
-	var count int64
-	err := r.db.Model(&migration.Vehicle{}).Where("ca_vet = ?", caVet).Count(&count).Error
-	if err != nil {
-		return false, err
-	}
-	return count > 0, nil
+	var exists bool
+	err := r.db.Model(&migration.Vehicle{}).
+		Select("1").
+		Where("ca_vet = ?", caVet).
+		Limit(1).
+		Find(&exists).
+		Error
+	return exists, err
 }
 
 // GetVehicleFromID retrieves a vehicle from the database using the vehicle ID
 func (r *VehicleRepository) GetVehicleFromID(vehicleID uuid.UUID) (schemas.VehicleDetail, error) {
 	var vehicle migration.Vehicle
-	if err := r.db.First(&vehicle, vehicleID).Error; err != nil {
+	err := r.db.Select("id", "name", "fuel_consumed", "license_plate").
+		First(&vehicle, vehicleID).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return schemas.VehicleDetail{}, ErrVehicleNotFound
+		}
 		return schemas.VehicleDetail{}, err
 	}
 
@@ -121,7 +132,10 @@ func (r *VehicleRepository) GetVehicleFromID(vehicleID uuid.UUID) (schemas.Vehic
 // GetAllVehiclesFromUserID retrieves all vehicles for a user using the user ID
 func (r *VehicleRepository) GetAllVehiclesFromUserID(userID uuid.UUID) ([]schemas.VehicleDetail, error) {
 	var vehicles []migration.Vehicle
-	if err := r.db.Where("user_id = ?", userID).Find(&vehicles).Error; err != nil {
+	err := r.db.Select("id", "name", "fuel_consumed", "license_plate").
+		Where("user_id = ?", userID).
+		Find(&vehicles).Error
+	if err != nil {
 		return nil, err
 	}
 
@@ -136,3 +150,6 @@ func (r *VehicleRepository) GetAllVehiclesFromUserID(userID uuid.UUID) ([]schema
 	}
 	return schemaVehicles, nil
 }
+
+// Make sure VehicleRepository implements IVehicleRepository
+var _ IVehicleRepository = (*VehicleRepository)(nil)
