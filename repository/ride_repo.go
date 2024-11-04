@@ -75,11 +75,28 @@ func (r *RideRepository) AcceptRideRequest(rideOfferID, rideRequestID, vehicleID
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		// Get the ride offer by ID with only necessary fields
 		var rideOffer migration.RideOffer
-		err := tx.Select("start_time, end_time, fare, start_address, end_address, encoded_polyline, distance, duration, start_latitude, start_longitude, end_latitude, end_longitude").
+		err := tx.Select("start_time, end_time, status, fare, start_address, end_address, encoded_polyline, distance, duration, start_latitude, start_longitude, end_latitude, end_longitude").
 			Where("id = ?", rideOfferID).
 			First(&rideOffer).Error
 		if err != nil {
 			return err
+		}
+		// Check if the ride offer is already matched
+		if rideOffer.Status == "matched" {
+			return errors.New("ride offer is already matched")
+		}
+
+		// Get the ride request by ID with only necessary fields
+		var rideRequest migration.RideRequest
+		err = tx.Select("start_time, end_time, status, start_address, end_address, start_latitude, start_longitude, end_latitude, end_longitude, encoded_polyline, distance, duration,").
+			Where("id = ?", rideRequestID).
+			First(&rideRequest).Error
+		if err != nil {
+			return err
+		}
+		// Check if the ride request is already matched
+		if rideRequest.Status == "matched" {
+			return errors.New("ride request is already matched")
 		}
 
 		// Create a new ride

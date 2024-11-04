@@ -6,13 +6,18 @@ import (
 	"shareway/schemas"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/twpayne/go-polyline"
 )
 
 const (
-	earthRadius = 6371 // Earth radius in kilometers
-	minDistance = 0.1  // Minimum distance in kilometers
+	earthRadius         = 6371   // Earth radius in kilometers
+	minDistance         = 0.1    // Minimum distance in kilometers
+	maxDistanceSubRoute = 0.0003 // Maximum distance in kilometers
+	maxDistanceMatch    = 0.02   // About 2 km at equator
+	degreesToRad        = math.Pi / 180
+	maxDistanceSq       = maxDistanceMatch * maxDistanceMatch
 )
 
 func haversineDistance(p1, p2 schemas.Point) float64 {
@@ -78,70 +83,135 @@ func ConvertStringToLocation(point string) schemas.Point {
 	}
 }
 
-func IsRouteMatching(offerPolyline, requestPolyline []schemas.Point, maxDistance float64) bool {
-	// Check if the request route is a subset of the offer route
-	if IsSubRoute(offerPolyline, requestPolyline) {
-		return true
+func IsMatchRoute(offerPolyline, requestPolyline []schemas.Point) bool {
+	if len(requestPolyline) < 2 || len(offerPolyline) < 2 {
+		return false
 	}
 
-	// Calculate the radius
-	startDist := HaversineDistance(
-		offerPolyline[0].Lat, offerPolyline[0].Lng,
-		requestPolyline[0].Lat, requestPolyline[0].Lng,
-	)
-
-	minEndDist := math.Inf(1)
-	for i := 0; i < len(offerPolyline); i++ {
-		endDist := HaversineDistance(
-			offerPolyline[i].Lat, offerPolyline[i].Lng,
-			requestPolyline[len(requestPolyline)-1].Lat,
-			requestPolyline[len(requestPolyline)-1].Lng,
-		)
-		if endDist < minEndDist {
-			minEndDist = endDist
-		}
-	}
-
-	totalRadius := math.Abs(startDist - minEndDist)
-	return totalRadius <= maxDistance
-}
-
-func IsSubRoute(offerPolyline, requestPolyline []schemas.Point) bool {
 	if len(requestPolyline) > len(offerPolyline) {
 		return false
 	}
 
-	for i := 0; i <= len(offerPolyline)-len(requestPolyline); i++ {
-		if IsMatchingSegment(offerPolyline[i:i+len(requestPolyline)], requestPolyline) {
-			return true
+	if IsSubRoute(offerPolyline, requestPolyline) {
+		return true
+	}
+
+	startPoint, endPoint := requestPolyline[0], requestPolyline[len(requestPolyline)-1]
+	minStartDistSq, minEndDistSq := math.MaxFloat64, math.MaxFloat64
+	startIdx, endIdx := -1, -1
+
+	for i, point := range offerPolyline {
+		startDistSq := squaredDistance(point, startPoint)
+		if startDistSq < minStartDistSq {
+			minStartDistSq = startDistSq
+			startIdx = i
+		}
+
+		endDistSq := squaredDistance(point, endPoint)
+		if endDistSq < minEndDistSq {
+			minEndDistSq = endDistSq
+			endIdx = i
 		}
 	}
-	return false
+
+	return minStartDistSq <= maxDistanceSq && minEndDistSq <= maxDistanceSq && startIdx < endIdx
 }
 
-func IsMatchingSegment(segment, requestPolyline []schemas.Point) bool {
-	const epsilon = 0.0001 // Small threshold for floating-point comparison
-	for i := range requestPolyline {
-		if math.Abs(segment[i].Lat-requestPolyline[i].Lat) > epsilon ||
-			math.Abs(segment[i].Lng-requestPolyline[i].Lng) > epsilon {
-			return false
+func IsSubRoute(offerPolyline, requestPolyline []schemas.Point) bool {
+	startPoint, endPoint := requestPolyline[0], requestPolyline[len(requestPolyline)-1]
+	startIdx, endIdx := -1, -1
+
+	for i, point := range offerPolyline {
+		if startIdx == -1 && squaredDistance(point, startPoint) <= maxDistanceSq {
+			startIdx = i
+		}
+		if squaredDistance(point, endPoint) <= maxDistanceSq {
+			endIdx = i
+		}
+		if startIdx != -1 && endIdx != -1 {
+			break
 		}
 	}
-	return true
+
+	return startIdx != -1 && endIdx != -1 && startIdx < endIdx
+}
+
+func squaredDistance(p1, p2 schemas.Point) float64 {
+	dx := (p2.Lng - p1.Lng) * math.Cos((p1.Lat+p2.Lat)/2*degreesToRad)
+	dy := p2.Lat - p1.Lat
+	return dx*dx + dy*dy
 }
 
 func HaversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
-	const earthRadius = 6371 // km
+	dLat := (lat2 - lat1) * degreesToRad
+	dLon := (lon2 - lon1) * degreesToRad
+	lat1 = lat1 * degreesToRad
+	lat2 = lat2 * degreesToRad
 
-	dLat := (lat2 - lat1) * math.Pi / 180
-	dLon := (lon2 - lon1) * math.Pi / 180
 	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
-		math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*
+		math.Cos(lat1)*math.Cos(lat2)*
 			math.Sin(dLon/2)*math.Sin(dLon/2)
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 	return earthRadius * c
 }
 
 func IsTimeOverlap(offer migration.RideOffer, request migration.RideRequest) bool {
-	return offer.StartTime.Before(request.StartTime) && offer.EndTime.After(request.EndTime)
+	// Add a buffer of 30 minutes to the start and end time of the offer
+	// to account for the time it takes to pick up the hitchhiker and drop them off
+	// This buffer is added to the start and end time of the offer
+	offerStartTime := offer.StartTime.Add(-30 * time.Minute)
+	offerEndTime := offer.EndTime.Add(30 * time.Minute)
+	return offerStartTime.Before(request.StartTime) && offerEndTime.After(request.EndTime)
 }
+
+// func IsSubRoute(offerPolyline, requestPolyline []schemas.Point) bool {
+// 	if len(requestPolyline) > len(offerPolyline) {
+// 		return false
+// 	}
+
+// 	for i := 0; i <= len(offerPolyline)-len(requestPolyline); i++ {
+// 		if IsMatchingSegment(offerPolyline[i:i+len(requestPolyline)], requestPolyline) {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
+
+// func IsMatchingSegment(segment, requestPolyline []schemas.Point) bool {
+// 	const epsilon = 0.0001 // Small threshold for floating-point comparison
+// 	for i := range requestPolyline {
+// 		if math.Abs(segment[i].Lat-requestPolyline[i].Lat) > epsilon ||
+// 			math.Abs(segment[i].Lng-requestPolyline[i].Lng) > epsilon {
+// 			return false
+// 		}
+// 	}
+// 	return true
+// }
+
+// func IsRouteMatching(offerPolyline, requestPolyline []schemas.Point, maxDistance float64) bool {
+// 	// Check if the request route is a subset of the offer route
+// 	if IsSubRoute(offerPolyline, requestPolyline) {
+// 		return true
+// 	}
+
+// 	// Calculate the radius
+// 	startDist := HaversineDistance(
+// 		offerPolyline[0].Lat, offerPolyline[0].Lng,
+// 		requestPolyline[0].Lat, requestPolyline[0].Lng,
+// 	)
+
+// 	minEndDist := math.Inf(1)
+// 	for i := 0; i < len(offerPolyline); i++ {
+// 		endDist := HaversineDistance(
+// 			offerPolyline[i].Lat, offerPolyline[i].Lng,
+// 			requestPolyline[len(requestPolyline)-1].Lat,
+// 			requestPolyline[len(requestPolyline)-1].Lng,
+// 		)
+// 		if endDist < minEndDist {
+// 			minEndDist = endDist
+// 		}
+// 	}
+
+// 	totalRadius := math.Abs(startDist - minEndDist)
+// 	return totalRadius <= maxDistance
+// }

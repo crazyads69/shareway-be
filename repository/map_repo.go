@@ -49,15 +49,10 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 	var rideOfferID uuid.UUID
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		// Check if the vehicle exists and belongs to the user
-		var vehicle struct {
-			FuelConsumed float64
-		}
-		if err := tx.Table("vehicles").
-			Select("vehicle_types.fuel_consumed").
-			Joins("JOIN vehicle_types ON vehicles.vehicle_type_id = vehicle_types.id").
-			Where("vehicles.id = ? AND vehicles.user_id = ?", vehicleID, userID).
-			First(&vehicle).Error; err != nil {
-			return fmt.Errorf("failed to fetch vehicle: %w", err)
+		// Check if the vehicle exists and belongs to the user
+		var vehicle migration.Vehicle
+		if err := r.db.Preload("VehicleType").Where("id = ? AND user_id = ?", vehicleID, userID).First(&vehicle).Error; err != nil {
+			return err
 		}
 
 		// Check for overlapping ride offers
@@ -71,6 +66,19 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 		}
 		if existingRideOfferCount > 0 {
 			return errors.New("ride offer already exists for the user in that time frame")
+		}
+
+		// Check for overlapping ride requests
+		var existingRideRequestCount int64
+		err = tx.Model(&migration.RideRequest{}).
+			Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
+				userID, startTime, endTime, startTime, endTime, startTime, endTime).
+			Count(&existingRideRequestCount).Error
+		if err != nil {
+			return fmt.Errorf("error checking for existing ride requests: %w", err)
+		}
+		if existingRideRequestCount > 0 {
+			return errors.New("ride request already exists for the user in that time frame")
 		}
 
 		// Fetch fuel price
@@ -152,6 +160,20 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 			return errors.New("ride request already exists for the user in that time frame")
 		}
 
+		// Check if any ride offer exists for the user that overlaps with the new time frame
+		// This is to prevent the user from creating a ride request that overlaps with their own ride offer
+		var existingRideOfferCount int64
+		err = tx.Model(&migration.RideOffer{}).
+			Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
+				userID, startTime, endTime, startTime, endTime, startTime, endTime).
+			Count(&existingRideOfferCount).Error
+		if err != nil {
+			return fmt.Errorf("error checking for existing ride offers: %w", err)
+		}
+		if existingRideOfferCount > 0 {
+			return errors.New("ride offer already exists for the user in that time frame")
+		}
+
 		// Create ride request
 		rideRequest := migration.RideRequest{
 			UserID:                userID,
@@ -222,7 +244,7 @@ func (r *MapsRepository) SuggestRideRequests(userID uuid.UUID, rideOfferID uuid.
 	for _, rideRequest := range rideRequests {
 		requestPolyline := helper.DecodePolyline(rideRequest.EncodedPolyline)
 
-		if rideRequest.UserID != userID && helper.IsRouteMatching(offerPolyline, requestPolyline, maxDistance) &&
+		if rideRequest.UserID != userID && helper.IsMatchRoute(offerPolyline, requestPolyline) &&
 			helper.IsTimeOverlap(rideOffer, rideRequest) {
 			filteredRideRequests = append(filteredRideRequests, rideRequest)
 		}
@@ -252,7 +274,7 @@ func (r *MapsRepository) SuggestRideOffers(userID uuid.UUID, rideRequestID uuid.
 	for _, rideOffer := range rideOffers {
 		offerPolyline := helper.DecodePolyline(rideOffer.EncodedPolyline)
 
-		if rideOffer.UserID != userID && helper.IsRouteMatching(offerPolyline, requestPolyline, maxDistance) &&
+		if rideOffer.UserID != userID && helper.IsMatchRoute(offerPolyline, requestPolyline) &&
 			helper.IsTimeOverlap(rideOffer, rideRequest) {
 			filteredRideOffers = append(filteredRideOffers, rideOffer)
 		}
