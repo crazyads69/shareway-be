@@ -88,10 +88,7 @@ func IsMatchRoute(offerPolyline, requestPolyline []schemas.Point) bool {
 		return false
 	}
 
-	if len(requestPolyline) > len(offerPolyline) {
-		return false
-	}
-
+	// Kiểm tra nếu requestPolyline là một sub-route của offerPolyline
 	if IsSubRoute(offerPolyline, requestPolyline) {
 		return true
 	}
@@ -100,14 +97,18 @@ func IsMatchRoute(offerPolyline, requestPolyline []schemas.Point) bool {
 	minStartDistSq, minEndDistSq := math.MaxFloat64, math.MaxFloat64
 	startIdx, endIdx := -1, -1
 
-	for i, point := range offerPolyline {
-		startDistSq := squaredDistance(point, startPoint)
+	for i := 0; i < len(offerPolyline)-1; i++ {
+		segmentStart, segmentEnd := offerPolyline[i], offerPolyline[i+1]
+
+		// Tính khoảng cách bình phương từ startPoint đến đoạn thẳng hiện tại trong offerPolyline
+		startDistSq := pointToSegmentDistanceSq(startPoint, segmentStart, segmentEnd)
 		if startDistSq < minStartDistSq {
 			minStartDistSq = startDistSq
 			startIdx = i
 		}
 
-		endDistSq := squaredDistance(point, endPoint)
+		// Tính khoảng cách bình phương từ endPoint đến đoạn thẳng hiện tại trong offerPolyline
+		endDistSq := pointToSegmentDistanceSq(endPoint, segmentStart, segmentEnd)
 		if endDistSq < minEndDistSq {
 			minEndDistSq = endDistSq
 			endIdx = i
@@ -118,14 +119,22 @@ func IsMatchRoute(offerPolyline, requestPolyline []schemas.Point) bool {
 }
 
 func IsSubRoute(offerPolyline, requestPolyline []schemas.Point) bool {
+	if len(requestPolyline) > len(offerPolyline) {
+		return false
+	}
+
 	startPoint, endPoint := requestPolyline[0], requestPolyline[len(requestPolyline)-1]
 	startIdx, endIdx := -1, -1
 
-	for i, point := range offerPolyline {
-		if startIdx == -1 && squaredDistance(point, startPoint) <= maxDistanceSq {
+	for i := 0; i < len(offerPolyline)-1; i++ {
+		segmentStart, segmentEnd := offerPolyline[i], offerPolyline[i+1]
+
+		// Kiểm tra xem startPoint có gần đoạn thẳng hiện tại trong offerPolyline không
+		if startIdx == -1 && pointToSegmentDistanceSq(startPoint, segmentStart, segmentEnd) <= maxDistanceSq {
 			startIdx = i
 		}
-		if squaredDistance(point, endPoint) <= maxDistanceSq {
+		// Kiểm tra xem endPoint có gần đoạn thẳng hiện tại trong offerPolyline không
+		if pointToSegmentDistanceSq(endPoint, segmentStart, segmentEnd) <= maxDistanceSq {
 			endIdx = i
 		}
 		if startIdx != -1 && endIdx != -1 {
@@ -136,11 +145,97 @@ func IsSubRoute(offerPolyline, requestPolyline []schemas.Point) bool {
 	return startIdx != -1 && endIdx != -1 && startIdx < endIdx
 }
 
+// Hàm tính bình phương khoảng cách từ một điểm đến đoạn thẳng
+func pointToSegmentDistanceSq(p, v, w schemas.Point) float64 {
+	dx := w.Lng - v.Lng
+	dy := w.Lat - v.Lat
+	lengthSq := dx*dx + dy*dy
+
+	if lengthSq == 0 {
+		return squaredDistance(p, v) // Nếu v và w là cùng một điểm
+	}
+
+	// Tính t để xác định vị trí gần nhất trên đoạn thẳng
+	t := ((p.Lng-v.Lng)*dx + (p.Lat-v.Lat)*dy) / lengthSq
+	t = math.Max(0, math.Min(1, t))
+	projection := schemas.Point{
+		Lng: v.Lng + t*dx,
+		Lat: v.Lat + t*dy,
+	}
+	return squaredDistance(p, projection)
+}
+
+// Hàm tính bình phương khoảng cách giữa hai điểm
 func squaredDistance(p1, p2 schemas.Point) float64 {
 	dx := (p2.Lng - p1.Lng) * math.Cos((p1.Lat+p2.Lat)/2*degreesToRad)
 	dy := p2.Lat - p1.Lat
 	return dx*dx + dy*dy
 }
+
+// func IsMatchRoute(offerPolyline, requestPolyline []schemas.Point) bool {
+// 	if len(requestPolyline) < 2 || len(offerPolyline) < 2 {
+// 		return false
+// 	}
+
+// 	// if len(requestPolyline) > len(offerPolyline) {
+// 	// 	return false
+// 	// }
+
+// 	if IsSubRoute(offerPolyline, requestPolyline) {
+// 		return true
+// 	}
+
+// 	startPoint, endPoint := requestPolyline[0], requestPolyline[len(requestPolyline)-1]
+// 	minStartDistSq, minEndDistSq := math.MaxFloat64, math.MaxFloat64
+// 	startIdx, endIdx := -1, -1
+
+// 	for i, point := range offerPolyline {
+// 		startDistSq := squaredDistance(point, startPoint)
+// 		if startDistSq < minStartDistSq {
+// 			minStartDistSq = startDistSq
+// 			startIdx = i
+// 		}
+
+// 		endDistSq := squaredDistance(point, endPoint)
+// 		if endDistSq < minEndDistSq {
+// 			minEndDistSq = endDistSq
+// 			endIdx = i
+// 		}
+// 	}
+
+// 	return minStartDistSq <= maxDistanceSq && minEndDistSq <= maxDistanceSq && startIdx < endIdx
+// }
+
+// func IsSubRoute(offerPolyline, requestPolyline []schemas.Point) bool {
+// 	// Check if the request polyline is a sub-route of the offer polyline
+// 	// If requestPolyline is longer than offerPolyline, it can't be a sub-route
+// 	if len(requestPolyline) > len(offerPolyline) {
+// 		return false
+// 	}
+
+// 	startPoint, endPoint := requestPolyline[0], requestPolyline[len(requestPolyline)-1]
+// 	startIdx, endIdx := -1, -1
+
+// 	for i, point := range offerPolyline {
+// 		if startIdx == -1 && squaredDistance(point, startPoint) <= maxDistanceSq {
+// 			startIdx = i
+// 		}
+// 		if squaredDistance(point, endPoint) <= maxDistanceSq {
+// 			endIdx = i
+// 		}
+// 		if startIdx != -1 && endIdx != -1 {
+// 			break
+// 		}
+// 	}
+
+// 	return startIdx != -1 && endIdx != -1 && startIdx < endIdx
+// }
+
+// func squaredDistance(p1, p2 schemas.Point) float64 {
+// 	dx := (p2.Lng - p1.Lng) * math.Cos((p1.Lat+p2.Lat)/2*degreesToRad)
+// 	dy := p2.Lat - p1.Lat
+// 	return dx*dx + dy*dy
+// }
 
 func HaversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
 	dLat := (lat2 - lat1) * degreesToRad
