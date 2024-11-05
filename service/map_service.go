@@ -210,7 +210,7 @@ func (s *MapService) CreateGiveRide(ctx context.Context, input schemas.GiveRideR
 		points[i] = point
 	}
 
-	optimizedPoints := helper.OptimizeRoutePoints(points)
+	// optimizedPoints := helper.OptimizeRoutePoints(points)
 
 	baseURL, err := url.Parse(fmt.Sprintf("%s/direction", s.cfg.GoongApiURL))
 	if err != nil {
@@ -219,13 +219,13 @@ func (s *MapService) CreateGiveRide(ctx context.Context, input schemas.GiveRideR
 
 	params := url.Values{
 		"api_key": {s.cfg.GoongAPIKey},
-		"origin":  {fmt.Sprintf("%f,%f", optimizedPoints[0].Lat, optimizedPoints[0].Lng)},
+		"origin":  {fmt.Sprintf("%f,%f", points[0].Lat, points[0].Lng)},
 		"vehicle": {"hd"},
 	}
 
-	destinations := make([]string, len(optimizedPoints)-1)
-	for i := 1; i < len(optimizedPoints); i++ {
-		destinations[i-1] = fmt.Sprintf("%f,%f", optimizedPoints[i].Lat, optimizedPoints[i].Lng)
+	destinations := make([]string, len(points)-1)
+	for i := 1; i < len(points); i++ {
+		destinations[i-1] = fmt.Sprintf("%f,%f", points[i].Lat, points[i].Lng)
 	}
 	params.Set("destination", strings.Join(destinations, ";"))
 
@@ -266,8 +266,8 @@ func (s *MapService) CreateGiveRide(ctx context.Context, input schemas.GiveRideR
 	}
 
 	currentLocation := schemas.Point{
-		Lat: optimizedPoints[0].Lat,
-		Lng: optimizedPoints[0].Lng,
+		Lat: points[0].Lat,
+		Lng: points[0].Lng,
 	}
 
 	// Check start_time from input and set the ride request status accordingly
@@ -303,7 +303,7 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 		points[i] = point
 	}
 
-	optimizedPoints := helper.OptimizeRoutePoints(points)
+	// optimizedPoints := helper.OptimizeRoutePoints(points)
 
 	baseURL, err := url.Parse(fmt.Sprintf("%s/direction", s.cfg.GoongApiURL))
 	if err != nil {
@@ -312,13 +312,13 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 
 	params := url.Values{
 		"api_key": {s.cfg.GoongAPIKey},
-		"origin":  {fmt.Sprintf("%f,%f", optimizedPoints[0].Lat, optimizedPoints[0].Lng)},
+		"origin":  {fmt.Sprintf("%f,%f", points[0].Lat, points[0].Lng)},
 		"vehicle": {"hd"},
 	}
 
-	destinations := make([]string, len(optimizedPoints)-1)
-	for i := 1; i < len(optimizedPoints); i++ {
-		destinations[i-1] = fmt.Sprintf("%f,%f", optimizedPoints[i].Lat, optimizedPoints[i].Lng)
+	destinations := make([]string, len(points)-1)
+	for i := 1; i < len(points); i++ {
+		destinations[i-1] = fmt.Sprintf("%f,%f", points[i].Lat, points[i].Lng)
 	}
 	params.Set("destination", strings.Join(destinations, ";"))
 
@@ -359,8 +359,8 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 	}
 
 	currentLocation := schemas.Point{
-		Lat: optimizedPoints[0].Lat,
-		Lng: optimizedPoints[0].Lng,
+		Lat: points[0].Lat,
+		Lng: points[0].Lng,
 	}
 
 	// Check start_time from input and set the ride request status accordingly
