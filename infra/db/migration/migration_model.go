@@ -1,6 +1,7 @@
 package migration
 
 import (
+	"shareway/util/jsonb"
 	"time"
 
 	"github.com/google/uuid"
@@ -204,8 +205,9 @@ type Notification struct {
 	User      User      `gorm:"foreignKey:UserID"`
 	Title     string
 	Body      string
-	TokenFCM  string // FCM token of the user to send the notification
-	IsRead    bool   `gorm:"default:false"`
+	Data      jsonb.JSONB `gorm:"type:jsonb"` // Additional data to be sent with the notification (optional)
+	TokenFCM  string      // FCM token of the user to send the notification
+	IsRead    bool        `gorm:"default:false"`
 }
 
 // Chat represents a chat message between 2 users

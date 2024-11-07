@@ -165,6 +165,21 @@ definitions:
     - rideOfferID
     - rideRequestID
     type: object
+  schemas.CreateNotificationRequest:
+    properties:
+      body:
+        type: string
+      data:
+        additionalProperties:
+          type: string
+        description: Additional data to be sent with the notification (optional)
+        type: object
+      title:
+        type: string
+    required:
+    - body
+    - title
+    type: object
   schemas.DeleteUserRequest:
     properties:
       phone_number:
@@ -1347,6 +1362,39 @@ paths:
       summary: Verify registration OTP
       tags:
       - auth
+  /create-notification:
+    post:
+      consumes:
+      - application/json
+      description: Create a new notification to be sent to the user device using the
+        FCM service
+      parameters:
+      - description: Create notification request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CreateNotificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully created notification
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Create a new notification
+      tags:
+      - notification
   /map/autocomplete:
     get:
       consumes:

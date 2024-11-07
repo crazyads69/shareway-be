@@ -9,11 +9,12 @@ import (
 
 // RepositoryContainer holds all the repositories
 type RepositoryContainer struct {
-	AuthRepository    IAuthRepository
-	MapsRepository    IMapsRepository
-	OTPRepository     IOTPRepository
-	VehicleRepository IVehicleRepository
-	RideRepository    IRideRepository
+	AuthRepository         IAuthRepository
+	MapsRepository         IMapsRepository
+	OTPRepository          IOTPRepository
+	VehicleRepository      IVehicleRepository
+	RideRepository         IRideRepository
+	NotificationRepository INotificationRepository
 	// Add other repositories here as needed
 }
 
@@ -36,11 +37,12 @@ func NewRepositoryFactory(db *gorm.DB, redisClient *redis.Client, cfg util.Confi
 // CreateRepositories initializes and returns all repositories
 func (f *RepositoryFactory) CreateRepositories() *RepositoryContainer {
 	return &RepositoryContainer{
-		AuthRepository:    f.createAuthRepository(),
-		MapsRepository:    f.createMapsRepository(),
-		OTPRepository:     f.createOTPRepository(),
-		VehicleRepository: f.createVehicleRepository(),
-		RideRepository:    f.createRideRepository(),
+		AuthRepository:         f.createAuthRepository(),
+		MapsRepository:         f.createMapsRepository(),
+		OTPRepository:          f.createOTPRepository(),
+		VehicleRepository:      f.createVehicleRepository(),
+		RideRepository:         f.createRideRepository(),
+		NotificationRepository: f.createNotificationRepository(),
 		// Initialize other repositories here
 	}
 }
@@ -68,6 +70,11 @@ func (f *RepositoryFactory) createVehicleRepository() IVehicleRepository {
 // createRideRepository initializes and returns the Ride repository
 func (f *RepositoryFactory) createRideRepository() IRideRepository {
 	return NewRideRepository(f.db, f.redisClient)
+}
+
+// createNotificationRepository initializes and returns the Notification repository
+func (f *RepositoryFactory) createNotificationRepository() INotificationRepository {
+	return NewNotificationRepository(f.db)
 }
 
 // Add methods for creating other repositories as needed

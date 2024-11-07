@@ -142,7 +142,7 @@ func main() {
 	scheduler.Start()
 
 	// Initialize services using the service factory pattern (dependency injection also included repository pattern)
-	serviceFactory := service.NewServiceFactory(database, cfg, maker, redisClient, hub)
+	serviceFactory := service.NewServiceFactory(database, cfg, maker, redisClient, hub, rabbitMQ)
 	services := serviceFactory.CreateServices()
 
 	// Create new API server

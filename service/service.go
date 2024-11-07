@@ -2,6 +2,7 @@ package service
 
 import (
 	"shareway/infra/fpt"
+	"shareway/infra/rabbitmq"
 	"shareway/infra/ws"
 	"shareway/repository"
 	"shareway/util"
@@ -12,11 +13,12 @@ import (
 )
 
 type ServiceContainer struct {
-	OTPService     IOTPService
-	UserService    IUsersService
-	MapService     IMapService
-	VehicleService IVehicleService
-	RideService    IRideService
+	OTPService          IOTPService
+	UserService         IUsersService
+	MapService          IMapService
+	VehicleService      IVehicleService
+	RideService         IRideService
+	NotificationService INotificationService
 }
 
 type ServiceFactory struct {
@@ -27,9 +29,10 @@ type ServiceFactory struct {
 	maker     *token.PasetoMaker
 	redis     *redis.Client
 	hub       *ws.Hub
+	rabbitmq  *rabbitmq.RabbitMQ
 }
 
-func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, redisClient *redis.Client, hub *ws.Hub) *ServiceFactory {
+func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, redisClient *redis.Client, hub *ws.Hub, rabbitmq *rabbitmq.RabbitMQ) *ServiceFactory {
 	repoFactory := repository.NewRepositoryFactory(db, redisClient, cfg)
 	repos := repoFactory.CreateRepositories()
 
@@ -46,16 +49,18 @@ func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, r
 		maker:     token,
 		redis:     redisClient,
 		hub:       hub,
+		rabbitmq:  rabbitmq,
 	}
 }
 
 func (f *ServiceFactory) CreateServices() *ServiceContainer {
 	return &ServiceContainer{
-		OTPService:     f.createOTPService(),
-		UserService:    f.createUserService(),
-		MapService:     f.createMapsService(),
-		VehicleService: f.createVehicleService(),
-		RideService:    f.createRideService(),
+		OTPService:          f.createOTPService(),
+		UserService:         f.createUserService(),
+		MapService:          f.createMapsService(),
+		VehicleService:      f.createVehicleService(),
+		RideService:         f.createRideService(),
+		NotificationService: f.createNotificationService(),
 	}
 }
 
@@ -77,4 +82,8 @@ func (f *ServiceFactory) createVehicleService() IVehicleService {
 
 func (f *ServiceFactory) createRideService() IRideService {
 	return NewRideService(f.repos.RideRepository, f.hub, f.cfg)
+}
+
+func (f *ServiceFactory) createNotificationService() INotificationService {
+	return NewNotificationService(f.repos.NotificationRepository, f.cfg, f.rabbitmq)
 }

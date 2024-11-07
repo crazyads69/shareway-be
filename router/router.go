@@ -92,6 +92,8 @@ func (server *APIServer) SetupRouter() {
 	server.router.GET("/ws", server.HandleWebSocket)
 	// Ride routes for ride matching and engagement
 	SetupRideRouter(server.router.Group("/ride", middleware.AuthMiddleware(server.Maker)), server)
+	// Notification routes for sending notifications
+	SetupNotificationRouter(server.router.Group("/notification", middleware.AuthMiddleware(server.Maker)), server)
 
 }
 
