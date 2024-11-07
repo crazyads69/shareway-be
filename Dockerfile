@@ -10,6 +10,7 @@ FROM alpine:3.18
 WORKDIR /app
 COPY --from=builder /app/main .
 COPY ./app.env .
+COPY ./serviceAccountKey.json .
 COPY ./entrypoint.sh .
 
 EXPOSE 8080
