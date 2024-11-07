@@ -36,7 +36,7 @@ func NewNotificationController(validate *validator.Validate, notificationService
 // @Success 200 {object} helper.Response "Successfully created notification"
 // @Failure 400 {object} helper.Response "Invalid request"
 // @Failure 500 {object} helper.Response "Internal server error"
-// @Router /create-notification [post]
+// @Router /notification/create-notification [post]
 func (nc *NotificationController) CreateNotification(ctx *gin.Context) {
 	// Get payload from context
 	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
