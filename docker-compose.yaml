@@ -9,6 +9,7 @@ services:
     depends_on:
       - postgres_db
       - redis
+      - rabbitmq
     networks:
       - shareway-network
 
@@ -41,9 +42,25 @@ services:
     networks:
       - shareway-network
 
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: shareway-rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672" # AMQP
+      - "15672:15672" # Web UI
+    networks:
+      - shareway-network
+
 volumes:
   postgres_data:
   redis_data:
+  rabbitmq_data:
 
 networks:
   shareway-network:

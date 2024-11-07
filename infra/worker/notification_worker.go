@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"shareway/infra/fcm"
-	rabbitmq "shareway/infra/rabbit_mq"
+	"shareway/infra/rabbitmq"
 	"shareway/schemas"
 	"shareway/util"
 )
@@ -50,7 +50,7 @@ func (nw *NotificationWorker) Start() {
 				continue
 			}
 
-			err = nw.fcm.SendNotification(context.Background(), notification.Token, notification.Title, notification.Body)
+			err = nw.fcm.SendNotification(context.Background(), notification)
 			if err != nil {
 				log.Printf("Error sending notification: %v", err)
 			} else {

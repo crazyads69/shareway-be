@@ -51,6 +51,7 @@ type Config struct {
 	GoongCachePlaceDetailDuration  int    `mapstructure:"GOONG_CACHE_PLACE_DETAIL_DURATION"` // 7 days
 	GoongCacheRouteDuration        int    `mapstructure:"GOONG_CACHE_ROUTE_DURATION"`        // 12 hours
 	GoongCacheDefaultDuration      int    `mapstructure:"GOONG_CACHE_DEFAULT_DURATION"`      // 1 hour (for backward compatibility)
+	FCMConfigPath                  string `mapstructure:"FCM_CONFIG_PATH"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

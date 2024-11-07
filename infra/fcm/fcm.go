@@ -3,6 +3,7 @@ package fcm
 import (
 	"context"
 	"fmt"
+	"shareway/schemas"
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/messaging"
@@ -28,13 +29,32 @@ func NewFCMClient(ctx context.Context, fcmConfigPath string) (*FCMClient, error)
 	return &FCMClient{client: client}, nil
 }
 
-func (f *FCMClient) SendNotification(ctx context.Context, token, title, body string) error {
-	message := &messaging.Message{
-		Notification: &messaging.Notification{
-			Title: title,
-			Body:  body,
-		},
-		Token: token, // Device token from the client
+func (f *FCMClient) SendNotification(ctx context.Context, notification schemas.Notification) error {
+	// message := &messaging.Message{
+	// 	Notification: &messaging.Notification{
+	// 		Title: title,
+	// 		Body:  body,
+	// 	},
+	// 	Token: token, // Device token from the client
+	// }
+	var message *messaging.Message
+	if notification.Data != nil {
+		message = &messaging.Message{
+			Notification: &messaging.Notification{
+				Title: notification.Title,
+				Body:  notification.Body,
+			},
+			Data:  notification.Data,
+			Token: notification.Token,
+		}
+	} else {
+		message = &messaging.Message{
+			Notification: &messaging.Notification{
+				Title: notification.Title,
+				Body:  notification.Body,
+			},
+			Token: notification.Token,
+		}
 	}
 
 	_, err := f.client.Send(ctx, message)

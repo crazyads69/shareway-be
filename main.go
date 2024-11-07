@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"shareway/infra/crawler"
 	"shareway/infra/db"
+	"shareway/infra/fcm"
+	"shareway/infra/rabbitmq"
+	"shareway/infra/worker"
 	"shareway/infra/ws"
 	"shareway/router"
 	"shareway/service"
@@ -46,36 +50,36 @@ func main() {
 	hub := ws.NewHub()
 	go hub.Run()
 
-	// // Init RabbitMQ
-	// rabbitMQ, err := rabbitmq.NewRabbitMQ(cfg)
-	// if err != nil {
-	// 	log.Fatal().Err(err).Msg("Could not create RabbitMQ instance")
-	// 	return
-	// }
-	// defer rabbitMQ.Close()
+	// Init RabbitMQ
+	rabbitMQ, err := rabbitmq.NewRabbitMQ(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Could not create RabbitMQ instance")
+		return
+	}
+	defer rabbitMQ.Close()
 
-	// // Declare queue for notifications
-	// err = rabbitMQ.DeclareQueue()
-	// if err != nil {
-	// 	log.Fatal().Err(err).Msg("Could not declare queue")
-	// 	return
-	// }
+	// Declare queue for notifications
+	err = rabbitMQ.DeclareQueue()
+	if err != nil {
+		log.Fatal().Err(err).Msg("Could not declare queue")
+		return
+	}
+	//
+	// Initialize Firebase Cloud Messaging client
+	fcmClient, err := fcm.NewFCMClient(context.Background(), cfg.FCMConfigPath)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Could not create FCM client")
+		return
+	}
 
-	// // Initialize Firebase Cloud Messaging client
-	// fcmClient, err := fcm.NewFCMClient(context.Background(), "")
-	// if err != nil {
-	// 	log.Fatal().Err(err).Msg("Could not create FCM client")
-	// 	return
-	// }
+	// Create new notification worker
+	notificationWorker := worker.NewNotificationWorker(rabbitMQ, fcmClient, cfg)
+	go notificationWorker.Start()
 
-	// // Create new notification worker
-	// notificationWorker := worker.NewNotificationWorker(rabbitMQ, fcmClient, cfg)
-	// go notificationWorker.Start()
-
-	// // Create a new notification
+	// Create a new notification
 	// err = rabbitMQ.PublishNotification(context.Background(), notification)
 	// if err != nil {
-	// 	log.Printf("Failed to publish notification: %v", err)
+	// log.Printf("Failed to publish notification: %v", err)
 	// }
 
 	// Create a scheduler
