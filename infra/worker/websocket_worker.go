@@ -34,25 +34,14 @@ type WebSocketMessage struct {
 func (w *WebSocketWorker) Start() {
 	ch := w.rabbitMQ.GetChannel()
 
-	// Declare WebSocket message queue
-	queueName := w.cfg.AmqpWebSocketQueue
-	_, err := ch.QueueDeclare(
-		queueName,
-		true,  // durable
-		false, // delete when unused
-		false, // exclusive
-		false, // no-wait
-		amqp.Table{
-			"x-dead-letter-exchange":    "websocket.dlx",
-			"x-dead-letter-routing-key": "websocket.dlq",
-		},
-	)
+	// Declare queue (this will now use the passive declare first)
+	err := w.rabbitMQ.DeclareQueues()
 	if err != nil {
-		log.Fatalf("Failed to declare WebSocket queue: %v", err)
+		log.Fatalf("Failed to declare queues: %v", err)
 	}
 
 	msgs, err := ch.Consume(
-		queueName,
+		w.cfg.AmqpWebSocketQueue,
 		"",    // consumer
 		false, // auto-ack
 		false, // exclusive

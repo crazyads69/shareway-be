@@ -28,6 +28,13 @@ func NewNotificationWorker(rabbitMQ *rabbitmq.RabbitMQ, fcm *fcm.FCMClient, cfg 
 
 func (nw *NotificationWorker) Start() {
 	ch := nw.rabbitMQ.GetChannel()
+
+	// Declare queue (this will now use the passive declare first)
+	err := nw.rabbitMQ.DeclareQueues()
+	if err != nil {
+		log.Fatalf("Failed to declare queues: %v", err)
+	}
+
 	msgs, err := ch.Consume(
 		nw.cfg.AmqpNotificationQueue,
 		"",    // consumer

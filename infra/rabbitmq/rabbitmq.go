@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"shareway/schemas"
 	"shareway/util"
 	"time"
@@ -51,16 +52,32 @@ func NewRabbitMQ(cfg util.Config) (*RabbitMQ, error) {
 	}, nil
 }
 
-// DeclareQueues declares all required queues
+func ConnectRabbitMQ(cfg util.Config) (*RabbitMQ, error) {
+	var rabbitMQ *RabbitMQ
+	var err error
+	for i := 0; i < 5; i++ { // Try 5 times
+		rabbitMQ, err = NewRabbitMQ(cfg)
+		if err == nil {
+			break
+		}
+		log.Printf("Failed to connect to RabbitMQ (attempt %d/5): %v", i+1, err)
+		time.Sleep(time.Second * 5) // Wait 5 seconds before retrying
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to RabbitMQ after 5 attempts: %v", err)
+	}
+	return rabbitMQ, nil
+}
+
 func (r *RabbitMQ) DeclareQueues() error {
 	// Declare notification queue
-	err := r.declareNotificationQueue()
+	err := r.declareQueueIfNotExists(r.config.AmqpNotificationQueue, "notification")
 	if err != nil {
 		return err
 	}
 
 	// Declare WebSocket queue
-	err = r.declareWebSocketQueue()
+	err = r.declareQueueIfNotExists(r.config.AmqpWebSocketQueue, "websocket")
 	if err != nil {
 		return err
 	}
@@ -68,121 +85,75 @@ func (r *RabbitMQ) DeclareQueues() error {
 	return nil
 }
 
-// declareNotificationQueue declares the queue for notifications
-func (r *RabbitMQ) declareNotificationQueue() error {
-	// Declare the main queue
-	_, err := r.channel.QueueDeclare(
-		r.config.AmqpNotificationQueue,
+func (r *RabbitMQ) declareQueueIfNotExists(queueName, queueType string) error {
+	// Try to declare the queue passively (check if it exists)
+	_, err := r.channel.QueueDeclarePassive(
+		queueName,
 		true,  // durable
 		false, // delete when unused
 		false, // exclusive
 		false, // no-wait
-		amqp.Table{
-			"x-dead-letter-exchange":    "notification.dlx",
-			"x-dead-letter-routing-key": "notification.dlq",
-		},
+		nil,   // arguments
 	)
-	if err != nil {
-		return fmt.Errorf("failed to declare main queue: %w", err)
-	}
 
-	// Declare the dead-letter exchange
-	err = r.channel.ExchangeDeclare(
-		"notification.dlx", // name
-		"direct",           // type
-		true,               // durable
-		false,              // auto-deleted
-		false,              // internal
-		false,              // no-wait
-		nil,                // arguments
-	)
 	if err != nil {
-		return fmt.Errorf("failed to declare DLX: %w", err)
-	}
+		// If the queue doesn't exist, declare it
+		dlxName := queueType + ".dlx"
+		dlqName := queueType + ".dlq"
 
-	// Declare the dead-letter queue
-	_, err = r.channel.QueueDeclare(
-		"notification.dlq", // name
-		true,               // durable
-		false,              // delete when unused
-		false,              // exclusive
-		false,              // no-wait
-		nil,                // arguments
-	)
-	if err != nil {
-		return fmt.Errorf("failed to declare DLQ: %w", err)
-	}
+		_, err = r.channel.QueueDeclare(
+			queueName,
+			true,  // durable
+			false, // delete when unused
+			false, // exclusive
+			false, // no-wait
+			amqp.Table{
+				"x-dead-letter-exchange":    dlxName,
+				"x-dead-letter-routing-key": dlqName,
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to declare %s queue: %w", queueType, err)
+		}
 
-	// Bind the DLQ to the DLX
-	err = r.channel.QueueBind(
-		"notification.dlq", // queue name
-		"notification.dlq", // routing key
-		"notification.dlx", // exchange
-		false,
-		nil,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to bind DLQ to DLX: %w", err)
-	}
+		// Declare the dead-letter exchange
+		err = r.channel.ExchangeDeclare(
+			dlxName,  // name
+			"direct", // type
+			true,     // durable
+			false,    // auto-deleted
+			false,    // internal
+			false,    // no-wait
+			nil,      // arguments
+		)
+		if err != nil {
+			return fmt.Errorf("failed to declare %s DLX: %w", queueType, err)
+		}
 
-	return nil
-}
+		// Declare the dead-letter queue
+		_, err = r.channel.QueueDeclare(
+			dlqName, // name
+			true,    // durable
+			false,   // delete when unused
+			false,   // exclusive
+			false,   // no-wait
+			nil,     // arguments
+		)
+		if err != nil {
+			return fmt.Errorf("failed to declare %s DLQ: %w", queueType, err)
+		}
 
-// declareWebSocketQueue declares the queue for WebSocket messages
-func (r *RabbitMQ) declareWebSocketQueue() error {
-	// Declare the main WebSocket queue
-	_, err := r.channel.QueueDeclare(
-		r.config.AmqpWebSocketQueue,
-		true,  // durable
-		false, // delete when unused
-		false, // exclusive
-		false, // no-wait
-		amqp.Table{
-			"x-dead-letter-exchange":    "websocket.dlx",
-			"x-dead-letter-routing-key": "websocket.dlq",
-		},
-	)
-	if err != nil {
-		return fmt.Errorf("failed to declare WebSocket queue: %w", err)
-	}
-
-	// Declare the dead-letter exchange for WebSocket
-	err = r.channel.ExchangeDeclare(
-		"websocket.dlx", // name
-		"direct",        // type
-		true,            // durable
-		false,           // auto-deleted
-		false,           // internal
-		false,           // no-wait
-		nil,             // arguments
-	)
-	if err != nil {
-		return fmt.Errorf("failed to declare WebSocket DLX: %w", err)
-	}
-
-	// Declare the dead-letter queue for WebSocket
-	_, err = r.channel.QueueDeclare(
-		"websocket.dlq", // name
-		true,            // durable
-		false,           // delete when unused
-		false,           // exclusive
-		false,           // no-wait
-		nil,             // arguments
-	)
-	if err != nil {
-		return fmt.Errorf("failed to declare WebSocket DLQ: %w", err)
-	}
-
-	// Bind the WebSocket DLQ to the DLX
-	err = r.channel.QueueBind(
-		"websocket.dlq", // queue name
-		"websocket.dlq", // routing key
-		"websocket.dlx", // exchange
-		false,
-		nil,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to bind WebSocket DLQ to DLX: %w", err)
+		// Bind the DLQ to the DLX
+		err = r.channel.QueueBind(
+			dlqName, // queue name
+			dlqName, // routing key
+			dlxName, // exchange
+			false,
+			nil,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to bind %s DLQ to DLX: %w", queueType, err)
+		}
 	}
 
 	return nil

@@ -51,7 +51,7 @@ func main() {
 	go hub.Run()
 
 	// Init RabbitMQ
-	rabbitMQ, err := rabbitmq.NewRabbitMQ(cfg)
+	rabbitMQ, err := rabbitmq.ConnectRabbitMQ(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Could not create RabbitMQ instance")
 		return
