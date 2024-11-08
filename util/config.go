@@ -54,6 +54,8 @@ type Config struct {
 	FCMConfigPath                  string `mapstructure:"FCM_CONFIG_PATH"`
 	MaxNotificationRetries         int    `mapstructure:"MAX_NOTIFICATION_RETRIES"`
 	NotificationTimeout            int    `mapstructure:"NOTIFICATION_TIMEOUT"`
+	AmqpWebSocketQueue             string `mapstructure:"AMQP_WEBSOCKET_QUEUE"`
+	MaxWebSocketRetries            int    `mapstructure:"MAX_WEBSOCKET_RETRIES"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

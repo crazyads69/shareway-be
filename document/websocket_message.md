@@ -4,6 +4,19 @@ This document outlines the different types of WebSocket messages that the Flutte
 
 ## Message Types and Structures
 
+### Test websocket
+
+Call to endpoint ```/notification/create-test-websocket```
+
+```json
+{
+  "type":"test",
+  "data": {
+    "message": "string"
+  }
+}
+```
+
 ### 1. new-give-ride-request
 
 Sent when a driver offers a ride to a hitchhiker.

@@ -13,5 +13,7 @@ func SetupNotificationRouter(group *gin.RouterGroup, server *APIServer) {
 	)
 	// CreateNotification request
 	group.POST("/create-notification", notificationController.CreateNotification)
+	// CreateTestWebsocket request
+	group.POST("/create-test-websocket", notificationController.CreateTestWebsocket)
 
 }

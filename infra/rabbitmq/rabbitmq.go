@@ -18,6 +18,8 @@ type RabbitMQ struct {
 }
 
 // NewRabbitMQ creates a new RabbitMQ instance
+
+// NewRabbitMQ creates a new RabbitMQ instance
 func NewRabbitMQ(cfg util.Config) (*RabbitMQ, error) {
 	conn, err := amqp.Dial(cfg.AmqpServerURL)
 	if err != nil {
@@ -49,8 +51,25 @@ func NewRabbitMQ(cfg util.Config) (*RabbitMQ, error) {
 	}, nil
 }
 
-// DeclareQueue declares a queue for notifications
-func (r *RabbitMQ) DeclareQueue() error {
+// DeclareQueues declares all required queues
+func (r *RabbitMQ) DeclareQueues() error {
+	// Declare notification queue
+	err := r.declareNotificationQueue()
+	if err != nil {
+		return err
+	}
+
+	// Declare WebSocket queue
+	err = r.declareWebSocketQueue()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// declareNotificationQueue declares the queue for notifications
+func (r *RabbitMQ) declareNotificationQueue() error {
 	// Declare the main queue
 	_, err := r.channel.QueueDeclare(
 		r.config.AmqpNotificationQueue,
@@ -104,6 +123,109 @@ func (r *RabbitMQ) DeclareQueue() error {
 	)
 	if err != nil {
 		return fmt.Errorf("failed to bind DLQ to DLX: %w", err)
+	}
+
+	return nil
+}
+
+// declareWebSocketQueue declares the queue for WebSocket messages
+func (r *RabbitMQ) declareWebSocketQueue() error {
+	// Declare the main WebSocket queue
+	_, err := r.channel.QueueDeclare(
+		r.config.AmqpWebSocketQueue,
+		true,  // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		amqp.Table{
+			"x-dead-letter-exchange":    "websocket.dlx",
+			"x-dead-letter-routing-key": "websocket.dlq",
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to declare WebSocket queue: %w", err)
+	}
+
+	// Declare the dead-letter exchange for WebSocket
+	err = r.channel.ExchangeDeclare(
+		"websocket.dlx", // name
+		"direct",        // type
+		true,            // durable
+		false,           // auto-deleted
+		false,           // internal
+		false,           // no-wait
+		nil,             // arguments
+	)
+	if err != nil {
+		return fmt.Errorf("failed to declare WebSocket DLX: %w", err)
+	}
+
+	// Declare the dead-letter queue for WebSocket
+	_, err = r.channel.QueueDeclare(
+		"websocket.dlq", // name
+		true,            // durable
+		false,           // delete when unused
+		false,           // exclusive
+		false,           // no-wait
+		nil,             // arguments
+	)
+	if err != nil {
+		return fmt.Errorf("failed to declare WebSocket DLQ: %w", err)
+	}
+
+	// Bind the WebSocket DLQ to the DLX
+	err = r.channel.QueueBind(
+		"websocket.dlq", // queue name
+		"websocket.dlq", // routing key
+		"websocket.dlx", // exchange
+		false,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to bind WebSocket DLQ to DLX: %w", err)
+	}
+
+	return nil
+}
+
+// PublishWebSocketMessage publishes a message to the WebSocket queue
+func (r *RabbitMQ) PublishWebSocketMessage(ctx context.Context, message schemas.WebSocketMessage) error {
+	body, err := json.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("failed to marshal WebSocket message: %w", err)
+	}
+
+	// Enable publisher confirms
+	err = r.channel.Confirm(false)
+	if err != nil {
+		return fmt.Errorf("failed to put channel in confirm mode: %w", err)
+	}
+
+	confirms := r.channel.NotifyPublish(make(chan amqp.Confirmation, 1))
+
+	err = r.channel.PublishWithContext(ctx,
+		"",                          // exchange
+		r.config.AmqpWebSocketQueue, // routing key
+		true,                        // mandatory
+		false,                       // immediate
+		amqp.Publishing{
+			ContentType:  "application/json",
+			Body:         body,
+			DeliveryMode: amqp.Persistent,
+			Timestamp:    time.Now(),
+		})
+	if err != nil {
+		return fmt.Errorf("failed to publish WebSocket message: %w", err)
+	}
+
+	// Wait for confirmation
+	select {
+	case confirm := <-confirms:
+		if !confirm.Ack {
+			return fmt.Errorf("failed to receive publish confirmation")
+		}
+	case <-ctx.Done():
+		return fmt.Errorf("publish confirmation timeout: %w", ctx.Err())
 	}
 
 	return nil

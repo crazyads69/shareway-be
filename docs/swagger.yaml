@@ -180,6 +180,13 @@ definitions:
     - body
     - title
     type: object
+  schemas.CreateTestWebsocketRequest:
+    properties:
+      message:
+        type: string
+    required:
+    - message
+    type: object
   schemas.DeleteUserRequest:
     properties:
       phone_number:
@@ -1638,6 +1645,38 @@ paths:
       security:
       - BearerAuth: []
       summary: Create a new notification
+      tags:
+      - notification
+  /notification/create-test-websocket:
+    post:
+      consumes:
+      - application/json
+      description: Create a test websocket for testing connection
+      parameters:
+      - description: Create test websocket request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CreateTestWebsocketRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully created test websocket
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Create a test websocket
       tags:
       - notification
   /protected/test:

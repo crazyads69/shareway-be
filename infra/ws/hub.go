@@ -1,6 +1,9 @@
 package ws
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 // Hub maintains the set of active clients and broadcasts messages
 type Hub struct {
@@ -55,18 +58,27 @@ func (h *Hub) Run() {
 }
 
 // SendToUser sends a message to a specific user
-func (h *Hub) SendToUser(userID string, messageType string, data interface{}) {
-	if client, ok := h.clients[userID]; ok {
-		message := map[string]interface{}{
-			"type": messageType,
-			"data": data,
-		}
-		jsonMessage, _ := json.Marshal(message)
-		select {
-		case client.send <- jsonMessage:
-		default:
-			close(client.send)
-			delete(h.clients, userID)
-		}
+func (h *Hub) SendToUser(userID string, messageType string, data interface{}) error {
+	client, ok := h.clients[userID]
+	if !ok {
+		return fmt.Errorf("client not found: %s", userID)
+	}
+
+	message := map[string]interface{}{
+		"type": messageType,
+		"data": data,
+	}
+	jsonMessage, err := json.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("failed to marshal message: %w", err)
+	}
+
+	select {
+	case client.send <- jsonMessage:
+		return nil
+	default:
+		close(client.send)
+		delete(h.clients, userID)
+		return fmt.Errorf("client send buffer full")
 	}
 }

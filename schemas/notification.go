@@ -21,3 +21,8 @@ type CreateNotificationRequest struct {
 type CreateNotificationResponse struct {
 	NotificationID uuid.UUID `json:"notification_id" binding:"required,uuid"`
 }
+
+// Define CreateTestWebsocketRequest
+type CreateTestWebsocketRequest struct {
+	Message string `json:"message" binding:"required" validate:"required"`
+}

@@ -2,32 +2,85 @@ package ws
 
 import (
 	"log"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
 
-// Constants for WebSocket connection management
 const (
-	writeWait      = 10 * time.Second    // Time allowed to write a message to the peer
-	pongWait       = 60 * time.Second    // Time allowed to read the next pong message from the peer
-	pingPeriod     = (pongWait * 9) / 10 // Send pings to peer with this period. Must be less than pongWait
-	maxMessageSize = 512                 // Maximum message size allowed from peer
+	writeWait      = 10 * time.Second
+	pongWait       = 60 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
+	maxMessageSize = 512
+	// Reconnection parameters
+	initialReconnectDelay = 1 * time.Second
+	maxReconnectDelay     = 30 * time.Second
+	reconnectMultiplier   = 1.5
 )
 
-// Client represents a WebSocket client connection
 type Client struct {
-	hub    *Hub
-	conn   *websocket.Conn
-	send   chan []byte
-	userID string // Unique identifier for the client
+	hub            *Hub
+	conn           *websocket.Conn
+	send           chan []byte
+	userID         string
+	mu             sync.Mutex // Protects conn
+	isConnected    bool
+	reconnectDelay time.Duration
+	done           chan struct{}
 }
 
-// readPump pumps messages from the WebSocket connection to the hub
+func NewClient(hub *Hub, conn *websocket.Conn, userID string) *Client {
+	return &Client{
+		hub:            hub,
+		conn:           conn,
+		send:           make(chan []byte, 256),
+		userID:         userID,
+		isConnected:    true,
+		reconnectDelay: initialReconnectDelay,
+		done:           make(chan struct{}),
+	}
+}
+
+func (c *Client) reconnect(url string) {
+	for {
+		select {
+		case <-c.done:
+			return
+		default:
+			log.Printf("Attempting to reconnect in %v...", c.reconnectDelay)
+			time.Sleep(c.reconnectDelay)
+
+			conn, _, err := websocket.DefaultDialer.Dial(url, nil)
+			if err != nil {
+				log.Printf("Reconnection failed: %v", err)
+				c.reconnectDelay = time.Duration(float64(c.reconnectDelay) * reconnectMultiplier)
+				if c.reconnectDelay > maxReconnectDelay {
+					c.reconnectDelay = maxReconnectDelay
+				}
+				continue
+			}
+
+			c.mu.Lock()
+			c.conn = conn
+			c.isConnected = true
+			c.reconnectDelay = initialReconnectDelay
+			c.mu.Unlock()
+
+			go c.readPump()
+			go c.writePump()
+			return
+		}
+	}
+}
+
 func (c *Client) readPump() {
 	defer func() {
 		c.hub.unregister <- c
+		c.mu.Lock()
 		c.conn.Close()
+		c.isConnected = false
+		c.mu.Unlock()
 	}()
 
 	c.conn.SetReadLimit(maxMessageSize)
@@ -41,41 +94,42 @@ func (c *Client) readPump() {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("error: %v", err)
+				log.Printf("read error: %v", err)
 			}
 			break
 		}
-
-		// Broadcast the received message to the hub
 		c.hub.broadcast <- message
 	}
 }
 
-// writePump pumps messages from the hub to the WebSocket connection
 func (c *Client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
+		c.mu.Lock()
 		c.conn.Close()
+		c.mu.Unlock()
 	}()
 
 	for {
 		select {
 		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			c.mu.Lock()
 			if !ok {
-				// The hub closed the channel
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				c.mu.Unlock()
 				return
 			}
 
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
+				c.mu.Unlock()
 				return
 			}
+
 			w.Write(message)
 
-			// Add queued messages to the current WebSocket message
 			n := len(c.send)
 			for i := 0; i < n; i++ {
 				w.Write([]byte{'\n'})
@@ -83,13 +137,19 @@ func (c *Client) writePump() {
 			}
 
 			if err := w.Close(); err != nil {
+				c.mu.Unlock()
 				return
 			}
+			c.mu.Unlock()
+
 		case <-ticker.C:
+			c.mu.Lock()
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				c.mu.Unlock()
 				return
 			}
+			c.mu.Unlock()
 		}
 	}
 }

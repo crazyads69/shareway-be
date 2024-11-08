@@ -59,7 +59,7 @@ func main() {
 	defer rabbitMQ.Close()
 
 	// Declare queue for notifications
-	err = rabbitMQ.DeclareQueue()
+	err = rabbitMQ.DeclareQueues()
 	if err != nil {
 		log.Fatal().Err(err).Msg("Could not declare queue")
 		return
@@ -75,6 +75,10 @@ func main() {
 	// Create new notification worker
 	notificationWorker := worker.NewNotificationWorker(rabbitMQ, fcmClient, cfg)
 	go notificationWorker.Start()
+
+	// Create new websocket worker
+	websocketWorker := worker.NewWebSocketWorker(rabbitMQ, hub, cfg)
+	go websocketWorker.Start()
 
 	// Create a new notification
 	// err = rabbitMQ.PublishNotification(context.Background(), notification)
@@ -152,6 +156,7 @@ func main() {
 		services,
 		validate,
 		hub,
+		rabbitMQ,
 	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Could not create router")

@@ -1,12 +1,16 @@
 package controller
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"shareway/helper"
+	"shareway/infra/rabbitmq"
 	"shareway/infra/ws"
 	"shareway/middleware"
 	"shareway/schemas"
 	"shareway/service"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -17,12 +21,14 @@ type RideController struct {
 	hub            *ws.Hub
 	RideService    service.IRideService
 	MapsService    service.IMapService
+	rabbitMQ       *rabbitmq.RabbitMQ
 	UserService    service.IUsersService
 	VehicleService service.IVehicleService
 }
 
 func NewRideController(validate *validator.Validate, hub *ws.Hub, rideService service.IRideService,
-	mapService service.IMapService, userService service.IUsersService, vehicleService service.IVehicleService) *RideController {
+	mapService service.IMapService, userService service.IUsersService, vehicleService service.IVehicleService,
+	rabbitMQ *rabbitmq.RabbitMQ) *RideController {
 	return &RideController{
 		validate:       validate,
 		hub:            hub,
@@ -30,6 +36,7 @@ func NewRideController(validate *validator.Validate, hub *ws.Hub, rideService se
 		MapsService:    mapService,
 		UserService:    userService,
 		VehicleService: vehicleService,
+		rabbitMQ:       rabbitMQ,
 	}
 }
 
@@ -149,7 +156,29 @@ func (ctrl *RideController) SendGiveRideRequest(ctx *gin.Context) {
 	}
 
 	// Send ride offer request to the receiver
-	ctrl.hub.SendToUser(req.ReceiverID.String(), "new-give-ride-request", res)
+	// ctrl.hub.SendToUser(req.ReceiverID.String(), "new-give-ride-request", res)
+
+	// Prepare the WebSocket message
+	wsMessage := schemas.WebSocketMessage{
+		UserID:  req.ReceiverID.String(),
+		Type:    "new-give-ride-request",
+		Payload: res,
+	}
+
+	// Send the WebSocket message using the rabbitmq worker
+	// Publish the message to RabbitMQ asynchronously
+	// This is to prevent blocking the main thread while waiting for the message to be sent
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		err := ctrl.rabbitMQ.PublishWebSocketMessage(ctx, wsMessage)
+		if err != nil {
+			// Log the error for monitoring
+			log.Printf("Error publishing WebSocket message to RabbitMQ: %v", err)
+			// You might want to emit a metric here or trigger an alert
+		}
+	}()
 
 	// Return success response
 	helper.GinResponse(ctx, 200, helper.SuccessResponse(
@@ -261,7 +290,29 @@ func (ctrl *RideController) SendHitchRideRequest(ctx *gin.Context) {
 	}
 
 	// Send ride request to the receiver
-	ctrl.hub.SendToUser(req.ReceiverID.String(), "new-hitch-ride-request", res)
+	// ctrl.hub.SendToUser(req.ReceiverID.String(), "new-hitch-ride-request", res)
+
+	// Prepare the WebSocket message
+	wsMessage := schemas.WebSocketMessage{
+		UserID:  req.ReceiverID.String(),
+		Type:    "new-hitch-ride-request",
+		Payload: res,
+	}
+
+	// Send the WebSocket message using the rabbitmq worker
+	// Publish the message to RabbitMQ asynchronously
+	// This is to prevent blocking the main thread while waiting for the message to be sent
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		err := ctrl.rabbitMQ.PublishWebSocketMessage(ctx, wsMessage)
+		if err != nil {
+			// Log the error for monitoring
+			log.Printf("Error publishing WebSocket message to RabbitMQ: %v", err)
+			// You might want to emit a metric here or trigger an alert
+		}
+	}()
 
 	// Return success response
 	helper.GinResponse(ctx, 200, helper.SuccessResponse(
@@ -385,7 +436,29 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 	}
 
 	// Send the accepted ride offer to the driver (match the ride successfully)
-	ctrl.hub.SendToUser(req.ReceiverID.String(), "accept-give-ride-request", res)
+	// ctrl.hub.SendToUser(req.ReceiverID.String(), "accept-give-ride-request", res)
+
+	// Prepare websocket message
+	wsMessage := schemas.WebSocketMessage{
+		UserID:  req.ReceiverID.String(),
+		Type:    "accept-give-ride-request",
+		Payload: res,
+	}
+
+	// Send the WebSocket message using the rabbitmq worker
+	// Publish the message to RabbitMQ asynchronously
+	// This is to prevent blocking the main thread while waiting for the message to be sent
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		err := ctrl.rabbitMQ.PublishWebSocketMessage(ctx, wsMessage)
+		if err != nil {
+			// Log the error for monitoring
+			log.Printf("Error publishing WebSocket message to RabbitMQ: %v", err)
+			// You might want to emit a metric here or trigger an alert
+		}
+	}()
 
 	// Return success response
 	helper.GinResponse(ctx, 200, helper.SuccessResponse(
@@ -507,7 +580,27 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 	}
 
 	// Send the accepted ride request to the hitcher (match the ride successfully)
-	ctrl.hub.SendToUser(req.ReceiverID.String(), "accept-hitch-ride-request", res)
+	// ctrl.hub.SendToUser(req.ReceiverID.String(), "accept-hitch-ride-request", res)
+
+	// Prepare websocket message
+	wsMessage := schemas.WebSocketMessage{
+		UserID:  req.ReceiverID.String(),
+		Type:    "accept-hitch-ride-request",
+		Payload: res,
+	}
+
+	// Publish the message to RabbitMQ asynchronously
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		err := ctrl.rabbitMQ.PublishWebSocketMessage(ctx, wsMessage)
+		if err != nil {
+			// Log the error for monitoring
+			log.Printf("Error publishing WebSocket message to RabbitMQ: %v", err)
+			// You might want to emit a metric here or trigger an alert
+		}
+	}()
 
 	// Return success response
 	helper.GinResponse(ctx, 200, helper.SuccessResponse(
@@ -574,7 +667,27 @@ func (ctrl *RideController) CancelGiveRideRequest(ctx *gin.Context) {
 		UserID:        data.UserID,
 	}
 	// Send the cancel notification to the driver
-	ctrl.hub.SendToUser(req.ReceiverID.String(), "cancel-give-ride-request", res)
+	// ctrl.hub.SendToUser(req.ReceiverID.String(), "cancel-give-ride-request", res)
+
+	// Prepare Websocket Message to send through rabbitmq
+	wsMessage := schemas.WebSocketMessage{
+		UserID:  req.ReceiverID.String(),
+		Type:    "cancel-give-ride-request",
+		Payload: res,
+	}
+
+	// Publish the message to RabbitMQ asynchronously
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		err := ctrl.rabbitMQ.PublishWebSocketMessage(ctx, wsMessage)
+		if err != nil {
+			// Log the error for monitoring
+			log.Printf("Error publishing WebSocket message to RabbitMQ: %v", err)
+			// You might want to emit a metric here or trigger an alert
+		}
+	}()
 
 	// Return success response
 	helper.GinResponse(ctx, 200, helper.SuccessResponse(
@@ -641,7 +754,27 @@ func (ctrl *RideController) CancelHitchRideRequest(ctx *gin.Context) {
 		UserID:        data.UserID,
 	}
 	// Send the cancel notification to the hitcher
-	ctrl.hub.SendToUser(req.ReceiverID.String(), "cancel-hitch-ride-request", res)
+	// ctrl.hub.SendToUser(req.ReceiverID.String(), "cancel-hitch-ride-request", res)
+
+	// Prepare websocket message
+	wsMessage := schemas.WebSocketMessage{
+		UserID:  req.ReceiverID.String(),
+		Type:    "cancel-hitch-ride-request",
+		Payload: res,
+	}
+
+	// Publish the message to RabbitMQ asynchronously
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		err := ctrl.rabbitMQ.PublishWebSocketMessage(ctx, wsMessage)
+		if err != nil {
+			// Log the error for monitoring
+			log.Printf("Error publishing WebSocket message to RabbitMQ: %v", err)
+			// You might want to emit a metric here or trigger an alert
+		}
+	}()
 
 	// Return success response
 	helper.GinResponse(ctx, 200, helper.SuccessResponse(
