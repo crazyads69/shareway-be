@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -254,31 +255,87 @@ func (r *MapsRepository) SuggestRideRequests(userID uuid.UUID, rideOfferID uuid.
 }
 
 // SuggestRideOffers suggests ride offers that match the given ride request
+// func (r *MapsRepository) SuggestRideOffers(userID uuid.UUID, rideRequestID uuid.UUID) ([]migration.RideOffer, error) {
+// 	// Fetch the ride request details
+// 	rideRequest, err := r.GetRideRequestDetails(rideRequestID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	// Fetch the ride offers that have status "created"
+// 	var rideOffers []migration.RideOffer
+// 	if err := r.db.Where("status = ?", "created").Find(&rideOffers).Error; err != nil {
+// 		return nil, err
+// 	}
+
+// 	var filteredRideOffers []migration.RideOffer
+// 	requestPolyline := helper.DecodePolyline(rideRequest.EncodedPolyline)
+// 	const maxDistance = 2.0 // km
+
+// 	for _, rideOffer := range rideOffers {
+// 		offerPolyline := helper.DecodePolyline(rideOffer.EncodedPolyline)
+
+// 		if rideOffer.UserID != userID && helper.IsMatchRoute(offerPolyline, requestPolyline) &&
+// 			helper.IsTimeOverlap(rideOffer, rideRequest) {
+// 			filteredRideOffers = append(filteredRideOffers, rideOffer)
+// 		}
+// 	}
+
+// 	return filteredRideOffers, nil
+// }
+
 func (r *MapsRepository) SuggestRideOffers(userID uuid.UUID, rideRequestID uuid.UUID) ([]migration.RideOffer, error) {
+	log.Info().
+		Str("userID", userID.String()).
+		Str("rideRequestID", rideRequestID.String()).
+		Msg("Starting SuggestRideOffers")
+
 	// Fetch the ride request details
 	rideRequest, err := r.GetRideRequestDetails(rideRequestID)
 	if err != nil {
+		log.Error().Err(err).Msg("Error fetching ride request details")
 		return nil, err
 	}
+	log.Debug().
+		Interface("rideRequest", rideRequest).
+		Msg("Fetched ride request")
 
 	// Fetch the ride offers that have status "created"
 	var rideOffers []migration.RideOffer
 	if err := r.db.Where("status = ?", "created").Find(&rideOffers).Error; err != nil {
+		log.Error().Err(err).Msg("Error fetching ride offers")
 		return nil, err
 	}
+	log.Info().Int("count", len(rideOffers)).Msg("Fetched ride offers with 'created' status")
 
 	var filteredRideOffers []migration.RideOffer
 	requestPolyline := helper.DecodePolyline(rideRequest.EncodedPolyline)
 	const maxDistance = 2.0 // km
 
+	log.Debug().Msg("Filtering ride offers")
 	for _, rideOffer := range rideOffers {
 		offerPolyline := helper.DecodePolyline(rideOffer.EncodedPolyline)
 
-		if rideOffer.UserID != userID && helper.IsMatchRoute(offerPolyline, requestPolyline) &&
-			helper.IsTimeOverlap(rideOffer, rideRequest) {
+		isNotSameUser := rideOffer.UserID != userID
+		isMatchingRoute := helper.IsMatchRoute(offerPolyline, requestPolyline)
+		isTimeOverlapping := helper.IsTimeOverlap(rideOffer, rideRequest)
+
+		log.Debug().
+			Str("rideOfferID", rideOffer.ID.String()).
+			Bool("differentUser", isNotSameUser).
+			Bool("matchingRoute", isMatchingRoute).
+			Bool("timeOverlap", isTimeOverlapping).
+			Msg("Checking ride offer")
+
+		if isNotSameUser && isMatchingRoute && isTimeOverlapping {
 			filteredRideOffers = append(filteredRideOffers, rideOffer)
+			log.Debug().Str("rideOfferID", rideOffer.ID.String()).Msg("Ride offer added to filtered list")
 		}
 	}
+
+	log.Info().
+		Int("filteredCount", len(filteredRideOffers)).
+		Msg("Filtered suitable ride offers")
 
 	return filteredRideOffers, nil
 }
