@@ -52,6 +52,8 @@ type Config struct {
 	GoongCacheRouteDuration        int    `mapstructure:"GOONG_CACHE_ROUTE_DURATION"`        // 12 hours
 	GoongCacheDefaultDuration      int    `mapstructure:"GOONG_CACHE_DEFAULT_DURATION"`      // 1 hour (for backward compatibility)
 	FCMConfigPath                  string `mapstructure:"FCM_CONFIG_PATH"`
+	MaxNotificationRetries         int    `mapstructure:"MAX_NOTIFICATION_RETRIES"`
+	NotificationTimeout            int    `mapstructure:"NOTIFICATION_TIMEOUT"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log"
 	"shareway/infra/rabbitmq"
 	"shareway/repository"
 	"shareway/schemas"
@@ -50,7 +51,9 @@ func (ns *NotificationService) CreateNotification(ctx context.Context, req schem
 
 	// Publish the notification to the RabbitMQ exchange
 	if err := ns.rabbitmq.PublishNotification(ctx, notification); err != nil {
-		return uuid.Nil, err
+		// Log the error not to interrupt the flow of the application
+		// This is an asynchronous operation
+		log.Printf("Failed to publish notification to RabbitMQ: %v", err)
 	}
 
 	return notificationID, nil
