@@ -11,6 +11,10 @@ WORKDIR /app
 COPY --from=builder /app/main .
 COPY ./app.env .
 COPY ./serviceAccountKey.json .
+
+# Install netcat for the wait-for-it functionality
+RUN apk add --no-cache netcat-openbsd
+
 COPY ./entrypoint.sh .
 
 EXPOSE 8080

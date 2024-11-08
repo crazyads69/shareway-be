@@ -5,11 +5,14 @@ services:
     build: .
     restart: always
     ports:
-      - "35000:8080" # change port here
+      - "35000:8080"
     depends_on:
-      - postgres_db
-      - redis
-      - rabbitmq
+      postgres_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - shareway-network
 
@@ -22,11 +25,16 @@ services:
       POSTGRES_PASSWORD: Minhtricute69.
       POSTGRES_DB: shareway
     ports:
-      - "5433:5432" # Map to port 5433 on the host
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - shareway-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trilm -d shareway"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:alpine
@@ -41,6 +49,11 @@ services:
       - redis_data:/data
     networks:
       - shareway-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
     image: rabbitmq:4-management-alpine
@@ -49,19 +62,18 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-    command: >
-      sh -c "
-        (rabbitmqctl stop_app || true) &&
-        (rabbitmqctl reset || true) &&
-        (rabbitmqctl start_app || true) &&
-        rabbitmq-server"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     ports:
-      - "5672:5672" # AMQP
-      - "15672:15672" # Web UI
+      - "5672:5672"
+      - "15672:15672"
     networks:
       - shareway-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
