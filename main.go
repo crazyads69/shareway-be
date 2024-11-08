@@ -174,7 +174,8 @@ func main() {
 	// Start HTTP server in a goroutine
 	go func() {
 		if err := server.Start(cfg.HTTPServerAddress); err != nil {
-			log.Fatal().Err(err).Msg("Could not start server")
+			log.Error().Err(err).Msg("Server encountered an error")
+			stop <- syscall.SIGTERM // Signal for graceful shutdown
 		}
 	}()
 
