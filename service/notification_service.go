@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"shareway/infra/rabbitmq"
 	"shareway/repository"
@@ -44,6 +45,11 @@ func (ns *NotificationService) CreateNotification(req schemas.CreateNotification
 		return uuid.Nil, err
 	}
 
+	// Check if the user has a device token
+	if deviceToken == "" {
+		return uuid.Nil, fmt.Errorf("user does not have a device token")
+	}
+
 	notification := schemas.Notification{
 		Data:  req.Data,
 		Title: req.Title,
@@ -77,16 +83,16 @@ func (ns *NotificationService) CreateTestWebsocket(req schemas.CreateTestWebsock
 
 	// Publish the message to the RabbitMQ exchange
 	// This is a asynchronous task so much run in a goroutine
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
+	// go func() {
+	// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	// 	defer cancel()
 
-		err := ns.rabbitmq.PublishWebSocketMessage(ctx, message)
-		if err != nil {
-			log.Printf("Failed to publish websocket message to RabbitMQ: %v", err)
-			// Consider implementing a retry mechanism or storing failed messages
-		}
-	}()
+	err := ns.rabbitmq.PublishWebSocketMessage(context.Background(), message)
+	if err != nil {
+		log.Printf("Failed to publish websocket message to RabbitMQ: %v", err)
+		// Consider implementing a retry mechanism or storing failed messages
+	}
+	// }()
 
 	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"shareway/infra/rabbitmq"
 	"shareway/infra/ws"
+	"shareway/schemas"
 	"shareway/util"
 	"time"
 
@@ -25,29 +26,25 @@ func NewWebSocketWorker(rabbitMQ *rabbitmq.RabbitMQ, hub *ws.Hub, cfg util.Confi
 	}
 }
 
-type WebSocketMessage struct {
-	UserID  string      `json:"user_id"`
-	Type    string      `json:"type"`
-	Payload interface{} `json:"payload"`
-}
-
 func (w *WebSocketWorker) Start() {
 	ch := w.rabbitMQ.GetChannel()
 
 	// Declare queue (this will now use the passive declare first)
-	err := w.rabbitMQ.DeclareQueues()
-	if err != nil {
-		log.Fatalf("Failed to declare queues: %v", err)
-	}
+	// err := w.rabbitMQ.DeclareQueues()
+	// if err != nil {
+	// 	log.Fatalf("Failed to declare queues: %v", err)
+	// }
 
 	msgs, err := ch.Consume(
 		w.cfg.AmqpWebSocketQueue,
 		"",    // consumer
-		false, // auto-ack
+		false, // auto-ackddee
 		false, // exclusive
 		false, // no-local
 		false, // no-wait
-		nil,   // args
+		amqp.Table{
+			"x-consumer-timeout": 300000, // 5 minutes in milliseconds
+		},
 	)
 	if err != nil {
 		log.Fatalf("Failed to register a WebSocket consumer: %v", err)
@@ -57,7 +54,7 @@ func (w *WebSocketWorker) Start() {
 
 	go func() {
 		for d := range msgs {
-			var wsMessage WebSocketMessage
+			var wsMessage schemas.WebSocketMessage
 			err := json.Unmarshal(d.Body, &wsMessage)
 			if err != nil {
 				log.Printf("Error unmarshalling WebSocket message: %v", err)

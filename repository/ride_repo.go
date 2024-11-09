@@ -2,7 +2,9 @@ package repository
 
 import (
 	"errors"
+	"shareway/helper"
 	"shareway/infra/db/migration"
+	"shareway/schemas"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -14,6 +16,8 @@ type IRideRepository interface {
 	GetRideRequestByID(rideRequestID uuid.UUID) (migration.RideRequest, error)
 	AcceptRideRequest(rideOfferID, rideRequestID, vehicleID uuid.UUID) (migration.Ride, error)
 	CreateRideTransaction(rideID uuid.UUID, Fare float64, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error)
+	StartRide(req schemas.StartRideRequest, userID uuid.UUID) (migration.Ride, error)
+	// EndRide(req schemas.EndRideRequest, userID uuid.UUID) (migration.Ride, error)
 }
 
 type RideRepository struct {
@@ -173,6 +177,129 @@ func (r *RideRepository) CreateRideTransaction(rideID uuid.UUID, Fare float64, p
 
 	return transaction, nil
 }
+
+// StartRide starts a ride
+func (r *RideRepository) StartRide(req schemas.StartRideRequest, userID uuid.UUID) (migration.Ride, error) {
+	var ride migration.Ride
+
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		// Get the ride by ID
+		err := tx.Model(&migration.Ride{}).
+			Where("id = ?", req.RideID).
+			First(&ride).Error
+		if err != nil {
+			return err
+		}
+
+		// Get the ride offer by ID
+		var rideOffer migration.RideOffer
+		err = tx.Model(&migration.RideOffer{}).
+			Where("id = ?", ride.RideOfferID).
+			First(&rideOffer).Error
+		if err != nil {
+			return err
+		}
+
+		// Get the ride request by ID
+		var rideRequest migration.RideRequest
+		err = tx.Model(&migration.RideRequest{}).
+			Where("id = ?", ride.RideRequestID).
+			First(&rideRequest).Error
+		if err != nil {
+			return err
+		}
+
+		// Check if the ride is already started
+		if ride.Status == "ongoing" {
+			return errors.New("ride is already started")
+		}
+
+		// Check if the ride is already cancelled
+		if ride.Status == "cancelled" {
+			return errors.New("ride is already cancelled")
+		}
+
+		// Check if the current location of the driver and hitcher is near less than 100 meters
+		if !helper.IsNearby(schemas.Point{Lat: rideOffer.DriverCurrentLatitude, Lng: rideOffer.DriverCurrentLongitude}, schemas.Point{Lat: rideRequest.RiderCurrentLatitude, Lng: rideRequest.RiderCurrentLongitude}, 0.0001) {
+			return errors.New("driver and rider are not nearby") // Make sure cannot fake the location
+		}
+
+		// TODO: In the future must check start time and end time of the ride to prevent early start or late start
+
+		// Update the ride offer status to ongoing
+		if err := tx.Model(&migration.RideOffer{}).Where("id = ?", ride.RideOfferID).Update("status", "ongoing").Error; err != nil {
+			return err
+		}
+
+		// Update the ride request status to ongoing
+		if err := tx.Model(&migration.RideRequest{}).Where("id = ?", ride.RideRequestID).Update("status", "ongoing").Error; err != nil {
+			return err
+		}
+
+		// Update the ride status to started
+		if err := tx.Model(&migration.Ride{}).Where("id = ?", req.RideID).Update("status", "ongoing").Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return migration.Ride{}, err
+	}
+
+	return ride, nil
+}
+
+// EndRide ends a ride
+// func (r *RideRepository) EndRide(req schemas.EndRideRequest, userID uuid.UUID) (migration.Ride, error) {
+// 	var ride migration.Ride
+
+// 	err := r.db.Transaction(func(tx *gorm.DB) error {
+// 		// Get the ride by ID
+// 		err := tx.Model(&migration.Ride{}).
+// 			Where("id = ?", req.RideID).
+// 			First(&ride).Error
+// 		if err != nil {
+// 			return err
+// 		}
+
+// 		// Get the ride offer by ID
+// 		var rideOffer migration.RideOffer
+// 		err = tx.Model(&migration.RideOffer{}).
+// 			Where("id = ?", ride.RideOfferID).
+// 			First(&rideOffer).Error
+// 		if err != nil {
+// 			return err
+// 		}
+
+// 		// Get the ride request by ID
+// 		var rideRequest migration.RideRequest
+// 		err = tx.Model(&migration.RideRequest{}).
+// 			Where("id = ?", ride.RideRequestID).
+// 			First(&rideRequest).Error
+// 		if err != nil {
+// 			return err
+// 		}
+
+// 		// Check if the ride is already ended
+// 		if ride.Status == "ended" {
+// 			return errors.New("ride is already ended")
+// 		}
+
+// 		// Check if the ride is already cancelled
+// 		if ride.Status == "cancelled" {
+// 			return errors.New("ride is already cancelled")
+// 		}
+
+// 		// Check if the current location of the driver and the hitcher end location is near less than 100 meters
+// 		if !helper.IsNearby(schemas.Point{Lat: rideOffer.DriverCurrentLatitude, Lng: rideOffer.DriverCurrentLongitude}, schemas.Point{Lat: rideRequest.EndLatitude, Lng: rideRequest.EndLongitude}, 0.0001) {
+// 			return errors.New("driver not nearby the end location") // Make sure cannot fake the location
+// 		}
+
+// 	}
+
+// }
 
 // Make sure the RideRepository implements the IRideRepository interface
 var _ IRideRepository = (*RideRepository)(nil)

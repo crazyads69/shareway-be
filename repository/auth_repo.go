@@ -357,8 +357,28 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 		return err
 	}
 
-	// Vehicles
-	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.Vehicle{}).Error; err != nil {
+	// Delete Rides associated with user's RideOffers and RideRequests
+	var rideOffers []migration.RideOffer
+	var rideRequests []migration.RideRequest
+	if err := tx.Where("user_id = ?", user.ID).Find(&rideOffers).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err := tx.Where("user_id = ?", user.ID).Find(&rideRequests).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	var rideOfferIDs []uuid.UUID
+	var rideRequestIDs []uuid.UUID
+	for _, offer := range rideOffers {
+		rideOfferIDs = append(rideOfferIDs, offer.ID)
+	}
+	for _, request := range rideRequests {
+		rideRequestIDs = append(rideRequestIDs, request.ID)
+	}
+
+	if err := tx.Where("ride_offer_id IN ? OR ride_request_id IN ?", rideOfferIDs, rideRequestIDs).Delete(&migration.Ride{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -371,6 +391,12 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 
 	// RideOffers
 	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.RideOffer{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Vehicles (now safe to delete after RideOffers are deleted)
+	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.Vehicle{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}

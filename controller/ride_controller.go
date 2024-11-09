@@ -783,3 +783,127 @@ func (ctrl *RideController) CancelHitchRideRequest(ctx *gin.Context) {
 		"Đã hủy yêu cầu chia sẻ chuyến đi thành công",
 	))
 }
+
+// StartRide starts the ride between the driver and the hitcher (the driver must starts the ride)
+func (ctrl *RideController) StartRide(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	var req schemas.StartRideRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind JSON",
+			"Không thể bind JSON",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+	if err := ctrl.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Start the ride
+	ride, err := ctrl.RideService.StartRide(req, data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to start ride",
+			"Không thể bắt đầu chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	log.Printf("Ride started: %v", ride)
+
+	// Prepare response
+
+	// Send the start ride notification to the hitcher
+	// ctrl.hub.SendToUser(req.ReceiverID.String(), "start-ride", res)
+
+	// Send the start ride notification to the hitcher
+}
+
+// EndRide ends the ride between the driver and the hitcher (the driver must ends the ride)
+// func (ctrl *RideController) EndRide(ctx *gin.Context) {
+// 	// Get payload from context
+// 	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+// 	// Convert payload to map
+// 	data, err := helper.ConvertToPayload(payload)
+
+// 	// If error occurs, return error response
+// 	if err != nil {
+// 		response := helper.ErrorResponseWithMessage(
+// 			fmt.Errorf("failed to convert payload"),
+// 			"Failed to convert payload",
+// 			"Không thể chuyển đổi payload",
+// 		)
+// 		helper.GinResponse(ctx, 500, response)
+// 		return
+// 	}
+
+// 	var req schemas.EndRideRequest
+// 	if err := ctx.ShouldBindJSON(&req); err != nil {
+// 		response := helper.ErrorResponseWithMessage(
+// 			err,
+// 			"Failed to bind JSON",
+// 			"Không thể bind JSON",
+// 		)
+// 		helper.GinResponse(ctx, 400, response)
+// 		return
+// 	}
+// 	if err := ctrl.validate.Struct(req); err != nil {
+// 		response := helper.ErrorResponseWithMessage(
+// 			err,
+// 			"Failed to validate request",
+// 			"Không thể validate request",
+// 		)
+// 		helper.GinResponse(ctx, 400, response)
+// 		return
+// 	}
+
+// 	// End the ride
+// 	ride, err := ctrl.RideService.EndRide(req, data.UserID)
+// 	if err != nil {
+// 		response := helper.ErrorResponseWithMessage(
+// 			err,
+// 			"Failed to end ride",
+// 			"Không thể kết thúc chuyến đi",
+// 		)
+// 		helper.GinResponse(ctx, 500, response)
+// 		return
+// 	}
+
+// 	log.Printf("Ride ended: %v", ride)
+
+// 	// Prepare response
+
+// 	// Send the end ride notification to the hitcher
+// 	// ctrl.hub.SendToUser(req.ReceiverID.String(), "end-ride", res)
+
+// 	// Send the end ride notification to the hitcher
+// }
+
+// UpdateRideLocation updates the current location of the driver during the ride

@@ -122,7 +122,7 @@ type RideOffer struct {
 	EndAddress             string  `gorm:"type:text"`
 	Distance               float64 // in kilometers
 	Duration               int     // in seconds
-	Status                 string  `gorm:"default:'created'"` // created, matched, completed, cancelled
+	Status                 string  `gorm:"default:'created'"` // created, matched, ongoing, completed, cancelled
 	Rides                  []Ride  `gorm:"foreignKey:RideOfferID"`
 	StartTime              time.Time
 	EndTime                time.Time // Time to end the ride (end time = start time + duration)
@@ -144,7 +144,7 @@ type RideRequest struct {
 	RiderCurrentLongitude float64
 	StartAddress          string  `gorm:"type:text"`
 	EndAddress            string  `gorm:"type:text"`
-	Status                string  `gorm:"default:'created'"` // created, matched, completed, cancelled
+	Status                string  `gorm:"default:'created'"` // created, matched, ongoing, completed, cancelled
 	Rides                 []Ride  `gorm:"foreignKey:RideRequestID"`
 	EncodedPolyline       string  `gorm:"type:text"`
 	Distance              float64 // in kilometers

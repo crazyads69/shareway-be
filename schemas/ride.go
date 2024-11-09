@@ -180,3 +180,23 @@ type CancelHitchRideRequestResponse struct {
 	RideRequestID uuid.UUID `json:"ride_request_id"`
 	UserID        uuid.UUID `json:"user_id"` // The user who cancel the request (driver cancel the request)
 }
+
+// Define StartRideRequest schema
+type StartRideRequest struct {
+	// Ride ID of the ride to start
+	RideID uuid.UUID `json:"rideID" binding:"required,uuid" validate:"required,uuid"`
+	// Current user location
+	CurrentLocation Point `json:"currentLocation" binding:"required" validate:"required"`
+}
+
+// Define StartRideResponse schema
+type StartRideResponse struct {
+}
+
+// Define EndRideRequest schema
+type EndRideRequest struct {
+	// Ride ID of the ride to end
+	RideID uuid.UUID `json:"rideID" binding:"required,uuid" validate:"required,uuid"`
+	// Current user location
+	CurrentLocation Point `json:"currentLocation" binding:"required" validate:"required"`
+}

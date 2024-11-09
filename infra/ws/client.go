@@ -101,7 +101,6 @@ func (c *Client) readPump() {
 		c.hub.broadcast <- message
 	}
 }
-
 func (c *Client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -121,19 +120,21 @@ func (c *Client) writePump() {
 				return
 			}
 
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			err := c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err != nil {
+				c.mu.Unlock()
+				return
+			}
+
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				c.mu.Unlock()
 				return
 			}
 
-			w.Write(message)
-
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				w.Write([]byte{'\n'})
-				w.Write(<-c.send)
+			if _, err := w.Write(message); err != nil {
+				c.mu.Unlock()
+				return
 			}
 
 			if err := w.Close(); err != nil {
@@ -144,7 +145,10 @@ func (c *Client) writePump() {
 
 		case <-ticker.C:
 			c.mu.Lock()
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.conn.SetWriteDeadline(time.Now().Add(writeWait)); err != nil {
+				c.mu.Unlock()
+				return
+			}
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				c.mu.Unlock()
 				return

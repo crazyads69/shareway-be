@@ -18,6 +18,8 @@ const (
 	maxDistanceMatch    = 0.02   // About 2 km at equator
 	degreesToRad        = math.Pi / 180
 	maxDistanceSq       = maxDistanceMatch * maxDistanceMatch
+	nearbyDistance      = 0.0001
+	nearbyDistanceSq    = nearbyDistance * nearbyDistance
 )
 
 func haversineDistance(p1, p2 schemas.Point) float64 {
@@ -310,3 +312,8 @@ func IsTimeOverlap(offer migration.RideOffer, request migration.RideRequest) boo
 // 	totalRadius := math.Abs(startDist - minEndDist)
 // 	return totalRadius <= maxDistance
 // }
+
+// IsNearby check the current location is nearby the target location or not with the given distance
+func IsNearby(current, target schemas.Point, distance float64) bool {
+	return squaredDistance(current, target) <= distance*distance
+}

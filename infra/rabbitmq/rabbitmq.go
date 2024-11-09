@@ -1,3 +1,4 @@
+// infra/rabbitmq/rabbitmq.go
 package rabbitmq
 
 import (
@@ -22,7 +23,12 @@ type RabbitMQ struct {
 
 // NewRabbitMQ creates a new RabbitMQ instance
 func NewRabbitMQ(cfg util.Config) (*RabbitMQ, error) {
-	conn, err := amqp.Dial(cfg.AmqpServerURL)
+	// Config connection and heartbeat
+	conn, err := amqp.DialConfig(cfg.AmqpServerURL, amqp.Config{
+		Heartbeat: 10 * time.Second,
+		Locale:    "en_US",
+	})
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to RabbitMQ: %w", err)
 	}
@@ -34,16 +40,16 @@ func NewRabbitMQ(cfg util.Config) (*RabbitMQ, error) {
 	}
 
 	// Set QoS for better load distribution
-	err = ch.Qos(
-		1,     // prefetch count
-		0,     // prefetch size
-		false, // global
-	)
-	if err != nil {
-		ch.Close()
-		conn.Close()
-		return nil, fmt.Errorf("failed to set QoS: %w", err)
-	}
+	// err = ch.Qos(
+	// 	1,     // prefetch count
+	// 	0,     // prefetch size
+	// 	false, // global
+	// )
+	// if err != nil {
+	// 	ch.Close()
+	// 	conn.Close()
+	// 	return nil, fmt.Errorf("failed to set QoS: %w", err)
+	// }
 
 	return &RabbitMQ{
 		conn:    conn,
@@ -85,75 +91,145 @@ func (r *RabbitMQ) DeclareQueues() error {
 	return nil
 }
 
+// func (r *RabbitMQ) declareQueueIfNotExists(queueName, queueType string) error {
+// 	// Try to declare the queue passively (check if it exists)
+// 	_, err := r.channel.QueueDeclarePassive(
+// 		queueName,
+// 		true,  // durable
+// 		false, // delete when unused
+// 		false, // exclusive
+// 		false, // no-wait
+// 		nil,   // arguments
+// 	)
+
+// 	if err != nil {
+// 		// If the queue doesn't exist, declare it
+// 		dlxName := queueType + ".dlx"
+// 		dlqName := queueType + ".dlq"
+
+// 		args := amqp.Table{
+// 			"x-dead-letter-exchange":    queueType + ".dlx",
+// 			"x-dead-letter-routing-key": queueType + ".dlq",
+// 			"x-message-ttl":             300000, // 5 minutes
+// 			"x-consumer-timeout":        300000,
+// 		}
+
+// 		_, err = r.channel.QueueDeclare(
+// 			queueName,
+// 			true,  // durable
+// 			false, // delete when unused
+// 			false, // exclusive
+// 			false, // no-wait
+// 			args,  // arguments
+// 		)
+// 		if err != nil {
+// 			return fmt.Errorf("failed to declare %s queue: %w", queueType, err)
+// 		}
+
+// 		// Declare the dead-letter exchange
+// 		err = r.channel.ExchangeDeclare(
+// 			dlxName,  // name
+// 			"direct", // type
+// 			true,     // durable
+// 			false,    // auto-deleted
+// 			false,    // internal
+// 			false,    // no-wait
+// 			nil,      // arguments
+// 		)
+// 		if err != nil {
+// 			return fmt.Errorf("failed to declare %s DLX: %w", queueType, err)
+// 		}
+
+// 		// Declare the dead-letter queue
+// 		_, err = r.channel.QueueDeclare(
+// 			dlqName, // name
+// 			true,    // durable
+// 			false,   // delete when unused
+// 			false,   // exclusive
+// 			false,   // no-wait
+// 			nil,     // arguments
+// 		)
+// 		if err != nil {
+// 			return fmt.Errorf("failed to declare %s DLQ: %w", queueType, err)
+// 		}
+
+// 		// Bind the DLQ to the DLX
+// 		err = r.channel.QueueBind(
+// 			dlqName, // queue name
+// 			dlqName, // routing key
+// 			dlxName, // exchange
+// 			false,
+// 			nil,
+// 		)
+// 		if err != nil {
+// 			return fmt.Errorf("failed to bind %s DLQ to DLX: %w", queueType, err)
+// 		}
+// 	}
+
+// 	return nil
+// }
+
 func (r *RabbitMQ) declareQueueIfNotExists(queueName, queueType string) error {
-	// Try to declare the queue passively (check if it exists)
-	_, err := r.channel.QueueDeclarePassive(
+	// Try to declare the queue (this will create it if it doesn't exist)
+	dlxName := queueType + ".dlx"
+	dlqName := queueType + ".dlq"
+
+	args := amqp.Table{
+		"x-dead-letter-exchange":    dlxName,
+		"x-dead-letter-routing-key": dlqName,
+		"x-message-ttl":             300000, // 5 minutes
+		"x-consumer-timeout":        300000,
+	}
+
+	_, err := r.channel.QueueDeclare(
 		queueName,
 		true,  // durable
 		false, // delete when unused
 		false, // exclusive
 		false, // no-wait
-		nil,   // arguments
+		args,  // arguments
 	)
-
 	if err != nil {
-		// If the queue doesn't exist, declare it
-		dlxName := queueType + ".dlx"
-		dlqName := queueType + ".dlq"
+		return fmt.Errorf("failed to declare %s queue: %w", queueType, err)
+	}
 
-		_, err = r.channel.QueueDeclare(
-			queueName,
-			true,  // durable
-			false, // delete when unused
-			false, // exclusive
-			false, // no-wait
-			amqp.Table{
-				"x-dead-letter-exchange":    dlxName,
-				"x-dead-letter-routing-key": dlqName,
-			},
-		)
-		if err != nil {
-			return fmt.Errorf("failed to declare %s queue: %w", queueType, err)
-		}
+	// Declare the dead-letter exchange
+	err = r.channel.ExchangeDeclare(
+		dlxName,  // name
+		"direct", // type
+		true,     // durable
+		false,    // auto-deleted
+		false,    // internal
+		false,    // no-wait
+		nil,      // arguments
+	)
+	if err != nil {
+		return fmt.Errorf("failed to declare %s DLX: %w", queueType, err)
+	}
 
-		// Declare the dead-letter exchange
-		err = r.channel.ExchangeDeclare(
-			dlxName,  // name
-			"direct", // type
-			true,     // durable
-			false,    // auto-deleted
-			false,    // internal
-			false,    // no-wait
-			nil,      // arguments
-		)
-		if err != nil {
-			return fmt.Errorf("failed to declare %s DLX: %w", queueType, err)
-		}
+	// Declare the dead-letter queue
+	_, err = r.channel.QueueDeclare(
+		dlqName, // name
+		true,    // durable
+		false,   // delete when unused
+		false,   // exclusive
+		false,   // no-wait
+		nil,     // arguments
+	)
+	if err != nil {
+		return fmt.Errorf("failed to declare %s DLQ: %w", queueType, err)
+	}
 
-		// Declare the dead-letter queue
-		_, err = r.channel.QueueDeclare(
-			dlqName, // name
-			true,    // durable
-			false,   // delete when unused
-			false,   // exclusive
-			false,   // no-wait
-			nil,     // arguments
-		)
-		if err != nil {
-			return fmt.Errorf("failed to declare %s DLQ: %w", queueType, err)
-		}
-
-		// Bind the DLQ to the DLX
-		err = r.channel.QueueBind(
-			dlqName, // queue name
-			dlqName, // routing key
-			dlxName, // exchange
-			false,
-			nil,
-		)
-		if err != nil {
-			return fmt.Errorf("failed to bind %s DLQ to DLX: %w", queueType, err)
-		}
+	// Bind the DLQ to the DLX
+	err = r.channel.QueueBind(
+		dlqName, // queue name
+		dlqName, // routing key
+		dlxName, // exchange
+		false,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to bind %s DLQ to DLX: %w", queueType, err)
 	}
 
 	return nil

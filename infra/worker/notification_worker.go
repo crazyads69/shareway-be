@@ -1,3 +1,4 @@
+// infra/worker/notification_worker.go
 package worker
 
 import (
@@ -30,10 +31,10 @@ func (nw *NotificationWorker) Start() {
 	ch := nw.rabbitMQ.GetChannel()
 
 	// Declare queue (this will now use the passive declare first)
-	err := nw.rabbitMQ.DeclareQueues()
-	if err != nil {
-		log.Fatalf("Failed to declare queues: %v", err)
-	}
+	// err := nw.rabbitMQ.DeclareQueues()
+	// if err != nil {
+	// 	log.Fatalf("Failed to declare queues: %v", err)
+	// }
 
 	msgs, err := ch.Consume(
 		nw.cfg.AmqpNotificationQueue,
@@ -42,7 +43,9 @@ func (nw *NotificationWorker) Start() {
 		false, // exclusive
 		false, // no-local
 		false, // no-wait
-		nil,   // args
+		amqp.Table{
+			"x-consumer-timeout": 300000, // 5 minutes in milliseconds
+		},
 	)
 	if err != nil {
 		log.Fatalf("Failed to register a consumer: %v", err)
