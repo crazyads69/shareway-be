@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"shareway/helper"
+	"shareway/infra/task"
 	"shareway/infra/ws"
 	"shareway/middleware"
 	"shareway/schemas"
@@ -20,10 +21,12 @@ type RideController struct {
 	MapsService    service.IMapService
 	UserService    service.IUsersService
 	VehicleService service.IVehicleService
+	asyncClient    *task.AsyncClient
 }
 
 func NewRideController(validate *validator.Validate, hub *ws.Hub, rideService service.IRideService,
-	mapService service.IMapService, userService service.IUsersService, vehicleService service.IVehicleService) *RideController {
+	mapService service.IMapService, userService service.IUsersService, vehicleService service.IVehicleService,
+	asyncClient *task.AsyncClient) *RideController {
 	return &RideController{
 		validate:       validate,
 		hub:            hub,
@@ -31,6 +34,7 @@ func NewRideController(validate *validator.Validate, hub *ws.Hub, rideService se
 		MapsService:    mapService,
 		UserService:    userService,
 		VehicleService: vehicleService,
+		asyncClient:    asyncClient,
 	}
 }
 
@@ -147,32 +151,58 @@ func (ctrl *RideController) SendGiveRideRequest(ctx *gin.Context) {
 		EndTime:                rideOffer.EndTime,
 		Status:                 rideOffer.Status,
 		Fare:                   rideOffer.Fare,
+		ReceiverID:             req.ReceiverID,
+		RideRequestID:          req.RideRequestID,
 	}
 
 	// Send ride offer request to the receiver
-	ctrl.hub.SendToUser(req.ReceiverID.String(), "new-give-ride-request", res)
+	// ctrl.hub.SendToUser(req.ReceiverID.String(), "new-give-ride-request", res)
+
+	// Get receiver device token to send notification
+	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get receiver details",
+			"Không thể lấy thông tin người nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
 
 	// Prepare the WebSocket message
-	// wsMessage := schemas.WebSocketMessage{
-	// 	UserID:  req.ReceiverID.String(),
-	// 	Type:    "new-give-ride-request",
-	// 	Payload: res,
-	// }
+	wsMessage := schemas.WebSocketMessage{
+		UserID:  req.ReceiverID.String(),
+		Type:    "new-give-ride-request",
+		Payload: res,
+	}
 
-	// Send the WebSocket message using the rabbitmq worker
-	// Publish the message to RabbitMQ asynchronously
-	// This is to prevent blocking the main thread while waiting for the message to be sent
-	// go func() {
-	// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	// 	defer cancel()
+	// Convert res to map[string]string
+	resMap := helper.StructToFCMData(res)
 
-	// 	err := ctrl.rabbitMQ.PublishWebSocketMessage(ctx, wsMessage)
-	// 	if err != nil {
-	// 		// Log the error for monitoring
-	// 		log.Printf("Error publishing WebSocket message to RabbitMQ: %v", err)
-	// 		// You might want to emit a metric here or trigger an alert
-	// 	}
-	// }()
+	// Prepare the notification message
+	notification := schemas.Notification{
+		Title: "Bạn nhận được một lời mời đi nhờ mới",
+		Body:  "Bạn nhận được một lời mời đi nhờ mới, hãy xem chi tiết và chấp nhận hoặc từ chối",
+		Token: receiver.DeviceToken,
+		Data:  resMap,
+	}
+
+	// Send the WebSocket message
+	go func() {
+		err := ctrl.asyncClient.EnqueueWebsocketMessage(wsMessage)
+		if err != nil {
+			log.Printf("Failed to enqueue websocket message: %v", err)
+		}
+	}()
+
+	// Send the notification message
+	go func() {
+		err = ctrl.asyncClient.EnqueueFCMNotification(notification)
+		if err != nil {
+			log.Printf("Failed to enqueue FCM notification: %v", err)
+		}
+	}()
 
 	// Return success response
 	helper.GinResponse(ctx, 200, helper.SuccessResponse(
@@ -281,10 +311,58 @@ func (ctrl *RideController) SendHitchRideRequest(ctx *gin.Context) {
 		Duration:              rideRequest.Duration,
 		StartTime:             rideRequest.StartTime,
 		EndTime:               rideRequest.EndTime,
+		ReceiverID:            req.ReceiverID,
+		RideOfferID:           req.RideOfferID,
 	}
 
 	// Send ride request to the receiver
-	ctrl.hub.SendToUser(req.ReceiverID.String(), "new-hitch-ride-request", res)
+	// ctrl.hub.SendToUser(req.ReceiverID.String(), "new-hitch-ride-request", res)
+
+	// Get receiver device token to send notification
+	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get receiver details",
+			"Không thể lấy thông tin người nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Prepare the WebSocket message
+	wsMessage := schemas.WebSocketMessage{
+		UserID:  req.ReceiverID.String(),
+		Type:    "new-hitch-ride-request",
+		Payload: res,
+	}
+
+	// Convert res to map[string]string
+	resMap := helper.StructToFCMData(res)
+
+	// Prepare the notification message
+	notification := schemas.Notification{
+		Title: "Bạn nhận được một yêu cầu đi nhờ mới",
+		Body:  "Bạn nhận được một yêu cầu đi nhờ mới, hãy xem chi tiết và chấp nhận hoặc từ chối",
+		Token: receiver.DeviceToken,
+		Data:  resMap,
+	}
+
+	// Send the WebSocket message using the async client
+	go func() {
+		err := ctrl.asyncClient.EnqueueWebsocketMessage(wsMessage)
+		if err != nil {
+			log.Printf("Failed to enqueue websocket message: %v", err)
+		}
+	}()
+
+	// Send the notification message using the async client
+	go func() {
+		err = ctrl.asyncClient.EnqueueFCMNotification(notification)
+		if err != nil {
+			log.Printf("Failed to enqueue FCM notification: %v", err)
+		}
+	}()
 
 	// Return success response
 	helper.GinResponse(ctx, 200, helper.SuccessResponse(
@@ -405,10 +483,57 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 		EndLatitude:     ride.EndLatitude,
 		EndLongitude:    ride.EndLongitude,
 		Vehicle:         vehicle,
+		ReceiverID:      req.ReceiverID,
+		RideRequestID:   req.RideRequestID,
+	}
+
+	// Get receiver device token to send notification
+	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get receiver details",
+			"Không thể lấy thông tin người nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
 	}
 
 	// Send the accepted ride offer to the driver (match the ride successfully)
-	ctrl.hub.SendToUser(req.ReceiverID.String(), "accept-give-ride-request", res)
+	// ctrl.hub.SendToUser(req.ReceiverID.String(), "accept-give-ride-request", res)
+
+	// Prepare the WebSocket message
+	wsMessage := schemas.WebSocketMessage{
+		UserID:  req.ReceiverID.String(),
+		Type:    "accept-give-ride-request",
+		Payload: res,
+	}
+	// Convert res to map[string]string
+	resMap := helper.StructToFCMData(res)
+
+	// Prepare the notification message
+	notification := schemas.Notification{
+		Title: "Yêu cầu đi nhờ của bạn đã được chấp nhận",
+		Body:  "Chuyến đi của bạn đã được chấp nhận, hãy chuẩn bị sẵn sàng để bắt đầu chuyến đi",
+		Token: receiver.DeviceToken,
+		Data:  resMap,
+	}
+
+	// Send the WebSocket message using the async client
+	go func() {
+		err := ctrl.asyncClient.EnqueueWebsocketMessage(wsMessage)
+		if err != nil {
+			log.Printf("Failed to enqueue websocket message: %v", err)
+		}
+	}()
+
+	// Send the notification message using the async client
+	go func() {
+		err = ctrl.asyncClient.EnqueueFCMNotification(notification)
+		if err != nil {
+			log.Printf("Failed to enqueue FCM notification: %v", err)
+		}
+	}()
 
 	// Return success response
 	helper.GinResponse(ctx, 200, helper.SuccessResponse(
@@ -515,6 +640,7 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 		},
 		Status:          ride.Status,
 		StartTime:       ride.StartTime,
+		RideOfferID:     ride.RideOfferID,
 		EndTime:         ride.EndTime,
 		StartAddress:    ride.StartAddress,
 		EndAddress:      ride.EndAddress,
@@ -526,11 +652,58 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 		StartLongitude:  ride.StartLongitude,
 		EndLatitude:     ride.EndLatitude,
 		EndLongitude:    ride.EndLongitude,
+		ReceiverID:      req.ReceiverID,
 		Vehicle:         vehicle,
 	}
 
+	// Get receiver device token to send notification
+	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get receiver details",
+			"Không thể lấy thông tin người nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	// Send the accepted ride request to the hitcher (match the ride successfully)
-	ctrl.hub.SendToUser(req.ReceiverID.String(), "accept-hitch-ride-request", res)
+	// ctrl.hub.SendToUser(req.ReceiverID.String(), "accept-hitch-ride-request", res)
+
+	// Prepare the WebSocket message
+	wsMessage := schemas.WebSocketMessage{
+		UserID:  req.ReceiverID.String(),
+		Type:    "accept-hitch-ride-request",
+		Payload: res,
+	}
+
+	// Convert res to map[string]string
+	resMap := helper.StructToFCMData(res)
+
+	// Prepare the notification message
+	notification := schemas.Notification{
+		Title: "Lời mời đi nhờ của bạn đã được chấp nhận",
+		Body:  "Chuyến đi của bạn đã được chấp nhận, hãy chuẩn bị sẵn sàng để bắt đầu chuyến đi",
+		Token: receiver.DeviceToken,
+		Data:  resMap,
+	}
+
+	// Send the WebSocket message using the async client
+	go func() {
+		err := ctrl.asyncClient.EnqueueWebsocketMessage(wsMessage)
+		if err != nil {
+			log.Printf("Failed to enqueue websocket message: %v", err)
+		}
+	}()
+
+	// Send the notification message using the async client
+	go func() {
+		err = ctrl.asyncClient.EnqueueFCMNotification(notification)
+		if err != nil {
+			log.Printf("Failed to enqueue FCM notification: %v", err)
+		}
+	}()
 
 	// Return success response
 	helper.GinResponse(ctx, 200, helper.SuccessResponse(
@@ -595,9 +768,57 @@ func (ctrl *RideController) CancelGiveRideRequest(ctx *gin.Context) {
 		RideOfferID:   req.RideOfferID,
 		RideRequestID: req.RideRequestID,
 		UserID:        data.UserID,
+		ReceiverID:    req.ReceiverID,
 	}
+
 	// Send the cancel notification to the driver
-	ctrl.hub.SendToUser(req.ReceiverID.String(), "cancel-give-ride-request", res)
+	// ctrl.hub.SendToUser(req.ReceiverID.String(), "cancel-give-ride-request", res)
+
+	// Get receiver device token to send notification
+	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get receiver details",
+			"Không thể lấy thông tin người nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Prepare the WebSocket message
+	wsMessage := schemas.WebSocketMessage{
+		UserID:  req.ReceiverID.String(),
+		Type:    "cancel-give-ride-request",
+		Payload: res,
+	}
+
+	// Convert res to map[string]string
+	resMap := helper.StructToFCMData(res)
+
+	// Prepare the notification message
+	notification := schemas.Notification{
+		Title: "Lời mời đi nhờ của bạn đã bị hủy",
+		Body:  "Lời mời đi nhờ của bạn đã bị hủy, vui lòng thử lại sau",
+		Token: receiver.DeviceToken,
+		Data:  resMap,
+	}
+
+	// Send the WebSocket message using the async client
+	go func() {
+		err := ctrl.asyncClient.EnqueueWebsocketMessage(wsMessage)
+		if err != nil {
+			log.Printf("Failed to enqueue websocket message: %v", err)
+		}
+	}()
+
+	// Send the notification message using the async client
+	go func() {
+		err = ctrl.asyncClient.EnqueueFCMNotification(notification)
+		if err != nil {
+			log.Printf("Failed to enqueue FCM notification: %v", err)
+		}
+	}()
 
 	// Return success response
 	helper.GinResponse(ctx, 200, helper.SuccessResponse(
@@ -662,9 +883,56 @@ func (ctrl *RideController) CancelHitchRideRequest(ctx *gin.Context) {
 		RideOfferID:   req.RideOfferID,
 		RideRequestID: req.RideRequestID,
 		UserID:        data.UserID,
+		ReceiverID:    req.ReceiverID,
 	}
 	// Send the cancel notification to the hitcher
-	ctrl.hub.SendToUser(req.ReceiverID.String(), "cancel-hitch-ride-request", res)
+	// ctrl.hub.SendToUser(req.ReceiverID.String(), "cancel-hitch-ride-request", res)
+
+	// Get receiver device token to send notification
+	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get receiver details",
+			"Không thể lấy thông tin người nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Prepare the WebSocket message
+	wsMessage := schemas.WebSocketMessage{
+		UserID:  req.ReceiverID.String(),
+		Type:    "cancel-hitch-ride-request",
+		Payload: res,
+	}
+
+	// Convert res to map[string]string
+	resMap := helper.StructToFCMData(res)
+
+	// Prepare the notification message
+	notification := schemas.Notification{
+		Title: "Yêu cầu đi nhờ của bạn đã bị hủy",
+		Body:  "Yêu cầu đi nhờ của bạn đã bị hủy, vui lòng thử lại sau",
+		Token: receiver.DeviceToken,
+		Data:  resMap,
+	}
+
+	// Send the WebSocket message using the async client
+	go func() {
+		err := ctrl.asyncClient.EnqueueWebsocketMessage(wsMessage)
+		if err != nil {
+			log.Printf("Failed to enqueue websocket message: %v", err)
+		}
+	}()
+
+	// Send the notification message using the async client
+	go func() {
+		err = ctrl.asyncClient.EnqueueFCMNotification(notification)
+		if err != nil {
+			log.Printf("Failed to enqueue FCM notification: %v", err)
+		}
+	}()
 
 	// Return success response
 	helper.GinResponse(ctx, 200, helper.SuccessResponse(

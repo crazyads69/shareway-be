@@ -40,6 +40,8 @@ type SendGiveRideRequestResponse struct {
 	EndTime                time.Time     `json:"end_time"`
 	Status                 string        `json:"status"`
 	Fare                   float64       `json:"fare"`
+	ReceiverID             uuid.UUID     `json:"receiver_id"`
+	RideRequestID          uuid.UUID     `json:"ride_request_id"`
 }
 
 // Define SendHitchRideRequestRequest schema
@@ -71,6 +73,8 @@ type SendHitchRideRequestResponse struct {
 	Duration              int       `json:"duration"`
 	StartTime             time.Time `json:"start_time"`
 	EndTime               time.Time `json:"end_time"`
+	ReceiverID            uuid.UUID `json:"receiver_id"`
+	RideOfferID           uuid.UUID `json:"ride_offer_id"`
 }
 
 // Define AcceptRideGiveRequestRequest schema
@@ -112,6 +116,7 @@ type AcceptGiveRideRequestResponse struct {
 	EndLatitude     float64       `json:"end_latitude"`
 	EndLongitude    float64       `json:"end_longitude"`
 	Vehicle         VehicleDetail `json:"vehicle"`
+	ReceiverID      uuid.UUID     `json:"receiver_id"`
 }
 
 // Define AcceptHitchRideRequestRequest schema
@@ -131,15 +136,16 @@ type AcceptHitchRideRequestResponse struct {
 	ID              uuid.UUID `json:"ride_id"`
 	RideOfferID     uuid.UUID `json:"ride_offer_id"`
 	RideRequestID   uuid.UUID `json:"ride_request_id"`
+	ReceiverID      uuid.UUID `json:"receiver_id"`
 	Status          string    `json:"status"`
 	StartTime       time.Time `json:"start_time"`
 	EndTime         time.Time `json:"end_time"`
 	StartAddress    string    `json:"start_address"`
 	EndAddress      string    `json:"end_address"`
-	Fare            float64
-	EncodedPolyline string  `json:"encoded_polyline"`
-	Distance        float64 `json:"distance"`
-	Duration        int     `json:"duration"`
+	Fare            float64   `json:"fare"`
+	EncodedPolyline string    `json:"encoded_polyline"`
+	Distance        float64   `json:"distance"`
+	Duration        int       `json:"duration"`
 	Transaction     TransactionDetail
 	StartLatitude   float64       `json:"start_latitude"`
 	StartLongitude  float64       `json:"start_longitude"`
@@ -162,6 +168,7 @@ type CancelGiveRideRequestResponse struct {
 	RideOfferID   uuid.UUID `json:"ride_offer_id"`
 	RideRequestID uuid.UUID `json:"ride_request_id"`
 	UserID        uuid.UUID `json:"user_id"` // The user who cancel the request (hitcher cancel the request)
+	ReceiverID    uuid.UUID `json:"receiver_id"`
 }
 
 type CancelHitchRideRequestRequest struct {
@@ -179,6 +186,7 @@ type CancelHitchRideRequestResponse struct {
 	RideOfferID   uuid.UUID `json:"ride_offer_id"`
 	RideRequestID uuid.UUID `json:"ride_request_id"`
 	UserID        uuid.UUID `json:"user_id"` // The user who cancel the request (driver cancel the request)
+	ReceiverID    uuid.UUID `json:"receiver_id"`
 }
 
 // Define StartRideRequest schema

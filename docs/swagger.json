@@ -1918,6 +1918,9 @@
                 "fare": {
                     "type": "number"
                 },
+                "receiver_id": {
+                    "type": "string"
+                },
                 "ride_id": {
                     "type": "string"
                 },
@@ -2003,6 +2006,9 @@
                 },
                 "fare": {
                     "type": "number"
+                },
+                "receiver_id": {
+                    "type": "string"
                 },
                 "ride_id": {
                     "type": "string"

@@ -26,6 +26,8 @@ Sent when a driver offers a ride to a hitchhiker.
   "type": "new-give-ride-request",
   "data": {
     "ride_offer_id": "UUID",
+    "ride_request_id": "UUID",
+    "receiver_id": "UUID",
     "user": {
       "id": "UUID",
       "phoneNumber": "string",
@@ -65,6 +67,8 @@ Sent when a hitchhiker requests a ride from a driver.
   "type": "new-hitch-ride-request",
   "data": {
     "ride_request_id": "UUID",
+    "ride_offer_id": "UUID",
+    "receiver_id": "UUID",
     "user": {
       "id": "UUID",
       "phoneNumber": "string",
@@ -99,6 +103,7 @@ Sent when a hitchhiker accepts a ride offer from a driver.
     "ride_id": "UUID",
     "ride_offer_id": "UUID",
     "ride_request_id": "UUID",
+    "receiver_id": "UUID",
     "status": "string",
     "start_time": "ISO8601 string",
     "end_time": "ISO8601 string",
@@ -139,6 +144,7 @@ Sent when a driver accepts a ride request from a hitchhiker.
     "ride_id": "UUID",
     "ride_offer_id": "UUID",
     "ride_request_id": "UUID",
+    "receiver_id": "UUID",
     "status": "string",
     "start_time": "ISO8601 string",
     "end_time": "ISO8601 string",
@@ -178,7 +184,8 @@ Sent when a hitchhiker cancels a ride offer from a driver.
   "data": {
     "ride_offer_id": "UUID",
     "ride_request_id": "UUID",
-    "user_id": "UUID"
+    "user_id": "UUID",
+    "receiver_id": "UUID"
   }
 }
 ```
@@ -193,7 +200,8 @@ Sent when a driver cancels a ride request from a hitchhiker.
   "data": {
     "ride_offer_id": "UUID",
     "ride_request_id": "UUID",
-    "user_id": "UUID"
+    "user_id": "UUID",
+    "receiver_id": "UUID"
   }
 }
 ```

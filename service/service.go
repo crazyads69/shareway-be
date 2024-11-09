@@ -3,6 +3,7 @@ package service
 import (
 	"shareway/infra/fpt"
 	"shareway/infra/rabbitmq"
+	"shareway/infra/task"
 	"shareway/infra/ws"
 	"shareway/repository"
 	"shareway/util"
@@ -30,9 +31,10 @@ type ServiceFactory struct {
 	redis     *redis.Client
 	hub       *ws.Hub
 	rabbitmq  *rabbitmq.RabbitMQ
+	asynq     *task.AsyncClient
 }
 
-func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, redisClient *redis.Client, hub *ws.Hub) *ServiceFactory {
+func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, redisClient *redis.Client, hub *ws.Hub, asynq *task.AsyncClient) *ServiceFactory {
 	repoFactory := repository.NewRepositoryFactory(db, redisClient, cfg)
 	repos := repoFactory.CreateRepositories()
 
@@ -49,6 +51,7 @@ func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, r
 		maker:     token,
 		redis:     redisClient,
 		hub:       hub,
+		asynq:     asynq,
 	}
 }
 
@@ -84,5 +87,5 @@ func (f *ServiceFactory) createRideService() IRideService {
 }
 
 func (f *ServiceFactory) createNotificationService() INotificationService {
-	return NewNotificationService(f.repos.NotificationRepository, f.cfg)
+	return NewNotificationService(f.repos.NotificationRepository, f.cfg, f.asynq)
 }

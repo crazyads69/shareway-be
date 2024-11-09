@@ -275,7 +275,7 @@ func (s *MapService) CreateGiveRide(ctx context.Context, input schemas.GiveRideR
 	var startTime time.Time
 	if input.StartTime != "" {
 		// Parse the start time to UTC time
-		startTime, err = time.Parse("2006-01-02T15:04:05.000", input.StartTime)
+		startTime, err = time.Parse("2006-01-02T15:04:05.999999", input.StartTime)
 		if err != nil {
 			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to parse start time: %w", err)
 		}
@@ -368,7 +368,7 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 	var startTime time.Time
 	if input.StartTime != "" {
 		// Parse the start time to UTC time
-		startTime, err = time.Parse("2006-01-02T15:04:05.000", input.StartTime)
+		startTime, err = time.Parse("2006-01-02T15:04:05.999999", input.StartTime)
 		if err != nil {
 			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to parse start time: %w", err)
 		}

@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"log"
+	"shareway/infra/task"
 	"shareway/repository"
 	"shareway/schemas"
 	"shareway/util"
@@ -16,14 +17,16 @@ type INotificationService interface {
 }
 
 type NotificationService struct {
-	repo repository.INotificationRepository
-	cfg  util.Config
+	repo        repository.INotificationRepository
+	cfg         util.Config
+	asynqClient *task.AsyncClient
 }
 
-func NewNotificationService(repo repository.INotificationRepository, cfg util.Config) INotificationService {
+func NewNotificationService(repo repository.INotificationRepository, cfg util.Config, asyncClient *task.AsyncClient) INotificationService {
 	return &NotificationService{
-		repo: repo,
-		cfg:  cfg,
+		repo:        repo,
+		cfg:         cfg,
+		asynqClient: asyncClient,
 	}
 }
 
@@ -54,6 +57,15 @@ func (ns *NotificationService) CreateNotification(req schemas.CreateNotification
 
 	log.Printf("Sending notification to device: %v", notification)
 
+	// Enqueue the notification task
+	go func() {
+		err := ns.asynqClient.EnqueueFCMNotification(notification)
+		if err != nil {
+			// Log the error instead of returning it
+			log.Printf("Failed to enqueue FCM notification: %v", err)
+		}
+	}()
+
 	// Publish the notification to the RabbitMQ exchange
 	// This is a asynchronous task so much run in a goroutine
 	// go func() {
@@ -80,18 +92,14 @@ func (ns *NotificationService) CreateTestWebsocket(req schemas.CreateTestWebsock
 
 	log.Printf("Sending test websocket message: %v", message)
 
-	// Publish the message to the RabbitMQ exchange
-	// This is a asynchronous task so much run in a goroutine
-	// go func() {
-	// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	// 	defer cancel()
-
-	// err := ns.rabbitmq.PublishWebSocketMessage(context.Background(), message)
-	// if err != nil {
-	// 	log.Printf("Failed to publish websocket message to RabbitMQ: %v", err)
-	// 	// Consider implementing a retry mechanism or storing failed messages
-	// }
-	// // }()
+	// Enqueue the websocket message task
+	go func() {
+		err := ns.asynqClient.EnqueueWebsocketMessage(message)
+		if err != nil {
+			// Log the error instead of returning it
+			log.Printf("Failed to enqueue websocket message: %v", err)
+		}
+	}()
 
 	return nil
 }

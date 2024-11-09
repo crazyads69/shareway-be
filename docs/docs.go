@@ -1929,6 +1929,9 @@ const docTemplate = `{
                 "fare": {
                     "type": "number"
                 },
+                "receiver_id": {
+                    "type": "string"
+                },
                 "ride_id": {
                     "type": "string"
                 },
@@ -2014,6 +2017,9 @@ const docTemplate = `{
                 },
                 "fare": {
                     "type": "number"
+                },
+                "receiver_id": {
+                    "type": "string"
                 },
                 "ride_id": {
                     "type": "string"
