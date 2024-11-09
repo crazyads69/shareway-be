@@ -1,14 +1,11 @@
 package service
 
 import (
-	"context"
 	"fmt"
 	"log"
-	"shareway/infra/rabbitmq"
 	"shareway/repository"
 	"shareway/schemas"
 	"shareway/util"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -19,16 +16,14 @@ type INotificationService interface {
 }
 
 type NotificationService struct {
-	repo     repository.INotificationRepository
-	cfg      util.Config
-	rabbitmq *rabbitmq.RabbitMQ
+	repo repository.INotificationRepository
+	cfg  util.Config
 }
 
-func NewNotificationService(repo repository.INotificationRepository, cfg util.Config, rabbitmq *rabbitmq.RabbitMQ) INotificationService {
+func NewNotificationService(repo repository.INotificationRepository, cfg util.Config) INotificationService {
 	return &NotificationService{
-		repo:     repo,
-		cfg:      cfg,
-		rabbitmq: rabbitmq,
+		repo: repo,
+		cfg:  cfg,
 	}
 }
 
@@ -57,18 +52,20 @@ func (ns *NotificationService) CreateNotification(req schemas.CreateNotification
 		Token: deviceToken,
 	}
 
+	log.Printf("Sending notification to device: %v", notification)
+
 	// Publish the notification to the RabbitMQ exchange
 	// This is a asynchronous task so much run in a goroutine
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
+	// go func() {
+	// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// 	defer cancel()
 
-		err := ns.rabbitmq.PublishNotification(ctx, notification)
-		if err != nil {
-			log.Printf("Failed to publish notification to RabbitMQ: %v", err)
-			// Consider implementing a retry mechanism or storing failed notifications
-		}
-	}()
+	// 	err := ns.rabbitmq.PublishNotification(ctx, notification)
+	// 	if err != nil {
+	// 		log.Printf("Failed to publish notification to RabbitMQ: %v", err)
+	// 		// Consider implementing a retry mechanism or storing failed notifications
+	// 	}
+	// }()
 
 	return notificationID, nil
 }
@@ -81,18 +78,20 @@ func (ns *NotificationService) CreateTestWebsocket(req schemas.CreateTestWebsock
 		Type:    "test",
 	}
 
+	log.Printf("Sending test websocket message: %v", message)
+
 	// Publish the message to the RabbitMQ exchange
 	// This is a asynchronous task so much run in a goroutine
 	// go func() {
 	// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	// 	defer cancel()
 
-	err := ns.rabbitmq.PublishWebSocketMessage(context.Background(), message)
-	if err != nil {
-		log.Printf("Failed to publish websocket message to RabbitMQ: %v", err)
-		// Consider implementing a retry mechanism or storing failed messages
-	}
-	// }()
+	// err := ns.rabbitmq.PublishWebSocketMessage(context.Background(), message)
+	// if err != nil {
+	// 	log.Printf("Failed to publish websocket message to RabbitMQ: %v", err)
+	// 	// Consider implementing a retry mechanism or storing failed messages
+	// }
+	// // }()
 
 	return nil
 }

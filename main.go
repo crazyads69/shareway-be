@@ -1,14 +1,10 @@
 package main
 
 import (
-	"context"
 	"os"
 	"os/signal"
 	"shareway/infra/crawler"
 	"shareway/infra/db"
-	"shareway/infra/fcm"
-	"shareway/infra/rabbitmq"
-	"shareway/infra/worker"
 	"shareway/infra/ws"
 	"shareway/router"
 	"shareway/service"
@@ -50,40 +46,11 @@ func main() {
 	hub := ws.NewHub()
 	go hub.Run()
 
-	// Init RabbitMQ
-	rabbitMQ, err := rabbitmq.ConnectRabbitMQ(cfg)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Could not create RabbitMQ instance")
-		return
-	}
-	defer rabbitMQ.Close()
-
-	// Declare queue for notifications
-	err = rabbitMQ.DeclareQueues()
-	if err != nil {
-		log.Fatal().Err(err).Msg("Could not declare queue")
-		return
-	}
-	//
-	// Initialize Firebase Cloud Messaging client
-	fcmClient, err := fcm.NewFCMClient(context.Background(), cfg.FCMConfigPath)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Could not create FCM client")
-		return
-	}
-
-	// Create new notification worker
-	notificationWorker := worker.NewNotificationWorker(rabbitMQ, fcmClient, cfg)
-	go notificationWorker.Start()
-
-	// Create new websocket worker
-	websocketWorker := worker.NewWebSocketWorker(rabbitMQ, hub, cfg)
-	go websocketWorker.Start()
-
-	// Create a new notification
-	// err = rabbitMQ.PublishNotification(context.Background(), notification)
+	// // Initialize Firebase Cloud Messaging client
+	// fcmClient, err := fcm.NewFCMClient(context.Background(), cfg.FCMConfigPath)
 	// if err != nil {
-	// log.Printf("Failed to publish notification: %v", err)
+	// 	log.Fatal().Err(err).Msg("Could not create FCM client")
+	// 	return
 	// }
 
 	// Create a scheduler
@@ -146,7 +113,7 @@ func main() {
 	scheduler.Start()
 
 	// Initialize services using the service factory pattern (dependency injection also included repository pattern)
-	serviceFactory := service.NewServiceFactory(database, cfg, maker, redisClient, hub, rabbitMQ)
+	serviceFactory := service.NewServiceFactory(database, cfg, maker, redisClient, hub)
 	services := serviceFactory.CreateServices()
 
 	// Create new API server
@@ -156,7 +123,6 @@ func main() {
 		services,
 		validate,
 		hub,
-		rabbitMQ,
 	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Could not create router")

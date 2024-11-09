@@ -14,7 +14,6 @@ func SetupRideRouter(group *gin.RouterGroup, server *APIServer) {
 		server.Service.MapService,
 		server.Service.UserService,
 		server.Service.VehicleService,
-		server.RabbitMQ,
 	)
 	group.POST("/give-ride-request", rideController.SendGiveRideRequest)
 	group.POST("/hitch-ride-request", rideController.SendHitchRideRequest)

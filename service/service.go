@@ -32,7 +32,7 @@ type ServiceFactory struct {
 	rabbitmq  *rabbitmq.RabbitMQ
 }
 
-func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, redisClient *redis.Client, hub *ws.Hub, rabbitmq *rabbitmq.RabbitMQ) *ServiceFactory {
+func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, redisClient *redis.Client, hub *ws.Hub) *ServiceFactory {
 	repoFactory := repository.NewRepositoryFactory(db, redisClient, cfg)
 	repos := repoFactory.CreateRepositories()
 
@@ -49,7 +49,6 @@ func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, r
 		maker:     token,
 		redis:     redisClient,
 		hub:       hub,
-		rabbitmq:  rabbitmq,
 	}
 }
 
@@ -85,5 +84,5 @@ func (f *ServiceFactory) createRideService() IRideService {
 }
 
 func (f *ServiceFactory) createNotificationService() INotificationService {
-	return NewNotificationService(f.repos.NotificationRepository, f.cfg, f.rabbitmq)
+	return NewNotificationService(f.repos.NotificationRepository, f.cfg)
 }
