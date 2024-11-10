@@ -119,6 +119,10 @@ Sent when a hitchhiker accepts a ride offer from a driver.
       "status": "string",
       "payment_method": "string"
     },
+    "driver_current_latitude": 0.0,
+    "driver_current_longitude": 0.0,
+    "rider_current_latitude": 0.0,
+    "rider_current_longitude": 0.0,
     "start_latitude": 0.0,
     "start_longitude": 0.0,
     "end_latitude": 0.0,
@@ -160,6 +164,10 @@ Sent when a driver accepts a ride request from a hitchhiker.
       "status": "string",
       "payment_method": "string"
     },
+    "driver_current_latitude": 0.0,
+    "driver_current_longitude": 0.0,
+    "rider_current_latitude": 0.0,
+    "rider_current_longitude": 0.0,
     "start_latitude": 0.0,
     "start_longitude": 0.0,
     "end_latitude": 0.0,

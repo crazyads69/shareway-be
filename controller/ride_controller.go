@@ -178,7 +178,16 @@ func (ctrl *RideController) SendGiveRideRequest(ctx *gin.Context) {
 	}
 
 	// Convert res to map[string]string
-	resMap := helper.StructToFCMData(res)
+	resMap, err := helper.ConvertToStringMap(res)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert struct to map",
+			"Không thể chuyển đổi struct sang map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
 
 	// Prepare the notification message
 	notification := schemas.Notification{
@@ -338,7 +347,16 @@ func (ctrl *RideController) SendHitchRideRequest(ctx *gin.Context) {
 	}
 
 	// Convert res to map[string]string
-	resMap := helper.StructToFCMData(res)
+	resMap, err := helper.ConvertToStringMap(res)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert struct to map",
+			"Không thể chuyển đổi struct sang map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
 
 	// Prepare the notification message
 	notification := schemas.Notification{
@@ -437,6 +455,30 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 		return
 	}
 
+	// Get ride offer details from ride_offer_id
+	rideOffer, err := ctrl.RideService.GetRideOfferByID(req.RideOfferID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get ride offer details",
+			"Không thể lấy thông tin chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get ride request details from ride_request_id
+	rideRequest, err := ctrl.RideService.GetRideRequestByID(req.RideRequestID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get ride request details",
+			"Không thể lấy thông tin yêu cầu chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	// Create a transaction to store fare details
 	transaction, err := ctrl.RideService.CreateRideTransaction(ride.ID, ride.Fare, req.ReceiverID, data.UserID)
 	if err != nil {
@@ -469,22 +511,26 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 			Status:        transaction.Status,
 			PaymentMethod: transaction.PaymentMethod,
 		},
-		Status:          ride.Status,
-		StartTime:       ride.StartTime,
-		EndTime:         ride.EndTime,
-		StartAddress:    ride.StartAddress,
-		EndAddress:      ride.EndAddress,
-		Fare:            ride.Fare,
-		EncodedPolyline: ride.EncodedPolyline,
-		Distance:        ride.Distance,
-		Duration:        ride.Duration,
-		StartLatitude:   ride.StartLatitude,
-		StartLongitude:  ride.StartLongitude,
-		EndLatitude:     ride.EndLatitude,
-		EndLongitude:    ride.EndLongitude,
-		Vehicle:         vehicle,
-		ReceiverID:      req.ReceiverID,
-		RideRequestID:   req.RideRequestID,
+		DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+		DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+		RiderCurrentLatitude:   rideRequest.RiderCurrentLatitude,
+		RiderCurrentLongitude:  rideRequest.RiderCurrentLongitude,
+		Status:                 ride.Status,
+		StartTime:              ride.StartTime,
+		EndTime:                ride.EndTime,
+		StartAddress:           ride.StartAddress,
+		EndAddress:             ride.EndAddress,
+		Fare:                   ride.Fare,
+		EncodedPolyline:        ride.EncodedPolyline,
+		Distance:               ride.Distance,
+		Duration:               ride.Duration,
+		StartLatitude:          ride.StartLatitude,
+		StartLongitude:         ride.StartLongitude,
+		EndLatitude:            ride.EndLatitude,
+		EndLongitude:           ride.EndLongitude,
+		Vehicle:                vehicle,
+		ReceiverID:             req.ReceiverID,
+		RideRequestID:          req.RideRequestID,
 	}
 
 	// Get receiver device token to send notification
@@ -509,7 +555,16 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 		Payload: res,
 	}
 	// Convert res to map[string]string
-	resMap := helper.StructToFCMData(res)
+	resMap, err := helper.ConvertToStringMap(res)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert struct to map",
+			"Không thể chuyển đổi struct sang map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
 
 	// Prepare the notification message
 	notification := schemas.Notification{
@@ -606,6 +661,30 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 		return
 	}
 
+	// Get ride offer details from ride_offer_id
+	rideOffer, err := ctrl.RideService.GetRideOfferByID(req.RideOfferID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get ride offer details",
+			"Không thể lấy thông tin chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get ride request details from ride_request_id
+	rideRequest, err := ctrl.RideService.GetRideRequestByID(req.RideRequestID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get ride request details",
+			"Không thể lấy thông tin yêu cầu chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	// Create a transaction to store fare details
 	transaction, err := ctrl.RideService.CreateRideTransaction(ride.ID, ride.Fare, data.UserID, req.ReceiverID)
 	if err != nil {
@@ -638,22 +717,26 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 			Status:        transaction.Status,
 			PaymentMethod: transaction.PaymentMethod,
 		},
-		Status:          ride.Status,
-		StartTime:       ride.StartTime,
-		RideOfferID:     ride.RideOfferID,
-		EndTime:         ride.EndTime,
-		StartAddress:    ride.StartAddress,
-		EndAddress:      ride.EndAddress,
-		Fare:            ride.Fare,
-		EncodedPolyline: ride.EncodedPolyline,
-		Distance:        ride.Distance,
-		Duration:        ride.Duration,
-		StartLatitude:   ride.StartLatitude,
-		StartLongitude:  ride.StartLongitude,
-		EndLatitude:     ride.EndLatitude,
-		EndLongitude:    ride.EndLongitude,
-		ReceiverID:      req.ReceiverID,
-		Vehicle:         vehicle,
+		Status:                 ride.Status,
+		StartTime:              ride.StartTime,
+		RideOfferID:            ride.RideOfferID,
+		DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+		DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+		RiderCurrentLatitude:   rideRequest.RiderCurrentLatitude,
+		RiderCurrentLongitude:  rideRequest.RiderCurrentLongitude,
+		EndTime:                ride.EndTime,
+		StartAddress:           ride.StartAddress,
+		EndAddress:             ride.EndAddress,
+		Fare:                   ride.Fare,
+		EncodedPolyline:        ride.EncodedPolyline,
+		Distance:               ride.Distance,
+		Duration:               ride.Duration,
+		StartLatitude:          ride.StartLatitude,
+		StartLongitude:         ride.StartLongitude,
+		EndLatitude:            ride.EndLatitude,
+		EndLongitude:           ride.EndLongitude,
+		ReceiverID:             req.ReceiverID,
+		Vehicle:                vehicle,
 	}
 
 	// Get receiver device token to send notification
@@ -679,7 +762,16 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 	}
 
 	// Convert res to map[string]string
-	resMap := helper.StructToFCMData(res)
+	resMap, err := helper.ConvertToStringMap(res)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert struct to map",
+			"Không thể chuyển đổi struct sang map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
 
 	// Prepare the notification message
 	notification := schemas.Notification{
@@ -794,7 +886,16 @@ func (ctrl *RideController) CancelGiveRideRequest(ctx *gin.Context) {
 	}
 
 	// Convert res to map[string]string
-	resMap := helper.StructToFCMData(res)
+	resMap, err := helper.ConvertToStringMap(res)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert struct to map",
+			"Không thể chuyển đổi struct sang map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
 
 	// Prepare the notification message
 	notification := schemas.Notification{
@@ -908,7 +1009,16 @@ func (ctrl *RideController) CancelHitchRideRequest(ctx *gin.Context) {
 	}
 
 	// Convert res to map[string]string
-	resMap := helper.StructToFCMData(res)
+	resMap, err := helper.ConvertToStringMap(res)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert struct to map",
+			"Không thể chuyển đổi struct sang map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
 
 	// Prepare the notification message
 	notification := schemas.Notification{

@@ -1897,6 +1897,12 @@
                 "distance": {
                     "type": "number"
                 },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
                 "duration": {
                     "type": "integer"
                 },
@@ -1929,6 +1935,12 @@
                 },
                 "ride_request_id": {
                     "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
                 },
                 "start_address": {
                     "type": "string"
@@ -1986,6 +1998,12 @@
                 "distance": {
                     "type": "number"
                 },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
                 "duration": {
                     "type": "integer"
                 },
@@ -2018,6 +2036,12 @@
                 },
                 "ride_request_id": {
                     "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
                 },
                 "start_address": {
                     "type": "string"

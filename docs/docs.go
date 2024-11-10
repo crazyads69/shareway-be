@@ -1908,6 +1908,12 @@ const docTemplate = `{
                 "distance": {
                     "type": "number"
                 },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
                 "duration": {
                     "type": "integer"
                 },
@@ -1940,6 +1946,12 @@ const docTemplate = `{
                 },
                 "ride_request_id": {
                     "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
                 },
                 "start_address": {
                     "type": "string"
@@ -1997,6 +2009,12 @@ const docTemplate = `{
                 "distance": {
                     "type": "number"
                 },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
                 "duration": {
                     "type": "integer"
                 },
@@ -2029,6 +2047,12 @@ const docTemplate = `{
                 },
                 "ride_request_id": {
                     "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
                 },
                 "start_address": {
                     "type": "string"

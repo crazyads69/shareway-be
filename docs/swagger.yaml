@@ -37,6 +37,10 @@ definitions:
     properties:
       distance:
         type: number
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
       duration:
         type: integer
       encoded_polyline:
@@ -59,6 +63,10 @@ definitions:
         type: string
       ride_request_id:
         type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
       start_address:
         type: string
       start_latitude:
@@ -100,6 +108,10 @@ definitions:
     properties:
       distance:
         type: number
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
       duration:
         type: integer
       encoded_polyline:
@@ -122,6 +134,10 @@ definitions:
         type: string
       ride_request_id:
         type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
       start_address:
         type: string
       start_latitude:

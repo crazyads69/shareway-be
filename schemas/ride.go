@@ -98,25 +98,29 @@ type TransactionDetail struct {
 
 // Define AcceptRideGiveRequestResponse schema
 type AcceptGiveRideRequestResponse struct {
-	ID              uuid.UUID `json:"ride_id"`
-	RideOfferID     uuid.UUID `json:"ride_offer_id"`
-	RideRequestID   uuid.UUID `json:"ride_request_id"`
-	Status          string    `json:"status"`
-	StartTime       time.Time `json:"start_time"`
-	EndTime         time.Time `json:"end_time"`
-	StartAddress    string    `json:"start_address"`
-	EndAddress      string    `json:"end_address"`
-	Fare            float64
-	EncodedPolyline string  `json:"encoded_polyline"`
-	Distance        float64 `json:"distance"`
-	Duration        int     `json:"duration"`
-	Transaction     TransactionDetail
-	StartLatitude   float64       `json:"start_latitude"`
-	StartLongitude  float64       `json:"start_longitude"`
-	EndLatitude     float64       `json:"end_latitude"`
-	EndLongitude    float64       `json:"end_longitude"`
-	Vehicle         VehicleDetail `json:"vehicle"`
-	ReceiverID      uuid.UUID     `json:"receiver_id"`
+	ID                     uuid.UUID         `json:"ride_id"`
+	RideOfferID            uuid.UUID         `json:"ride_offer_id"`
+	RideRequestID          uuid.UUID         `json:"ride_request_id"`
+	Status                 string            `json:"status"`
+	StartTime              time.Time         `json:"start_time"`
+	EndTime                time.Time         `json:"end_time"`
+	StartAddress           string            `json:"start_address"`
+	EndAddress             string            `json:"end_address"`
+	Fare                   float64           `json:"fare"`
+	EncodedPolyline        string            `json:"encoded_polyline"`
+	Distance               float64           `json:"distance"`
+	Duration               int               `json:"duration"`
+	DriverCurrentLatitude  float64           `json:"driver_current_latitude"`
+	DriverCurrentLongitude float64           `json:"driver_current_longitude"`
+	RiderCurrentLatitude   float64           `json:"rider_current_latitude"`
+	RiderCurrentLongitude  float64           `json:"rider_current_longitude"`
+	Transaction            TransactionDetail `json:"transaction"`
+	StartLatitude          float64           `json:"start_latitude"`
+	StartLongitude         float64           `json:"start_longitude"`
+	EndLatitude            float64           `json:"end_latitude"`
+	EndLongitude           float64           `json:"end_longitude"`
+	Vehicle                VehicleDetail     `json:"vehicle"`
+	ReceiverID             uuid.UUID         `json:"receiver_id"`
 }
 
 // Define AcceptHitchRideRequestRequest schema
@@ -133,25 +137,29 @@ type AcceptHitchRideRequestRequest struct {
 
 // Define AcceptHitchRideRequestResponse schema
 type AcceptHitchRideRequestResponse struct {
-	ID              uuid.UUID `json:"ride_id"`
-	RideOfferID     uuid.UUID `json:"ride_offer_id"`
-	RideRequestID   uuid.UUID `json:"ride_request_id"`
-	ReceiverID      uuid.UUID `json:"receiver_id"`
-	Status          string    `json:"status"`
-	StartTime       time.Time `json:"start_time"`
-	EndTime         time.Time `json:"end_time"`
-	StartAddress    string    `json:"start_address"`
-	EndAddress      string    `json:"end_address"`
-	Fare            float64   `json:"fare"`
-	EncodedPolyline string    `json:"encoded_polyline"`
-	Distance        float64   `json:"distance"`
-	Duration        int       `json:"duration"`
-	Transaction     TransactionDetail
-	StartLatitude   float64       `json:"start_latitude"`
-	StartLongitude  float64       `json:"start_longitude"`
-	EndLatitude     float64       `json:"end_latitude"`
-	EndLongitude    float64       `json:"end_longitude"`
-	Vehicle         VehicleDetail `json:"vehicle"`
+	ID                     uuid.UUID         `json:"ride_id"`
+	RideOfferID            uuid.UUID         `json:"ride_offer_id"`
+	RideRequestID          uuid.UUID         `json:"ride_request_id"`
+	ReceiverID             uuid.UUID         `json:"receiver_id"`
+	Status                 string            `json:"status"`
+	StartTime              time.Time         `json:"start_time"`
+	EndTime                time.Time         `json:"end_time"`
+	StartAddress           string            `json:"start_address"`
+	EndAddress             string            `json:"end_address"`
+	Fare                   float64           `json:"fare"`
+	EncodedPolyline        string            `json:"encoded_polyline"`
+	Distance               float64           `json:"distance"`
+	Duration               int               `json:"duration"`
+	Transaction            TransactionDetail `json:"transaction"`
+	StartLatitude          float64           `json:"start_latitude"`
+	StartLongitude         float64           `json:"start_longitude"`
+	EndLatitude            float64           `json:"end_latitude"`
+	EndLongitude           float64           `json:"end_longitude"`
+	Vehicle                VehicleDetail     `json:"vehicle"`
+	DriverCurrentLatitude  float64           `json:"driver_current_latitude"`
+	DriverCurrentLongitude float64           `json:"driver_current_longitude"`
+	RiderCurrentLatitude   float64           `json:"rider_current_latitude"`
+	RiderCurrentLongitude  float64           `json:"rider_current_longitude"`
 }
 
 type CancelGiveRideRequestRequest struct {
