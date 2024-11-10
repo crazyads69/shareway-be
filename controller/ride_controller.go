@@ -189,6 +189,9 @@ func (ctrl *RideController) SendGiveRideRequest(ctx *gin.Context) {
 		return
 	}
 
+	// Append type to the resMap
+	resMap["type"] = "new-give-ride-request"
+
 	// Prepare the notification message
 	notification := schemas.Notification{
 		Title: "Bạn nhận được một lời mời đi nhờ mới",
@@ -357,6 +360,9 @@ func (ctrl *RideController) SendHitchRideRequest(ctx *gin.Context) {
 		helper.GinResponse(ctx, 500, response)
 		return
 	}
+
+	// Append type to the resMap
+	resMap["type"] = "new-hitch-ride-request"
 
 	// Prepare the notification message
 	notification := schemas.Notification{
@@ -554,6 +560,7 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 		Type:    "accept-give-ride-request",
 		Payload: res,
 	}
+
 	// Convert res to map[string]string
 	resMap, err := helper.ConvertToStringMap(res)
 	if err != nil {
@@ -565,6 +572,9 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 		helper.GinResponse(ctx, 500, response)
 		return
 	}
+
+	// Append type to the resMap
+	resMap["type"] = "accept-give-ride-request"
 
 	// Prepare the notification message
 	notification := schemas.Notification{
@@ -773,6 +783,9 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 		return
 	}
 
+	// Append type to resMap
+	resMap["type"] = "accept-hitch-ride-request"
+
 	// Prepare the notification message
 	notification := schemas.Notification{
 		Title: "Lời mời đi nhờ của bạn đã được chấp nhận",
@@ -897,6 +910,9 @@ func (ctrl *RideController) CancelGiveRideRequest(ctx *gin.Context) {
 		return
 	}
 
+	// Append type to resMap
+	resMap["type"] = "cancel-give-ride-request"
+
 	// Prepare the notification message
 	notification := schemas.Notification{
 		Title: "Lời mời đi nhờ của bạn đã bị hủy",
@@ -1019,6 +1035,9 @@ func (ctrl *RideController) CancelHitchRideRequest(ctx *gin.Context) {
 		helper.GinResponse(ctx, 500, response)
 		return
 	}
+
+	// Append type to resMap
+	resMap["type"] = "cancel-hitch-ride-request"
 
 	// Prepare the notification message
 	notification := schemas.Notification{
