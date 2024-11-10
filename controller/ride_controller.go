@@ -317,6 +317,30 @@ func (ctrl *RideController) SendHitchRideRequest(ctx *gin.Context) {
 		return
 	}
 
+	// Get ride offer details from ride_offer_id
+	rideOffer, err := ctrl.RideService.GetRideOfferByID(req.RideOfferID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get ride offer details",
+			"Không thể lấy thông tin chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get vehicle details from user_id
+	vehicle, err := ctrl.VehicleService.GetVehicleFromID(rideOffer.VehicleID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get vehicle details",
+			"Không thể lấy thông tin phương tiện",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	res := schemas.SendHitchRideRequestResponse{
 		ID: rideRequest.ID,
 		User: schemas.UserInfo{
@@ -340,6 +364,7 @@ func (ctrl *RideController) SendHitchRideRequest(ctx *gin.Context) {
 		EndTime:               rideRequest.EndTime,
 		ReceiverID:            req.ReceiverID,
 		RideOfferID:           req.RideOfferID,
+		Vehicle:               vehicle,
 	}
 
 	// Send ride request to the receiver

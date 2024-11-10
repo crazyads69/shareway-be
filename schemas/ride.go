@@ -57,24 +57,25 @@ type SendHitchRideRequestRequest struct {
 // Define SendHitchRideRequestResponse schema
 type SendHitchRideRequestResponse struct {
 	// This will act as data send through websocket to the receiver to able preview the request before accepting or rejecting
-	ID                    uuid.UUID `json:"ride_request_id"`
-	User                  UserInfo  `json:"user"`
-	StartLatitude         float64   `json:"start_latitude"`
-	StartLongitude        float64   `json:"start_longitude"`
-	EndLatitude           float64   `json:"end_latitude"`
-	EndLongitude          float64   `json:"end_longitude"`
-	RiderCurrentLatitude  float64   `json:"rider_current_latitude"`
-	RiderCurrentLongitude float64   `json:"rider_current_longitude"`
-	StartAddress          string    `json:"start_address"`
-	EndAddress            string    `json:"end_address"`
-	Status                string    `json:"status"`
-	EncodedPolyline       string    `json:"encoded_polyline"`
-	Distance              float64   `json:"distance"`
-	Duration              int       `json:"duration"`
-	StartTime             time.Time `json:"start_time"`
-	EndTime               time.Time `json:"end_time"`
-	ReceiverID            uuid.UUID `json:"receiver_id"`
-	RideOfferID           uuid.UUID `json:"ride_offer_id"`
+	ID                    uuid.UUID     `json:"ride_request_id"`
+	User                  UserInfo      `json:"user"`
+	Vehicle               VehicleDetail `json:"vehicle"`
+	StartLatitude         float64       `json:"start_latitude"`
+	StartLongitude        float64       `json:"start_longitude"`
+	EndLatitude           float64       `json:"end_latitude"`
+	EndLongitude          float64       `json:"end_longitude"`
+	RiderCurrentLatitude  float64       `json:"rider_current_latitude"`
+	RiderCurrentLongitude float64       `json:"rider_current_longitude"`
+	StartAddress          string        `json:"start_address"`
+	EndAddress            string        `json:"end_address"`
+	Status                string        `json:"status"`
+	EncodedPolyline       string        `json:"encoded_polyline"`
+	Distance              float64       `json:"distance"`
+	Duration              int           `json:"duration"`
+	StartTime             time.Time     `json:"start_time"`
+	EndTime               time.Time     `json:"end_time"`
+	ReceiverID            uuid.UUID     `json:"receiver_id"`
+	RideOfferID           uuid.UUID     `json:"ride_offer_id"`
 }
 
 // Define AcceptRideGiveRequestRequest schema
