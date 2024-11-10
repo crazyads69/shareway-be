@@ -74,6 +74,12 @@ Sent when a hitchhiker requests a ride from a driver.
       "phoneNumber": "string",
       "fullName": "string"
     },
+    "vehicle": {
+      "vehicle_id": "UUID",
+      "name": "string",
+      "fuel_consumed": 0.0,
+      "license_plate": "string"
+    },
     "start_latitude": 0.0,
     "start_longitude": 0.0,
     "end_latitude": 0.0,
