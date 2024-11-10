@@ -544,7 +544,7 @@ func (s *MapService) SuggestRideRequests(ctx context.Context, userID uuid.UUID, 
 	return s.repo.SuggestRideRequests(userID, rideOfferID)
 }
 
-// // SuggestRideOffers returns the suggested ride offers for the given user and ride request
+// SuggestRideOffers returns the suggested ride offers for the given user and ride request
 func (s *MapService) SuggestRideOffers(ctx context.Context, userID uuid.UUID, rideRequestID uuid.UUID) ([]migration.RideOffer, error) {
 	return s.repo.SuggestRideOffers(userID, rideRequestID)
 }

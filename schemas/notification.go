@@ -26,3 +26,8 @@ type CreateNotificationResponse struct {
 type CreateTestWebsocketRequest struct {
 	Message string `json:"message" binding:"required" validate:"required"`
 }
+
+type NotificationPayload struct {
+	Type string            `json:"type"`
+	Data map[string]string `json:"data"`
+}

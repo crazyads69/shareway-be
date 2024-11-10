@@ -207,6 +207,30 @@ type StartRideRequest struct {
 
 // Define StartRideResponse schema
 type StartRideResponse struct {
+	ID                     uuid.UUID         `json:"ride_id"`
+	RideOfferID            uuid.UUID         `json:"ride_offer_id"`
+	User                   UserInfo          `json:"user"`
+	RideRequestID          uuid.UUID         `json:"ride_request_id"`
+	ReceiverID             uuid.UUID         `json:"receiver_id"`
+	Status                 string            `json:"status"`
+	StartTime              time.Time         `json:"start_time"`
+	EndTime                time.Time         `json:"end_time"`
+	StartAddress           string            `json:"start_address"`
+	EndAddress             string            `json:"end_address"`
+	Fare                   float64           `json:"fare"`
+	EncodedPolyline        string            `json:"encoded_polyline"`
+	Distance               float64           `json:"distance"`
+	Duration               int               `json:"duration"`
+	Transaction            TransactionDetail `json:"transaction"`
+	StartLatitude          float64           `json:"start_latitude"`
+	StartLongitude         float64           `json:"start_longitude"`
+	EndLatitude            float64           `json:"end_latitude"`
+	EndLongitude           float64           `json:"end_longitude"`
+	Vehicle                VehicleDetail     `json:"vehicle"`
+	DriverCurrentLatitude  float64           `json:"driver_current_latitude"`
+	DriverCurrentLongitude float64           `json:"driver_current_longitude"`
+	RiderCurrentLatitude   float64           `json:"rider_current_latitude"`
+	RiderCurrentLongitude  float64           `json:"rider_current_longitude"`
 }
 
 // Define EndRideRequest schema
@@ -214,5 +238,41 @@ type EndRideRequest struct {
 	// Ride ID of the ride to end
 	RideID uuid.UUID `json:"rideID" binding:"required,uuid" validate:"required,uuid"`
 	// Current user location
+	CurrentLocation Point `json:"currentLocation" binding:"required" validate:"required"`
+}
+
+// Define EndRideResponse schema
+type EndRideResponse struct {
+	ID                     uuid.UUID         `json:"ride_id"`
+	RideOfferID            uuid.UUID         `json:"ride_offer_id"`
+	User                   UserInfo          `json:"user"`
+	RideRequestID          uuid.UUID         `json:"ride_request_id"`
+	ReceiverID             uuid.UUID         `json:"receiver_id"`
+	Status                 string            `json:"status"`
+	StartTime              time.Time         `json:"start_time"`
+	EndTime                time.Time         `json:"end_time"`
+	StartAddress           string            `json:"start_address"`
+	EndAddress             string            `json:"end_address"`
+	Fare                   float64           `json:"fare"`
+	EncodedPolyline        string            `json:"encoded_polyline"`
+	Distance               float64           `json:"distance"`
+	Duration               int               `json:"duration"`
+	Transaction            TransactionDetail `json:"transaction"`
+	StartLatitude          float64           `json:"start_latitude"`
+	StartLongitude         float64           `json:"start_longitude"`
+	EndLatitude            float64           `json:"end_latitude"`
+	EndLongitude           float64           `json:"end_longitude"`
+	Vehicle                VehicleDetail     `json:"vehicle"`
+	DriverCurrentLatitude  float64           `json:"driver_current_latitude"`
+	DriverCurrentLongitude float64           `json:"driver_current_longitude"`
+	RiderCurrentLatitude   float64           `json:"rider_current_latitude"`
+	RiderCurrentLongitude  float64           `json:"rider_current_longitude"`
+}
+
+// Define UpdateRideLocationRequest schema
+type UpdateRideLocationRequest struct {
+	// Ride ID of the ride to update location
+	RideID uuid.UUID `json:"rideID" binding:"required,uuid" validate:"required,uuid"`
+	// Current driver location
 	CurrentLocation Point `json:"currentLocation" binding:"required" validate:"required"`
 }

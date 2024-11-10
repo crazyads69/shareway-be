@@ -214,6 +214,70 @@ definitions:
     required:
     - phone_number
     type: object
+  schemas.EndRideRequest:
+    properties:
+      currentLocation:
+        allOf:
+        - $ref: '#/definitions/schemas.Point'
+        description: Current user location
+      rideID:
+        description: Ride ID of the ride to end
+        type: string
+    required:
+    - currentLocation
+    - rideID
+    type: object
+  schemas.EndRideResponse:
+    properties:
+      distance:
+        type: number
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
+      duration:
+        type: integer
+      encoded_polyline:
+        type: string
+      end_address:
+        type: string
+      end_latitude:
+        type: number
+      end_longitude:
+        type: number
+      end_time:
+        type: string
+      fare:
+        type: number
+      receiver_id:
+        type: string
+      ride_id:
+        type: string
+      ride_offer_id:
+        type: string
+      ride_request_id:
+        type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
+      start_address:
+        type: string
+      start_latitude:
+        type: number
+      start_longitude:
+        type: number
+      start_time:
+        type: string
+      status:
+        type: string
+      transaction:
+        $ref: '#/definitions/schemas.TransactionDetail'
+      user:
+        $ref: '#/definitions/schemas.UserInfo'
+      vehicle:
+        $ref: '#/definitions/schemas.VehicleDetail'
+    type: object
   schemas.GeoCodeLocation:
     properties:
       distance:
@@ -793,6 +857,70 @@ definitions:
     - receiverID
     - rideOfferID
     - rideRequestID
+    type: object
+  schemas.StartRideRequest:
+    properties:
+      currentLocation:
+        allOf:
+        - $ref: '#/definitions/schemas.Point'
+        description: Current user location
+      rideID:
+        description: Ride ID of the ride to start
+        type: string
+    required:
+    - currentLocation
+    - rideID
+    type: object
+  schemas.StartRideResponse:
+    properties:
+      distance:
+        type: number
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
+      duration:
+        type: integer
+      encoded_polyline:
+        type: string
+      end_address:
+        type: string
+      end_latitude:
+        type: number
+      end_longitude:
+        type: number
+      end_time:
+        type: string
+      fare:
+        type: number
+      receiver_id:
+        type: string
+      ride_id:
+        type: string
+      ride_offer_id:
+        type: string
+      ride_request_id:
+        type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
+      start_address:
+        type: string
+      start_latitude:
+        type: number
+      start_longitude:
+        type: number
+      start_time:
+        type: string
+      status:
+        type: string
+      transaction:
+        $ref: '#/definitions/schemas.TransactionDetail'
+      user:
+        $ref: '#/definitions/schemas.UserInfo'
+      vehicle:
+        $ref: '#/definitions/schemas.VehicleDetail'
     type: object
   schemas.StructuredFormatting:
     properties:
@@ -1861,6 +1989,43 @@ paths:
       summary: Cancel a ride request from the hitcher
       tags:
       - ride
+  /ride/end-ride:
+    post:
+      consumes:
+      - application/json
+      description: Ends the ride between the driver and the hitcher
+      parameters:
+      - description: End ride request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.EndRideRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully ended ride
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.EndRideResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: End a ride
+      tags:
+      - ride
   /ride/give-ride-request:
     post:
       consumes:
@@ -1923,6 +2088,43 @@ paths:
       security:
       - BearerAuth: []
       summary: Send a ride request from the hitcher to the driver
+      tags:
+      - ride
+  /ride/start-ride:
+    post:
+      consumes:
+      - application/json
+      description: Starts the ride between the driver and the hitcher
+      parameters:
+      - description: Start ride request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.StartRideRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully started ride
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.StartRideResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Start a ride
       tags:
       - ride
   /user/get-profile:

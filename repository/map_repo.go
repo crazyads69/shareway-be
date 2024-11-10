@@ -19,6 +19,7 @@ type IMapsRepository interface {
 	GetRideRequestDetails(rideRequestID uuid.UUID) (migration.RideRequest, error)
 	SuggestRideRequests(userID uuid.UUID, rideOfferID uuid.UUID) ([]migration.RideRequest, error)
 	SuggestRideOffers(userID uuid.UUID, rideRequestID uuid.UUID) ([]migration.RideOffer, error)
+	GetRideByID(rideID uuid.UUID) (migration.Ride, error)
 }
 
 type MapsRepository struct {
@@ -281,6 +282,14 @@ func (r *MapsRepository) SuggestRideOffers(userID uuid.UUID, rideRequestID uuid.
 	}
 
 	return filteredRideOffers, nil
+}
+
+func (r *MapsRepository) GetRideByID(rideID uuid.UUID) (migration.Ride, error) {
+	ride := migration.Ride{}
+	if err := r.db.Preload("RideOffer").Preload("RideRequest").First(&ride, rideID).Error; err != nil {
+		return migration.Ride{}, err
+	}
+	return ride, nil
 }
 
 // Make sure to implement the IMapsRepository interface
