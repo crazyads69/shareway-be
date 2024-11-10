@@ -19,6 +19,7 @@ type IRideRepository interface {
 	CreateRideTransaction(rideID uuid.UUID, Fare float64, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error)
 	StartRide(req schemas.StartRideRequest, userID uuid.UUID) (migration.Ride, error)
 	EndRide(req schemas.EndRideRequest, userID uuid.UUID) (migration.Ride, error)
+	UpdateRideLocation(req schemas.UpdateRideLocationRequest, userID uuid.UUID) (migration.Ride, error)
 }
 
 type RideRepository struct {
@@ -330,6 +331,72 @@ func (r *RideRepository) EndRide(req schemas.EndRideRequest, userID uuid.UUID) (
 
 		// Update the ride status to ended
 		if err := tx.Model(&migration.Ride{}).Where("id = ?", req.RideID).Update("status", "completed").Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return migration.Ride{}, err
+	}
+
+	return ride, nil
+}
+
+// UpdateRideLocation updates the location of a ride
+func (r *RideRepository) UpdateRideLocation(req schemas.UpdateRideLocationRequest, userID uuid.UUID) (migration.Ride, error) {
+	var ride migration.Ride
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		// Get the ride by ID
+		err := tx.Model(&migration.Ride{}).
+			Where("id = ?", req.RideID).
+			First(&ride).Error
+		if err != nil {
+			return err
+		}
+
+		// Get the ride offer by ID
+		var rideOffer migration.RideOffer
+		err = tx.Model(&migration.RideOffer{}).
+			Where("id = ?", ride.RideOfferID).
+			First(&rideOffer).Error
+		if err != nil {
+			return err
+		}
+
+		// Get the ride request by ID
+		var rideRequest migration.RideRequest
+		err = tx.Model(&migration.RideRequest{}).
+			Where("id = ?", ride.RideRequestID).
+			First(&rideRequest).Error
+		if err != nil {
+			return err
+		}
+
+		// Check if the ride is already ended
+		if ride.Status == "completed" {
+			return errors.New("ride is already ended")
+		}
+
+		// Check if the ride is already cancelled
+		if ride.Status == "cancelled" {
+			return errors.New("ride is already cancelled")
+		}
+
+		// Update the driver's current location
+		if err := tx.Model(&migration.RideOffer{}).Where("id = ?", ride.RideOfferID).Update("driver_current_latitude", req.CurrentLocation.Lat).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&migration.RideOffer{}).Where("id = ?", ride.RideOfferID).Update("driver_current_longitude", req.CurrentLocation.Lng).Error; err != nil {
+			return err
+		}
+
+		// Update the hitcher's current location
+		if err := tx.Model(&migration.RideRequest{}).Where("id = ?", ride.RideRequestID).Update("rider_current_latitude", req.CurrentLocation.Lat).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&migration.RideRequest{}).Where("id = ?", ride.RideRequestID).Update("rider_current_longitude", req.CurrentLocation.Lng).Error; err != nil {
 			return err
 		}
 

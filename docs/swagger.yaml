@@ -977,6 +977,70 @@ definitions:
       transaction_id:
         type: string
     type: object
+  schemas.UpdateRideLocationRequest:
+    properties:
+      currentLocation:
+        allOf:
+        - $ref: '#/definitions/schemas.Point'
+        description: Current driver location
+      rideID:
+        description: Ride ID of the ride to update location
+        type: string
+    required:
+    - currentLocation
+    - rideID
+    type: object
+  schemas.UpdateRideLocationResponse:
+    properties:
+      distance:
+        type: number
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
+      duration:
+        type: integer
+      encoded_polyline:
+        type: string
+      end_address:
+        type: string
+      end_latitude:
+        type: number
+      end_longitude:
+        type: number
+      end_time:
+        type: string
+      fare:
+        type: number
+      receiver_id:
+        type: string
+      ride_id:
+        type: string
+      ride_offer_id:
+        type: string
+      ride_request_id:
+        type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
+      start_address:
+        type: string
+      start_latitude:
+        type: number
+      start_longitude:
+        type: number
+      start_time:
+        type: string
+      status:
+        type: string
+      transaction:
+        $ref: '#/definitions/schemas.TransactionDetail'
+      user:
+        $ref: '#/definitions/schemas.UserInfo'
+      vehicle:
+        $ref: '#/definitions/schemas.VehicleDetail'
+    type: object
   schemas.UpdateUserProfileRequest:
     properties:
       email:
@@ -2125,6 +2189,43 @@ paths:
       security:
       - BearerAuth: []
       summary: Start a ride
+      tags:
+      - ride
+  /ride/update-ride-location:
+    post:
+      consumes:
+      - application/json
+      description: Updates the current location of the driver during the ride
+      parameters:
+      - description: Update ride location request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.UpdateRideLocationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated ride location
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.UpdateRideLocationResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Update the current location of the driver during the ride
       tags:
       - ride
   /user/get-profile:

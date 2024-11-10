@@ -24,6 +24,7 @@ type IRideService interface {
 	CreateRideTransaction(rideID uuid.UUID, Fare float64, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error)
 	StartRide(req schemas.StartRideRequest, userID uuid.UUID) (migration.Ride, error)
 	EndRide(req schemas.EndRideRequest, userID uuid.UUID) (migration.Ride, error)
+	UpdateRideLocation(req schemas.UpdateRideLocationRequest, userID uuid.UUID) (migration.Ride, error)
 }
 
 func NewRideService(repo repository.IRideRepository, hub *ws.Hub, cfg util.Config) IRideService {
@@ -70,6 +71,9 @@ func (s *RideService) EndRide(req schemas.EndRideRequest, userID uuid.UUID) (mig
 }
 
 // UpdateRideLocation updates the location of a ride
+func (s *RideService) UpdateRideLocation(req schemas.UpdateRideLocationRequest, userID uuid.UUID) (migration.Ride, error) {
+	return s.repo.UpdateRideLocation(req, userID)
+}
 
 // Make sure the RideService implements the IRideService interface
 var _ IRideService = (*RideService)(nil)

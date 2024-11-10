@@ -142,7 +142,7 @@ func (ctrl *RideController) SendGiveRideRequest(ctx *gin.Context) {
 		EndLongitude:           rideOffer.EndLongitude,
 		StartAddress:           rideOffer.StartAddress,
 		EndAddress:             rideOffer.EndAddress,
-		EncodedPolyline:        rideOffer.EncodedPolyline,
+		EncodedPolyline:        string(rideOffer.EncodedPolyline),
 		Distance:               rideOffer.Distance,
 		Duration:               rideOffer.Duration,
 		DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
@@ -333,7 +333,7 @@ func (ctrl *RideController) SendHitchRideRequest(ctx *gin.Context) {
 		RiderCurrentLatitude:  rideRequest.RiderCurrentLatitude,
 		RiderCurrentLongitude: rideRequest.RiderCurrentLongitude,
 		Status:                rideRequest.Status,
-		EncodedPolyline:       rideRequest.EncodedPolyline,
+		EncodedPolyline:       string(rideRequest.EncodedPolyline),
 		Distance:              rideRequest.Distance,
 		Duration:              rideRequest.Duration,
 		StartTime:             rideRequest.StartTime,
@@ -556,7 +556,7 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 		StartAddress:           ride.StartAddress,
 		EndAddress:             ride.EndAddress,
 		Fare:                   ride.Fare,
-		EncodedPolyline:        ride.EncodedPolyline,
+		EncodedPolyline:        string(ride.EncodedPolyline),
 		Distance:               ride.Distance,
 		Duration:               ride.Duration,
 		StartLatitude:          ride.StartLatitude,
@@ -781,7 +781,7 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 		StartAddress:           ride.StartAddress,
 		EndAddress:             ride.EndAddress,
 		Fare:                   ride.Fare,
-		EncodedPolyline:        ride.EncodedPolyline,
+		EncodedPolyline:        string(ride.EncodedPolyline),
 		Distance:               ride.Distance,
 		Duration:               ride.Duration,
 		StartLatitude:          ride.StartLatitude,
@@ -1304,7 +1304,7 @@ func (ctrl *RideController) StartRide(ctx *gin.Context) {
 		StartAddress:           ride.StartAddress,
 		EndAddress:             ride.EndAddress,
 		Fare:                   ride.Fare,
-		EncodedPolyline:        ride.EncodedPolyline,
+		EncodedPolyline:        string(ride.EncodedPolyline),
 		Distance:               ride.Distance,
 		Duration:               ride.Duration,
 		StartLatitude:          ride.StartLatitude,
@@ -1544,7 +1544,7 @@ func (ctrl *RideController) EndRide(ctx *gin.Context) {
 		StartAddress:           ride.StartAddress,
 		EndAddress:             ride.EndAddress,
 		Fare:                   ride.Fare,
-		EncodedPolyline:        ride.EncodedPolyline,
+		EncodedPolyline:        string(ride.EncodedPolyline),
 		Distance:               ride.Distance,
 		Duration:               ride.Duration,
 		StartLatitude:          ride.StartLatitude,
@@ -1637,45 +1637,246 @@ func (ctrl *RideController) EndRide(ctx *gin.Context) {
 }
 
 // UpdateRideLocation updates the current location of the driver during the ride (the driver must update the location)
-// func (ctrl *RideController) UpdateRideLocation(ctx *gin.Context) {
-// 	// Get payload from context
-// 	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+// UpdateRideLocation godoc
+// @Summary Update the current location of the driver during the ride
+// @Description Updates the current location of the driver during the ride
+// @Tags ride
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body schemas.UpdateRideLocationRequest true "Update ride location request"
+// @Success 200 {object} helper.Response{data=schemas.UpdateRideLocationResponse} "Successfully updated ride location"
+// @Failure 400 {object} helper.Response "Invalid request"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /ride/update-ride-location [post]
+func (ctrl *RideController) UpdateRideLocation(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
 
-// 	// Convert payload to map
-// 	data, err := helper.ConvertToPayload(payload)
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
 
-// 	// If error occurs, return error response
-// 	if err != nil {
-// 		response := helper.ErrorResponseWithMessage(
-// 			fmt.Errorf("failed to convert payload"),
-// 			"Failed to convert payload",
-// 			"Không thể chuyển đổi payload",
-// 		)
-// 		helper.GinResponse(ctx, 500, response)
-// 		return
-// 	}
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
 
-// 	var req schemas.UpdateRideLocationRequest
-// 	if err := ctx.ShouldBindJSON(&req); err != nil {
-// 		response := helper.ErrorResponseWithMessage(
-// 			err,
-// 			"Failed to bind JSON",
-// 			"Không thể bind JSON",
-// 		)
-// 		helper.GinResponse(ctx, 400, response)
-// 		return
-// 	}
-// 	if err := ctrl.validate.Struct(req); err != nil {
-// 		response := helper.ErrorResponseWithMessage(
-// 			err,
-// 			"Failed to validate request",
-// 			"Không thể validate request",
-// 		)
-// 		helper.GinResponse(ctx, 400, response)
-// 		return
-// 	}
+	var req schemas.UpdateRideLocationRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind JSON",
+			"Không thể bind JSON",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+	if err := ctrl.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
 
-// 	// Update the ride location
-// 	ride, err := ctrl.RideService.UpdateRideLocation(req, data.UserID)
+	// Update the ride location
+	ride, err := ctrl.RideService.UpdateRideLocation(req, data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to update ride location",
+			"Không thể cập nhật vị trí chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
 
-// }
+	// Get ride offer details from ride_offer_id
+	rideOffer, err := ctrl.RideService.GetRideOfferByID(ride.RideOfferID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get ride offer details",
+			"Không thể lấy thông tin chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get ride request details from ride_request_id
+	rideRequest, err := ctrl.RideService.GetRideRequestByID(ride.RideRequestID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get ride request details",
+			"Không thể lấy thông tin yêu cầu chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get vehicle details from vehicle_id
+	vehicle, err := ctrl.VehicleService.GetVehicleFromID(ride.VehicleID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get vehicle details",
+			"Không thể lấy thông tin phương tiện",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get driver details from user_id
+	driver, err := ctrl.UserService.GetUserByID(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get driver details",
+			"Không thể lấy thông tin tài xế",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get transaction details from transaction_id
+	transaction, err := ctrl.RideService.GetTransactionByRideID(ride.ID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get transaction details",
+			"Không thể lấy thông tin giao dịch",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	res := schemas.UpdateRideLocationResponse{
+		ID:            ride.ID,
+		RideOfferID:   ride.RideOfferID,
+		RideRequestID: ride.RideRequestID,
+		Transaction: schemas.TransactionDetail{
+			ID:            transaction.ID,
+			Amount:        transaction.Amount,
+			Status:        transaction.Status,
+			PaymentMethod: transaction.PaymentMethod,
+		},
+		User: schemas.UserInfo{
+			ID:          driver.ID,
+			FullName:    driver.FullName,
+			PhoneNumber: driver.PhoneNumber,
+		},
+		Status:                 ride.Status,
+		StartTime:              ride.StartTime,
+		DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+		DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+		RiderCurrentLatitude:   rideRequest.RiderCurrentLatitude,
+		RiderCurrentLongitude:  rideRequest.RiderCurrentLongitude,
+		EndTime:                ride.EndTime,
+		StartAddress:           ride.StartAddress,
+		EndAddress:             ride.EndAddress,
+		Fare:                   ride.Fare,
+		EncodedPolyline:        string(ride.EncodedPolyline),
+		Distance:               ride.Distance,
+		Duration:               ride.Duration,
+		StartLatitude:          ride.StartLatitude,
+		StartLongitude:         ride.StartLongitude,
+		EndLatitude:            ride.EndLatitude,
+		EndLongitude:           ride.EndLongitude,
+		Vehicle:                vehicle,
+		ReceiverID:             rideRequest.UserID, // ReceiverID is the hitcher's user_id
+	}
+
+	// // Get receiver device token to send notification
+	// receiver, err := ctrl.UserService.GetUserByID(rideRequest.UserID)
+	// if err != nil {
+	// 	response := helper.ErrorResponseWithMessage(
+	// 		err,
+	// 		"Failed to get receiver details",
+	// 		"Không thể lấy thông tin người nhận",
+	// 	)
+	// 	helper.GinResponse(ctx, 500, response)
+	// 	return
+	// }
+
+	// Prepare the WebSocket message
+	wsMessage := schemas.WebSocketMessage{
+		UserID:  rideRequest.UserID.String(),
+		Type:    "update-ride-location",
+		Payload: res,
+	}
+
+	// // Convert res to map[string]string
+	// resMap, err := helper.ConvertToStringMap(res)
+	// if err != nil {
+	// 	response := helper.ErrorResponseWithMessage(
+	// 		err,
+	// 		"Failed to convert struct to map",
+	// 		"Không thể chuyển đổi struct sang map",
+	// 	)
+	// 	helper.GinResponse(ctx, 500, response)
+	// 	return
+	// }
+
+	// notificationPayload := schemas.NotificationPayload{
+	// 	Type: "update-ride-location",
+	// 	Data: resMap,
+	// }
+
+	// // Convert notificationPayload to map[string]string
+	// notificationPayloadMap, err := helper.ConvertToStringMap(notificationPayload)
+	// if err != nil {
+	// 	response := helper.ErrorResponseWithMessage(
+	// 		err,
+	// 		"Failed to convert struct to map",
+	// 		"Không thể chuyển đổi struct sang map",
+	// 	)
+	// 	helper.GinResponse(ctx, 500, response)
+	// 	return
+	// }
+
+	// // Prepare the notification message
+	// notification := schemas.Notification{
+	// 	Title: "Vị trí của tài xế đã được cập nhật",
+	// 	Body:  "Vị trí của tài xế đã được cập nhật, vui lòng kiểm tra vị trí của tài xế",
+	// 	Token: receiver.DeviceToken,
+	// 	Data:  notificationPayloadMap,
+	// }
+
+	// Send the WebSocket message using the async client
+	go func() {
+		err := ctrl.asyncClient.EnqueueWebsocketMessage(wsMessage)
+		if err != nil {
+			log.Printf("Failed to enqueue websocket message: %v", err)
+		}
+	}()
+
+	// // Send the notification message using the async client
+	// go func() {
+	// 	err = ctrl.asyncClient.EnqueueFCMNotification(notification)
+	// 	if err != nil {
+	// 		log.Printf("Failed to enqueue FCM notification: %v", err)
+	// 	}
+	// }()
+
+	// Return success response
+	response := helper.SuccessResponse(
+		res,
+		"Successfully updated ride location",
+		"Đã cập nhật vị trí chuyến đi thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
+}
+
+// CancelRideByDriver cancels the ride by the driver
+func (ctrl *RideController) CancelRideByDriver(ctx *gin.Context) {
+
+}

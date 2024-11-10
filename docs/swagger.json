@@ -1657,6 +1657,69 @@
                 }
             }
         },
+        "/ride/update-ride-location": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates the current location of the driver during the ride",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Update the current location of the driver during the ride",
+                "parameters": [
+                    {
+                        "description": "Update ride location request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.UpdateRideLocationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully updated ride location",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.UpdateRideLocationResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/user/get-profile": {
             "get": {
                 "security": [
@@ -3415,6 +3478,104 @@
                 },
                 "transaction_id": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.UpdateRideLocationRequest": {
+            "type": "object",
+            "required": [
+                "currentLocation",
+                "rideID"
+            ],
+            "properties": {
+                "currentLocation": {
+                    "description": "Current driver location",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/schemas.Point"
+                        }
+                    ]
+                },
+                "rideID": {
+                    "description": "Ride ID of the ride to update location",
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.UpdateRideLocationResponse": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "encoded_polyline": {
+                    "type": "string"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_latitude": {
+                    "type": "number"
+                },
+                "end_longitude": {
+                    "type": "number"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "fare": {
+                    "type": "number"
+                },
+                "receiver_id": {
+                    "type": "string"
+                },
+                "ride_id": {
+                    "type": "string"
+                },
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "ride_request_id": {
+                    "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_latitude": {
+                    "type": "number"
+                },
+                "start_longitude": {
+                    "type": "number"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction": {
+                    "$ref": "#/definitions/schemas.TransactionDetail"
+                },
+                "user": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/schemas.VehicleDetail"
                 }
             }
         },
