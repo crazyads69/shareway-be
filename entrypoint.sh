@@ -22,7 +22,7 @@ wait_for_service "postgres_db" "5432" "PostgreSQL"
 wait_for_service "redis" "6379" "Redis"
 
 # Wait for RabbitMQ
-wait_for_service "rabbitmq" "5672" "RabbitMQ"
+# wait_for_service "rabbitmq" "5672" "RabbitMQ"
 
 echo "All services are up - starting the application"
 exec "$@"

@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"os"
 	"os/signal"
+
 	"shareway/infra/crawler"
 	"shareway/infra/db"
+	"shareway/infra/fcm"
+	"shareway/infra/task"
 	"shareway/infra/ws"
 	"shareway/router"
 	"shareway/service"
@@ -46,12 +50,22 @@ func main() {
 	hub := ws.NewHub()
 	go hub.Run()
 
-	// // Initialize Firebase Cloud Messaging client
-	// fcmClient, err := fcm.NewFCMClient(context.Background(), cfg.FCMConfigPath)
-	// if err != nil {
-	// 	log.Fatal().Err(err).Msg("Could not create FCM client")
-	// 	return
-	// }
+	// Initialize Firebase Cloud Messaging client
+	fcmClient, err := fcm.NewFCMClient(context.Background(), cfg.FCMConfigPath)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Could not create FCM client")
+		return
+	}
+
+	// Initialize the Asynq task processor
+	taskProcessor := task.NewTaskProcessor(hub, cfg, fcmClient)
+
+	// Initialize the Asynq Client
+	asynqClient := task.NewAsynqClient(cfg)
+
+	// Start the Asynq server
+	asynqServer := task.NewAsynqServer(cfg)
+	asynqServer.StartAsynqServer(taskProcessor)
 
 	// Create a scheduler
 	scheduler, err := gocron.NewScheduler()
@@ -113,7 +127,7 @@ func main() {
 	scheduler.Start()
 
 	// Initialize services using the service factory pattern (dependency injection also included repository pattern)
-	serviceFactory := service.NewServiceFactory(database, cfg, maker, redisClient, hub)
+	serviceFactory := service.NewServiceFactory(database, cfg, maker, redisClient, hub, asynqClient)
 	services := serviceFactory.CreateServices()
 
 	// Create new API server
@@ -123,6 +137,7 @@ func main() {
 		services,
 		validate,
 		hub,
+		asynqClient,
 	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Could not create router")
@@ -156,5 +171,8 @@ func main() {
 
 	// Cancel the scheduler
 	scheduler.Shutdown()
+
+	// Shutdown the Asynq server
+	asynqServer.Shutdown()
 
 }

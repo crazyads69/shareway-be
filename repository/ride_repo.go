@@ -14,10 +14,13 @@ import (
 type IRideRepository interface {
 	GetRideOfferByID(rideOfferID uuid.UUID) (migration.RideOffer, error)
 	GetRideRequestByID(rideRequestID uuid.UUID) (migration.RideRequest, error)
+	GetTransactionByRideID(rideID uuid.UUID) (migration.Transaction, error)
 	AcceptRideRequest(rideOfferID, rideRequestID, vehicleID uuid.UUID) (migration.Ride, error)
 	CreateRideTransaction(rideID uuid.UUID, Fare float64, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error)
 	StartRide(req schemas.StartRideRequest, userID uuid.UUID) (migration.Ride, error)
-	// EndRide(req schemas.EndRideRequest, userID uuid.UUID) (migration.Ride, error)
+	EndRide(req schemas.EndRideRequest, userID uuid.UUID) (migration.Ride, error)
+	UpdateRideLocation(req schemas.UpdateRideLocationRequest, userID uuid.UUID) (migration.Ride, error)
+	CancelRide(req schemas.CancelRideRequest, userID uuid.UUID) (migration.Ride, error)
 }
 
 type RideRepository struct {
@@ -92,7 +95,7 @@ func (r *RideRepository) AcceptRideRequest(rideOfferID, rideRequestID, vehicleID
 
 		// Get the ride request by ID with only necessary fields
 		var rideRequest migration.RideRequest
-		err = tx.Select("start_time, end_time, status, start_address, end_address, start_latitude, start_longitude, end_latitude, end_longitude, encoded_polyline, distance, duration,").
+		err = tx.Select("start_time, end_time, status, start_address, end_address, start_latitude, start_longitude, end_latitude, end_longitude, encoded_polyline, distance, duration").
 			Where("id = ?", rideRequestID).
 			First(&rideRequest).Error
 		if err != nil {
@@ -214,6 +217,11 @@ func (r *RideRepository) StartRide(req schemas.StartRideRequest, userID uuid.UUI
 			return errors.New("ride is already started")
 		}
 
+		// Check if the ride is already ended
+		if ride.Status == "completed" {
+			return errors.New("ride is already ended")
+		}
+
 		// Check if the ride is already cancelled
 		if ride.Status == "cancelled" {
 			return errors.New("ride is already cancelled")
@@ -251,55 +259,232 @@ func (r *RideRepository) StartRide(req schemas.StartRideRequest, userID uuid.UUI
 	return ride, nil
 }
 
+// GetTransactionByID fetches a transaction by its ID
+func (r *RideRepository) GetTransactionByRideID(rideID uuid.UUID) (migration.Transaction, error) {
+	var transaction migration.Transaction
+	err := r.db.Model(&migration.Transaction{}).
+		Where("ride_id = ?", rideID).
+		First(&transaction).
+		Error
+
+	if err != nil {
+		return migration.Transaction{}, err
+	}
+
+	return transaction, nil
+}
+
 // EndRide ends a ride
-// func (r *RideRepository) EndRide(req schemas.EndRideRequest, userID uuid.UUID) (migration.Ride, error) {
-// 	var ride migration.Ride
+func (r *RideRepository) EndRide(req schemas.EndRideRequest, userID uuid.UUID) (migration.Ride, error) {
+	var ride migration.Ride
 
-// 	err := r.db.Transaction(func(tx *gorm.DB) error {
-// 		// Get the ride by ID
-// 		err := tx.Model(&migration.Ride{}).
-// 			Where("id = ?", req.RideID).
-// 			First(&ride).Error
-// 		if err != nil {
-// 			return err
-// 		}
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		// Get the ride by ID
+		err := tx.Model(&migration.Ride{}).
+			Where("id = ?", req.RideID).
+			First(&ride).Error
+		if err != nil {
+			return err
+		}
 
-// 		// Get the ride offer by ID
-// 		var rideOffer migration.RideOffer
-// 		err = tx.Model(&migration.RideOffer{}).
-// 			Where("id = ?", ride.RideOfferID).
-// 			First(&rideOffer).Error
-// 		if err != nil {
-// 			return err
-// 		}
+		// Get the ride offer by ID
+		var rideOffer migration.RideOffer
+		err = tx.Model(&migration.RideOffer{}).
+			Where("id = ?", ride.RideOfferID).
+			First(&rideOffer).Error
+		if err != nil {
+			return err
+		}
 
-// 		// Get the ride request by ID
-// 		var rideRequest migration.RideRequest
-// 		err = tx.Model(&migration.RideRequest{}).
-// 			Where("id = ?", ride.RideRequestID).
-// 			First(&rideRequest).Error
-// 		if err != nil {
-// 			return err
-// 		}
+		// Get the ride request by ID
+		var rideRequest migration.RideRequest
+		err = tx.Model(&migration.RideRequest{}).
+			Where("id = ?", ride.RideRequestID).
+			First(&rideRequest).Error
+		if err != nil {
+			return err
+		}
 
-// 		// Check if the ride is already ended
-// 		if ride.Status == "ended" {
-// 			return errors.New("ride is already ended")
-// 		}
+		// Check if the ride is already ended
+		if ride.Status == "completed" {
+			return errors.New("ride is already ended")
+		}
 
-// 		// Check if the ride is already cancelled
-// 		if ride.Status == "cancelled" {
-// 			return errors.New("ride is already cancelled")
-// 		}
+		// Check if the ride is already cancelled
+		if ride.Status == "cancelled" {
+			return errors.New("ride is already cancelled")
+		}
 
-// 		// Check if the current location of the driver and the hitcher end location is near less than 100 meters
-// 		if !helper.IsNearby(schemas.Point{Lat: rideOffer.DriverCurrentLatitude, Lng: rideOffer.DriverCurrentLongitude}, schemas.Point{Lat: rideRequest.EndLatitude, Lng: rideRequest.EndLongitude}, 0.0001) {
-// 			return errors.New("driver not nearby the end location") // Make sure cannot fake the location
-// 		}
+		// Check if the current location of the driver and the hitcher end location is near less than 100 meters
+		if !helper.IsNearby(schemas.Point{Lat: rideOffer.DriverCurrentLatitude, Lng: rideOffer.DriverCurrentLongitude}, schemas.Point{Lat: rideRequest.EndLatitude, Lng: rideRequest.EndLongitude}, 0.0001) {
+			return errors.New("driver not nearby the end location") // Make sure cannot fake the location
+		}
 
-// 	}
+		// Update the ride offer status to ended
+		if err := tx.Model(&migration.RideOffer{}).Where("id = ?", ride.RideOfferID).Update("status", "completed").Error; err != nil {
+			return err
+		}
 
-// }
+		// Update the ride request status to ended
+		if err := tx.Model(&migration.RideRequest{}).Where("id = ?", ride.RideRequestID).Update("status", "completed").Error; err != nil {
+			return err
+		}
+
+		// Update the transaction status to completed
+		if err := tx.Model(&migration.Transaction{}).Where("ride_id = ?", req.RideID).Update("status", "completed").Error; err != nil {
+			return err
+		}
+
+		// Update the ride status to ended
+		if err := tx.Model(&migration.Ride{}).Where("id = ?", req.RideID).Update("status", "completed").Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return migration.Ride{}, err
+	}
+
+	return ride, nil
+}
+
+// UpdateRideLocation updates the location of a ride
+func (r *RideRepository) UpdateRideLocation(req schemas.UpdateRideLocationRequest, userID uuid.UUID) (migration.Ride, error) {
+	var ride migration.Ride
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		// Get the ride by ID
+		err := tx.Model(&migration.Ride{}).
+			Where("id = ?", req.RideID).
+			First(&ride).Error
+		if err != nil {
+			return err
+		}
+
+		// Get the ride offer by ID
+		var rideOffer migration.RideOffer
+		err = tx.Model(&migration.RideOffer{}).
+			Where("id = ?", ride.RideOfferID).
+			First(&rideOffer).Error
+		if err != nil {
+			return err
+		}
+
+		// Get the ride request by ID
+		var rideRequest migration.RideRequest
+		err = tx.Model(&migration.RideRequest{}).
+			Where("id = ?", ride.RideRequestID).
+			First(&rideRequest).Error
+		if err != nil {
+			return err
+		}
+
+		// Check if the ride is already ended
+		if ride.Status == "completed" {
+			return errors.New("ride is already ended")
+		}
+
+		// Check if the ride is already cancelled
+		if ride.Status == "cancelled" {
+			return errors.New("ride is already cancelled")
+		}
+
+		// Update the driver's current location
+		if err := tx.Model(&migration.RideOffer{}).Where("id = ?", ride.RideOfferID).Update("driver_current_latitude", req.CurrentLocation.Lat).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&migration.RideOffer{}).Where("id = ?", ride.RideOfferID).Update("driver_current_longitude", req.CurrentLocation.Lng).Error; err != nil {
+			return err
+		}
+
+		// Update the hitcher's current location
+		if err := tx.Model(&migration.RideRequest{}).Where("id = ?", ride.RideRequestID).Update("rider_current_latitude", req.CurrentLocation.Lat).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&migration.RideRequest{}).Where("id = ?", ride.RideRequestID).Update("rider_current_longitude", req.CurrentLocation.Lng).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return migration.Ride{}, err
+	}
+
+	return ride, nil
+}
+
+// CancelRideByDriver cancels a ride by the driver
+func (r *RideRepository) CancelRide(req schemas.CancelRideRequest, userID uuid.UUID) (migration.Ride, error) {
+	var ride migration.Ride
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		// Get the ride by ID
+		err := tx.Model(&migration.Ride{}).
+			Where("id = ?", req.RideID).
+			First(&ride).Error
+		if err != nil {
+			return err
+		}
+
+		// Get the ride offer by ID
+		var rideOffer migration.RideOffer
+		err = tx.Model(&migration.RideOffer{}).
+			Where("id = ?", ride.RideOfferID).
+			First(&rideOffer).Error
+		if err != nil {
+			return err
+		}
+
+		// Get the ride request by ID
+		var rideRequest migration.RideRequest
+		err = tx.Model(&migration.RideRequest{}).
+			Where("id = ?", ride.RideRequestID).
+			First(&rideRequest).Error
+		if err != nil {
+			return err
+		}
+
+		// Check if the ride is already ended
+		if ride.Status == "completed" {
+			return errors.New("ride is already ended")
+		}
+
+		// Check if the ride is already cancelled
+		if ride.Status == "cancelled" {
+			return errors.New("ride is already cancelled")
+		}
+
+		// Update the ride offer status to cancelled
+		if err := tx.Model(&migration.RideOffer{}).Where("id = ?", ride.RideOfferID).Update("status", "cancelled").Error; err != nil {
+			return err
+		}
+
+		// Update the ride request status to cancelled
+		if err := tx.Model(&migration.RideRequest{}).Where("id = ?", ride.RideRequestID).Update("status", "cancelled").Error; err != nil {
+			return err
+		}
+
+		// Update the ride status to cancelled
+		if err := tx.Model(&migration.Ride{}).Where("id = ?", req.RideID).Update("status", "cancelled").Error; err != nil {
+			return err
+		}
+
+		// Update the transaction status to cancelled
+		if err := tx.Model(&migration.Transaction{}).Where("ride_id = ?", req.RideID).Update("status", "cancelled").Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return migration.Ride{}, err
+	}
+
+	return ride, nil
+}
 
 // Make sure the RideRepository implements the IRideRepository interface
 var _ IRideRepository = (*RideRepository)(nil)

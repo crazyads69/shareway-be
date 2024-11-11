@@ -26,6 +26,8 @@ Sent when a driver offers a ride to a hitchhiker.
   "type": "new-give-ride-request",
   "data": {
     "ride_offer_id": "UUID",
+    "ride_request_id": "UUID",
+    "receiver_id": "UUID",
     "user": {
       "id": "UUID",
       "phoneNumber": "string",
@@ -65,10 +67,18 @@ Sent when a hitchhiker requests a ride from a driver.
   "type": "new-hitch-ride-request",
   "data": {
     "ride_request_id": "UUID",
+    "ride_offer_id": "UUID",
+    "receiver_id": "UUID",
     "user": {
       "id": "UUID",
       "phoneNumber": "string",
       "fullName": "string"
+    },
+    "vehicle": {
+      "vehicle_id": "UUID",
+      "name": "string",
+      "fuel_consumed": 0.0,
+      "license_plate": "string"
     },
     "start_latitude": 0.0,
     "start_longitude": 0.0,
@@ -99,6 +109,7 @@ Sent when a hitchhiker accepts a ride offer from a driver.
     "ride_id": "UUID",
     "ride_offer_id": "UUID",
     "ride_request_id": "UUID",
+    "receiver_id": "UUID",
     "status": "string",
     "start_time": "ISO8601 string",
     "end_time": "ISO8601 string",
@@ -114,6 +125,10 @@ Sent when a hitchhiker accepts a ride offer from a driver.
       "status": "string",
       "payment_method": "string"
     },
+    "driver_current_latitude": 0.0,
+    "driver_current_longitude": 0.0,
+    "rider_current_latitude": 0.0,
+    "rider_current_longitude": 0.0,
     "start_latitude": 0.0,
     "start_longitude": 0.0,
     "end_latitude": 0.0,
@@ -139,6 +154,7 @@ Sent when a driver accepts a ride request from a hitchhiker.
     "ride_id": "UUID",
     "ride_offer_id": "UUID",
     "ride_request_id": "UUID",
+    "receiver_id": "UUID",
     "status": "string",
     "start_time": "ISO8601 string",
     "end_time": "ISO8601 string",
@@ -154,6 +170,10 @@ Sent when a driver accepts a ride request from a hitchhiker.
       "status": "string",
       "payment_method": "string"
     },
+    "driver_current_latitude": 0.0,
+    "driver_current_longitude": 0.0,
+    "rider_current_latitude": 0.0,
+    "rider_current_longitude": 0.0,
     "start_latitude": 0.0,
     "start_longitude": 0.0,
     "end_latitude": 0.0,
@@ -178,7 +198,8 @@ Sent when a hitchhiker cancels a ride offer from a driver.
   "data": {
     "ride_offer_id": "UUID",
     "ride_request_id": "UUID",
-    "user_id": "UUID"
+    "user_id": "UUID",
+    "receiver_id": "UUID"
   }
 }
 ```
@@ -193,7 +214,160 @@ Sent when a driver cancels a ride request from a hitchhiker.
   "data": {
     "ride_offer_id": "UUID",
     "ride_request_id": "UUID",
-    "user_id": "UUID"
+    "user_id": "UUID",
+    "receiver_id": "UUID"
+  }
+}
+```
+
+### 7. start-ride
+
+Send when driver start the ride
+
+```json
+{
+  "type": "start-ride",
+  "data": {
+    "ride_id": "UUID",
+    "ride_offer_id": "UUID",
+    "ride_request_id": "UUID",
+    "receiver_id": "UUID",
+    "status": "string",
+    "start_time": "ISO8601 string",
+    "end_time": "ISO8601 string",
+    "start_address": "string",
+    "end_address": "string",
+    "fare": 0.0,
+    "encoded_polyline": "string",
+    "distance": 0.0,
+    "duration": 0,
+    "transaction": {
+      "transaction_id": "UUID",
+      "amount": 0.0,
+      "status": "string",
+      "payment_method": "string"
+    },
+    "driver_current_latitude": 0.0,
+    "driver_current_longitude": 0.0,
+    "rider_current_latitude": 0.0,
+    "rider_current_longitude": 0.0,
+    "start_latitude": 0.0,
+    "start_longitude": 0.0,
+    "end_latitude": 0.0,
+    "end_longitude": 0.0,
+    "vehicle": {
+      "vehicle_id": "UUID",
+      "name": "string",
+      "fuel_consumed": 0.0,
+      "license_plate": "string"
+    }
+  }
+}
+```
+
+### 8. end-ride
+
+Send when driver end the ride
+
+```json
+{
+  "type": "end-ride",
+  "data": {
+    "ride_id": "UUID",
+    "ride_offer_id": "UUID",
+    "ride_request_id": "UUID",
+    "receiver_id": "UUID",
+    "status": "string",
+    "start_time": "ISO8601 string",
+    "end_time": "ISO8601 string",
+    "start_address": "string",
+    "end_address": "string",
+    "fare": 0.0,
+    "encoded_polyline": "string",
+    "distance": 0.0,
+    "duration": 0,
+    "transaction": {
+      "transaction_id": "UUID",
+      "amount": 0.0,
+      "status": "string",
+      "payment_method": "string"
+    },
+    "driver_current_latitude": 0.0,
+    "driver_current_longitude": 0.0,
+    "rider_current_latitude": 0.0,
+    "rider_current_longitude": 0.0,
+    "start_latitude": 0.0,
+    "start_longitude": 0.0,
+    "end_latitude": 0.0,
+    "end_longitude": 0.0,
+    "vehicle": {
+      "vehicle_id": "UUID",
+      "name": "string",
+      "fuel_consumed": 0.0,
+      "license_plate": "string"
+    }
+  }
+}
+```
+
+### 9. update-ride-location
+
+Send when driver update the ride location
+
+```json
+{
+  "type": "update-ride-location",
+  "data": {
+    "ride_id": "UUID",
+    "ride_offer_id": "UUID",
+    "ride_request_id": "UUID",
+    "receiver_id": "UUID",
+    "status": "string",
+    "start_time": "ISO8601 string",
+    "end_time": "ISO8601 string",
+    "start_address": "string",
+    "end_address": "string",
+    "fare": 0.0,
+    "encoded_polyline": "string",
+    "distance": 0.0,
+    "duration": 0,
+    "transaction": {
+      "transaction_id": "UUID",
+      "amount": 0.0,
+      "status": "string",
+      "payment_method": "string"
+    },
+    "driver_current_latitude": 0.0,
+    "driver_current_longitude": 0.0,
+    "rider_current_latitude": 0.0,
+    "rider_current_longitude": 0.0,
+    "start_latitude": 0.0,
+    "start_longitude": 0.0,
+    "end_latitude": 0.0,
+    "end_longitude": 0.0,
+    "vehicle": {
+      "vehicle_id": "UUID",
+      "name": "string",
+      "fuel_consumed": 0.0,
+      "license_plate": "string"
+    }
+  }
+}
+```
+
+### 10. cancel-ride
+
+Send when the driver or hitcher want to cancel the ride
+
+```json
+```json
+{
+  "type": "cancel-ride",
+  "data": {
+    "ride_id": "UUID",
+    "ride_offer_id": "UUID",
+    "ride_request_id": "UUID",
+    "receiver_id": "UUID",
   }
 }
 ```

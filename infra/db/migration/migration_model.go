@@ -2,6 +2,7 @@ package migration
 
 import (
 	"shareway/util/jsonb"
+	"shareway/util/polyline"
 	"time"
 
 	"github.com/google/uuid"
@@ -115,7 +116,7 @@ type RideOffer struct {
 	StartLongitude         float64
 	EndLatitude            float64
 	EndLongitude           float64
-	EncodedPolyline        string `gorm:"type:text"` // Store the overview_polyline here
+	EncodedPolyline        polyline.Polyline `gorm:"type:text"` // Store the overview_polyline here
 	DriverCurrentLatitude  float64
 	DriverCurrentLongitude float64
 	StartAddress           string  `gorm:"type:text"`
@@ -142,13 +143,13 @@ type RideRequest struct {
 	EndLongitude          float64
 	RiderCurrentLatitude  float64
 	RiderCurrentLongitude float64
-	StartAddress          string  `gorm:"type:text"`
-	EndAddress            string  `gorm:"type:text"`
-	Status                string  `gorm:"default:'created'"` // created, matched, ongoing, completed, cancelled
-	Rides                 []Ride  `gorm:"foreignKey:RideRequestID"`
-	EncodedPolyline       string  `gorm:"type:text"`
-	Distance              float64 // in kilometers
-	Duration              int     // in seconds
+	StartAddress          string            `gorm:"type:text"`
+	EndAddress            string            `gorm:"type:text"`
+	Status                string            `gorm:"default:'created'"` // created, matched, ongoing, completed, cancelled
+	Rides                 []Ride            `gorm:"foreignKey:RideRequestID"`
+	EncodedPolyline       polyline.Polyline `gorm:"type:text"`
+	Distance              float64           // in kilometers
+	Duration              int               // in seconds
 	StartTime             time.Time
 	EndTime               time.Time // Time to end the ride (end time = start time + duration)
 }
@@ -166,9 +167,9 @@ type Ride struct {
 	StartTime       time.Time
 	EndTime         time.Time
 	Fare            float64
-	StartAddress    string `gorm:"type:text"`
-	EndAddress      string `gorm:"type:text"`
-	EncodedPolyline string `gorm:"type:text"`
+	StartAddress    string            `gorm:"type:text"`
+	EndAddress      string            `gorm:"type:text"`
+	EncodedPolyline polyline.Polyline `gorm:"type:text"`
 	Distance        float64
 	Duration        int
 	StartLatitude   float64

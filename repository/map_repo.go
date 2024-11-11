@@ -6,6 +6,7 @@ import (
 	"shareway/helper"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
+	"shareway/util/polyline"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,6 +20,7 @@ type IMapsRepository interface {
 	GetRideRequestDetails(rideRequestID uuid.UUID) (migration.RideRequest, error)
 	SuggestRideRequests(userID uuid.UUID, rideOfferID uuid.UUID) ([]migration.RideRequest, error)
 	SuggestRideOffers(userID uuid.UUID, rideRequestID uuid.UUID) ([]migration.RideOffer, error)
+	GetRideByID(rideID uuid.UUID) (migration.Ride, error)
 }
 
 type MapsRepository struct {
@@ -99,7 +101,7 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 			StartLongitude:         firstLeg.Start_location.Lng,
 			EndLatitude:            lastLeg.End_location.Lat,
 			EndLongitude:           lastLeg.End_location.Lng,
-			EncodedPolyline:        firstRoute.Overview_polyline.Points,
+			EncodedPolyline:        polyline.Polyline(firstRoute.Overview_polyline.Points), // Use gorm.Expr to prevent escaping
 			DriverCurrentLatitude:  currentLocation.Lat,
 			DriverCurrentLongitude: currentLocation.Lng,
 			StartAddress:           firstLeg.Start_address,
@@ -142,7 +144,6 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 		totalDuration += leg.Duration.Value
 	}
 	totalDistance /= 1000 // Convert to kilometers
-
 	endTime := startTime.Add(time.Duration(totalDuration) * time.Second)
 
 	var rideRequestID uuid.UUID
@@ -161,7 +162,6 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 		}
 
 		// Check if any ride offer exists for the user that overlaps with the new time frame
-		// This is to prevent the user from creating a ride request that overlaps with their own ride offer
 		var existingRideOfferCount int64
 		err = tx.Model(&migration.RideOffer{}).
 			Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
@@ -186,7 +186,7 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 			StartAddress:          firstLeg.Start_address,
 			EndAddress:            lastLeg.End_address,
 			Status:                "created",
-			EncodedPolyline:       firstRoute.Overview_polyline.Points,
+			EncodedPolyline:       polyline.Polyline(firstRoute.Overview_polyline.Points), // Use gorm.Expr to prevent escaping
 			Distance:              float64(totalDistance),
 			Duration:              totalDuration,
 			StartTime:             startTime,
@@ -196,7 +196,6 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 		if err := tx.Create(&rideRequest).Error; err != nil {
 			return fmt.Errorf("error creating ride request: %w", err)
 		}
-
 		rideRequestID = rideRequest.ID
 		return nil
 	})
@@ -204,7 +203,6 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 	if err != nil {
 		return uuid.Nil, err
 	}
-
 	return rideRequestID, nil
 }
 
@@ -238,11 +236,11 @@ func (r *MapsRepository) SuggestRideRequests(userID uuid.UUID, rideOfferID uuid.
 	}
 
 	var filteredRideRequests []migration.RideRequest
-	offerPolyline := helper.DecodePolyline(rideOffer.EncodedPolyline)
+	offerPolyline := helper.DecodePolyline(string(rideOffer.EncodedPolyline))
 	const maxDistance = 2.0 // km
 
 	for _, rideRequest := range rideRequests {
-		requestPolyline := helper.DecodePolyline(rideRequest.EncodedPolyline)
+		requestPolyline := helper.DecodePolyline(string(rideRequest.EncodedPolyline))
 
 		if rideRequest.UserID != userID && helper.IsMatchRoute(offerPolyline, requestPolyline) &&
 			helper.IsTimeOverlap(rideOffer, rideRequest) {
@@ -268,11 +266,11 @@ func (r *MapsRepository) SuggestRideOffers(userID uuid.UUID, rideRequestID uuid.
 	}
 
 	var filteredRideOffers []migration.RideOffer
-	requestPolyline := helper.DecodePolyline(rideRequest.EncodedPolyline)
+	requestPolyline := helper.DecodePolyline(string(rideRequest.EncodedPolyline))
 	const maxDistance = 2.0 // km
 
 	for _, rideOffer := range rideOffers {
-		offerPolyline := helper.DecodePolyline(rideOffer.EncodedPolyline)
+		offerPolyline := helper.DecodePolyline(string(rideOffer.EncodedPolyline))
 
 		if rideOffer.UserID != userID && helper.IsMatchRoute(offerPolyline, requestPolyline) &&
 			helper.IsTimeOverlap(rideOffer, rideRequest) {
@@ -281,6 +279,14 @@ func (r *MapsRepository) SuggestRideOffers(userID uuid.UUID, rideRequestID uuid.
 	}
 
 	return filteredRideOffers, nil
+}
+
+func (r *MapsRepository) GetRideByID(rideID uuid.UUID) (migration.Ride, error) {
+	ride := migration.Ride{}
+	if err := r.db.Preload("RideOffer").Preload("RideRequest").First(&ride, rideID).Error; err != nil {
+		return migration.Ride{}, err
+	}
+	return ride, nil
 }
 
 // Make sure to implement the IMapsRepository interface

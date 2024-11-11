@@ -2,6 +2,7 @@ package router
 
 import (
 	"shareway/controller"
+	"shareway/infra/task"
 	"shareway/infra/ws"
 	"shareway/middleware"
 	"shareway/service"
@@ -21,16 +22,17 @@ import (
 
 // APIServer represents the API server structure
 type APIServer struct {
-	router   *gin.Engine
-	Maker    *token.PasetoMaker
-	Cfg      util.Config
-	Service  *service.ServiceContainer
-	Validate *validator.Validate
-	Hub      *ws.Hub
+	router      *gin.Engine
+	Maker       *token.PasetoMaker
+	Cfg         util.Config
+	Service     *service.ServiceContainer
+	Validate    *validator.Validate
+	Hub         *ws.Hub
+	AsyncClient *task.AsyncClient
 }
 
 // NewAPIServer creates and initializes a new APIServer instance
-func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.ServiceContainer, Validate *validator.Validate, Hub *ws.Hub) (*APIServer, error) {
+func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.ServiceContainer, Validate *validator.Validate, Hub *ws.Hub, AsyncClient *task.AsyncClient) (*APIServer, error) {
 	r := gin.Default()
 
 	if cfg.GinMode != "release" {
@@ -46,12 +48,13 @@ func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.Se
 	setupBasicRoutes(r)
 
 	return &APIServer{
-		router:   r,
-		Maker:    maker,
-		Cfg:      cfg,
-		Service:  service,
-		Validate: Validate,
-		Hub:      Hub,
+		router:      r,
+		Maker:       maker,
+		Cfg:         cfg,
+		Service:     service,
+		Validate:    Validate,
+		Hub:         Hub,
+		AsyncClient: AsyncClient,
 	}, nil
 }
 

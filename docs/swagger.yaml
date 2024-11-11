@@ -37,6 +37,10 @@ definitions:
     properties:
       distance:
         type: number
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
       duration:
         type: integer
       encoded_polyline:
@@ -51,12 +55,18 @@ definitions:
         type: string
       fare:
         type: number
+      receiver_id:
+        type: string
       ride_id:
         type: string
       ride_offer_id:
         type: string
       ride_request_id:
         type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
       start_address:
         type: string
       start_latitude:
@@ -98,6 +108,10 @@ definitions:
     properties:
       distance:
         type: number
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
       duration:
         type: integer
       encoded_polyline:
@@ -112,12 +126,18 @@ definitions:
         type: string
       fare:
         type: number
+      receiver_id:
+        type: string
       ride_id:
         type: string
       ride_offer_id:
         type: string
       ride_request_id:
         type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
       start_address:
         type: string
       start_latitude:
@@ -136,13 +156,12 @@ definitions:
   schemas.CancelGiveRideRequestRequest:
     properties:
       receiverID:
-        description: The driver who received the cancel request
         type: string
       rideOfferID:
-        description: The hitcher who want to cancel the ride offer
         type: string
       rideRequestID:
-        description: The driver who received the request
+        type: string
+      vehicleID:
         type: string
     required:
     - receiverID
@@ -160,10 +179,39 @@ definitions:
       rideRequestID:
         description: The driver who want to cancel the ride request
         type: string
+      vehicleID:
+        description: The vehicle id
+        type: string
     required:
     - receiverID
     - rideOfferID
     - rideRequestID
+    type: object
+  schemas.CancelRideRequest:
+    properties:
+      receiverID:
+        description: The receiver id (the hitcher) who received the cancel request
+        type: string
+      rideID:
+        description: The ride id to cancel
+        type: string
+      vehicleID:
+        type: string
+    required:
+    - receiverID
+    - rideID
+    type: object
+  schemas.CancelRideResponse:
+    properties:
+      receiver_id:
+        type: string
+      ride_id:
+        description: Send back id of ride offer ride request to update ui
+        type: string
+      ride_offer_id:
+        type: string
+      ride_request_id:
+        type: string
     type: object
   schemas.CreateNotificationRequest:
     properties:
@@ -193,6 +241,72 @@ definitions:
         type: string
     required:
     - phone_number
+    type: object
+  schemas.EndRideRequest:
+    properties:
+      currentLocation:
+        allOf:
+        - $ref: '#/definitions/schemas.Point'
+        description: Current user location
+      rideID:
+        description: Ride ID of the ride to end
+        type: string
+      vehicleID:
+        type: string
+    required:
+    - currentLocation
+    - rideID
+    type: object
+  schemas.EndRideResponse:
+    properties:
+      distance:
+        type: number
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
+      duration:
+        type: integer
+      encoded_polyline:
+        type: string
+      end_address:
+        type: string
+      end_latitude:
+        type: number
+      end_longitude:
+        type: number
+      end_time:
+        type: string
+      fare:
+        type: number
+      receiver_id:
+        type: string
+      ride_id:
+        type: string
+      ride_offer_id:
+        type: string
+      ride_request_id:
+        type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
+      start_address:
+        type: string
+      start_latitude:
+        type: number
+      start_longitude:
+        type: number
+      start_time:
+        type: string
+      status:
+        type: string
+      transaction:
+        $ref: '#/definitions/schemas.TransactionDetail'
+      user:
+        $ref: '#/definitions/schemas.UserInfo'
+      vehicle:
+        $ref: '#/definitions/schemas.VehicleDetail'
     type: object
   schemas.GeoCodeLocation:
     properties:
@@ -769,10 +883,78 @@ definitions:
       rideRequestID:
         description: The ID of the ride request (current user is the hitcher)
         type: string
+      vehicleID:
+        type: string
     required:
     - receiverID
     - rideOfferID
     - rideRequestID
+    type: object
+  schemas.StartRideRequest:
+    properties:
+      currentLocation:
+        allOf:
+        - $ref: '#/definitions/schemas.Point'
+        description: Current user location
+      rideID:
+        description: Ride ID of the ride to start
+        type: string
+      vehicleID:
+        type: string
+    required:
+    - currentLocation
+    - rideID
+    type: object
+  schemas.StartRideResponse:
+    properties:
+      distance:
+        type: number
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
+      duration:
+        type: integer
+      encoded_polyline:
+        type: string
+      end_address:
+        type: string
+      end_latitude:
+        type: number
+      end_longitude:
+        type: number
+      end_time:
+        type: string
+      fare:
+        type: number
+      receiver_id:
+        type: string
+      ride_id:
+        type: string
+      ride_offer_id:
+        type: string
+      ride_request_id:
+        type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
+      start_address:
+        type: string
+      start_latitude:
+        type: number
+      start_longitude:
+        type: number
+      start_time:
+        type: string
+      status:
+        type: string
+      transaction:
+        $ref: '#/definitions/schemas.TransactionDetail'
+      user:
+        $ref: '#/definitions/schemas.UserInfo'
+      vehicle:
+        $ref: '#/definitions/schemas.VehicleDetail'
     type: object
   schemas.StructuredFormatting:
     properties:
@@ -828,6 +1010,72 @@ definitions:
         type: string
       transaction_id:
         type: string
+    type: object
+  schemas.UpdateRideLocationRequest:
+    properties:
+      currentLocation:
+        allOf:
+        - $ref: '#/definitions/schemas.Point'
+        description: Current driver location
+      rideID:
+        description: Ride ID of the ride to update location
+        type: string
+      vehicleID:
+        type: string
+    required:
+    - currentLocation
+    - rideID
+    type: object
+  schemas.UpdateRideLocationResponse:
+    properties:
+      distance:
+        type: number
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
+      duration:
+        type: integer
+      encoded_polyline:
+        type: string
+      end_address:
+        type: string
+      end_latitude:
+        type: number
+      end_longitude:
+        type: number
+      end_time:
+        type: string
+      fare:
+        type: number
+      receiver_id:
+        type: string
+      ride_id:
+        type: string
+      ride_offer_id:
+        type: string
+      ride_request_id:
+        type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
+      start_address:
+        type: string
+      start_latitude:
+        type: number
+      start_longitude:
+        type: number
+      start_time:
+        type: string
+      status:
+        type: string
+      transaction:
+        $ref: '#/definitions/schemas.TransactionDetail'
+      user:
+        $ref: '#/definitions/schemas.UserInfo'
+      vehicle:
+        $ref: '#/definitions/schemas.VehicleDetail'
     type: object
   schemas.UpdateUserProfileRequest:
     properties:
@@ -1841,6 +2089,80 @@ paths:
       summary: Cancel a ride request from the hitcher
       tags:
       - ride
+  /ride/cancel-ride:
+    post:
+      consumes:
+      - application/json
+      description: Cancels the ride
+      parameters:
+      - description: Cancel ride request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CancelRideRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully canceled ride by driver
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.CancelRideResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Cancel a ride
+      tags:
+      - ride
+  /ride/end-ride:
+    post:
+      consumes:
+      - application/json
+      description: Ends the ride between the driver and the hitcher
+      parameters:
+      - description: End ride request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.EndRideRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully ended ride
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.EndRideResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: End a ride
+      tags:
+      - ride
   /ride/give-ride-request:
     post:
       consumes:
@@ -1903,6 +2225,80 @@ paths:
       security:
       - BearerAuth: []
       summary: Send a ride request from the hitcher to the driver
+      tags:
+      - ride
+  /ride/start-ride:
+    post:
+      consumes:
+      - application/json
+      description: Starts the ride between the driver and the hitcher
+      parameters:
+      - description: Start ride request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.StartRideRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully started ride
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.StartRideResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Start a ride
+      tags:
+      - ride
+  /ride/update-ride-location:
+    post:
+      consumes:
+      - application/json
+      description: Updates the current location of the driver during the ride
+      parameters:
+      - description: Update ride location request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.UpdateRideLocationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated ride location
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.UpdateRideLocationResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Update the current location of the driver during the ride
       tags:
       - ride
   /user/get-profile:

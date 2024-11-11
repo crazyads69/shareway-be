@@ -1440,6 +1440,132 @@ const docTemplate = `{
                 }
             }
         },
+        "/ride/cancel-ride": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels the ride",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Cancel a ride",
+                "parameters": [
+                    {
+                        "description": "Cancel ride request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.CancelRideRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully canceled ride by driver",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.CancelRideResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ride/end-ride": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Ends the ride between the driver and the hitcher",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "End a ride",
+                "parameters": [
+                    {
+                        "description": "End ride request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.EndRideRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully ended ride",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.EndRideResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/ride/give-ride-request": {
             "post": {
                 "security": [
@@ -1525,6 +1651,132 @@ const docTemplate = `{
                         "description": "Successfully sent ride request",
                         "schema": {
                             "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ride/start-ride": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Starts the ride between the driver and the hitcher",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Start a ride",
+                "parameters": [
+                    {
+                        "description": "Start ride request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.StartRideRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully started ride",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.StartRideResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ride/update-ride-location": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates the current location of the driver during the ride",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Update the current location of the driver during the ride",
+                "parameters": [
+                    {
+                        "description": "Update ride location request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.UpdateRideLocationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully updated ride location",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.UpdateRideLocationResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -1908,6 +2160,12 @@ const docTemplate = `{
                 "distance": {
                     "type": "number"
                 },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
                 "duration": {
                     "type": "integer"
                 },
@@ -1929,6 +2187,9 @@ const docTemplate = `{
                 "fare": {
                     "type": "number"
                 },
+                "receiver_id": {
+                    "type": "string"
+                },
                 "ride_id": {
                     "type": "string"
                 },
@@ -1937,6 +2198,12 @@ const docTemplate = `{
                 },
                 "ride_request_id": {
                     "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
                 },
                 "start_address": {
                     "type": "string"
@@ -1994,6 +2261,12 @@ const docTemplate = `{
                 "distance": {
                     "type": "number"
                 },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
                 "duration": {
                     "type": "integer"
                 },
@@ -2015,6 +2288,9 @@ const docTemplate = `{
                 "fare": {
                     "type": "number"
                 },
+                "receiver_id": {
+                    "type": "string"
+                },
                 "ride_id": {
                     "type": "string"
                 },
@@ -2023,6 +2299,12 @@ const docTemplate = `{
                 },
                 "ride_request_id": {
                     "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
                 },
                 "start_address": {
                     "type": "string"
@@ -2056,15 +2338,15 @@ const docTemplate = `{
             ],
             "properties": {
                 "receiverID": {
-                    "description": "The driver who received the cancel request",
                     "type": "string"
                 },
                 "rideOfferID": {
-                    "description": "The hitcher who want to cancel the ride offer",
                     "type": "string"
                 },
                 "rideRequestID": {
-                    "description": "The driver who received the request",
+                    "type": "string"
+                },
+                "vehicleID": {
                     "type": "string"
                 }
             }
@@ -2087,6 +2369,48 @@ const docTemplate = `{
                 },
                 "rideRequestID": {
                     "description": "The driver who want to cancel the ride request",
+                    "type": "string"
+                },
+                "vehicleID": {
+                    "description": "The vehicle id",
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.CancelRideRequest": {
+            "type": "object",
+            "required": [
+                "receiverID",
+                "rideID"
+            ],
+            "properties": {
+                "receiverID": {
+                    "description": "The receiver id (the hitcher) who received the cancel request",
+                    "type": "string"
+                },
+                "rideID": {
+                    "description": "The ride id to cancel",
+                    "type": "string"
+                },
+                "vehicleID": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.CancelRideResponse": {
+            "type": "object",
+            "properties": {
+                "receiver_id": {
+                    "type": "string"
+                },
+                "ride_id": {
+                    "description": "Send back id of ride offer ride request to update ui",
+                    "type": "string"
+                },
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "ride_request_id": {
                     "type": "string"
                 }
             }
@@ -2132,6 +2456,107 @@ const docTemplate = `{
             "properties": {
                 "phone_number": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.EndRideRequest": {
+            "type": "object",
+            "required": [
+                "currentLocation",
+                "rideID"
+            ],
+            "properties": {
+                "currentLocation": {
+                    "description": "Current user location",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/schemas.Point"
+                        }
+                    ]
+                },
+                "rideID": {
+                    "description": "Ride ID of the ride to end",
+                    "type": "string"
+                },
+                "vehicleID": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.EndRideResponse": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "encoded_polyline": {
+                    "type": "string"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_latitude": {
+                    "type": "number"
+                },
+                "end_longitude": {
+                    "type": "number"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "fare": {
+                    "type": "number"
+                },
+                "receiver_id": {
+                    "type": "string"
+                },
+                "ride_id": {
+                    "type": "string"
+                },
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "ride_request_id": {
+                    "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_latitude": {
+                    "type": "number"
+                },
+                "start_longitude": {
+                    "type": "number"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction": {
+                    "$ref": "#/definitions/schemas.TransactionDetail"
+                },
+                "user": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/schemas.VehicleDetail"
                 }
             }
         },
@@ -2989,6 +3414,110 @@ const docTemplate = `{
                 "rideRequestID": {
                     "description": "The ID of the ride request (current user is the hitcher)",
                     "type": "string"
+                },
+                "vehicleID": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.StartRideRequest": {
+            "type": "object",
+            "required": [
+                "currentLocation",
+                "rideID"
+            ],
+            "properties": {
+                "currentLocation": {
+                    "description": "Current user location",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/schemas.Point"
+                        }
+                    ]
+                },
+                "rideID": {
+                    "description": "Ride ID of the ride to start",
+                    "type": "string"
+                },
+                "vehicleID": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.StartRideResponse": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "encoded_polyline": {
+                    "type": "string"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_latitude": {
+                    "type": "number"
+                },
+                "end_longitude": {
+                    "type": "number"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "fare": {
+                    "type": "number"
+                },
+                "receiver_id": {
+                    "type": "string"
+                },
+                "ride_id": {
+                    "type": "string"
+                },
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "ride_request_id": {
+                    "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_latitude": {
+                    "type": "number"
+                },
+                "start_longitude": {
+                    "type": "number"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction": {
+                    "$ref": "#/definitions/schemas.TransactionDetail"
+                },
+                "user": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/schemas.VehicleDetail"
                 }
             }
         },
@@ -3074,6 +3603,107 @@ const docTemplate = `{
                 },
                 "transaction_id": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.UpdateRideLocationRequest": {
+            "type": "object",
+            "required": [
+                "currentLocation",
+                "rideID"
+            ],
+            "properties": {
+                "currentLocation": {
+                    "description": "Current driver location",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/schemas.Point"
+                        }
+                    ]
+                },
+                "rideID": {
+                    "description": "Ride ID of the ride to update location",
+                    "type": "string"
+                },
+                "vehicleID": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.UpdateRideLocationResponse": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "encoded_polyline": {
+                    "type": "string"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_latitude": {
+                    "type": "number"
+                },
+                "end_longitude": {
+                    "type": "number"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "fare": {
+                    "type": "number"
+                },
+                "receiver_id": {
+                    "type": "string"
+                },
+                "ride_id": {
+                    "type": "string"
+                },
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "ride_request_id": {
+                    "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_latitude": {
+                    "type": "number"
+                },
+                "start_longitude": {
+                    "type": "number"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction": {
+                    "$ref": "#/definitions/schemas.TransactionDetail"
+                },
+                "user": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/schemas.VehicleDetail"
                 }
             }
         },
