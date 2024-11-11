@@ -131,15 +131,17 @@ func (r *RideRepository) AcceptRideRequest(rideOfferID, rideRequestID, vehicleID
 			return err
 		}
 
-		// Update ride offer status
-		if err := tx.Model(&migration.RideOffer{}).Where("id = ?", rideOfferID).Update("status", "matched").Error; err != nil {
-			return err
-		}
+		// TODO: COMMENTED OUT FOR NOW FOR BETTER TESTING
 
-		// Update ride request status
-		if err := tx.Model(&migration.RideRequest{}).Where("id = ?", rideRequestID).Update("status", "matched").Error; err != nil {
-			return err
-		}
+		// // Update ride offer status
+		// if err := tx.Model(&migration.RideOffer{}).Where("id = ?", rideOfferID).Update("status", "matched").Error; err != nil {
+		// 	return err
+		// }
+
+		// // Update ride request status
+		// if err := tx.Model(&migration.RideRequest{}).Where("id = ?", rideRequestID).Update("status", "matched").Error; err != nil {
+		// 	return err
+		// }
 
 		return nil
 	})
