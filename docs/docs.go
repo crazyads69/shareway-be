@@ -2338,19 +2338,15 @@ const docTemplate = `{
             ],
             "properties": {
                 "receiverID": {
-                    "description": "The driver who received the cancel request",
                     "type": "string"
                 },
                 "rideOfferID": {
-                    "description": "The hitcher who want to cancel the ride offer",
                     "type": "string"
                 },
                 "rideRequestID": {
-                    "description": "The driver who received the request",
                     "type": "string"
                 },
-                "vehicle_id": {
-                    "description": "The vehicle id",
+                "vehicleID": {
                     "type": "string"
                 }
             }
@@ -2375,7 +2371,7 @@ const docTemplate = `{
                     "description": "The driver who want to cancel the ride request",
                     "type": "string"
                 },
-                "vehicle_id": {
+                "vehicleID": {
                     "description": "The vehicle id",
                     "type": "string"
                 }
@@ -2396,7 +2392,7 @@ const docTemplate = `{
                     "description": "The ride id to cancel",
                     "type": "string"
                 },
-                "vehicle_id": {
+                "vehicleID": {
                     "type": "string"
                 }
             }
@@ -2482,7 +2478,7 @@ const docTemplate = `{
                     "description": "Ride ID of the ride to end",
                     "type": "string"
                 },
-                "vehicle_id": {
+                "vehicleID": {
                     "type": "string"
                 }
             }
@@ -3419,7 +3415,7 @@ const docTemplate = `{
                     "description": "The ID of the ride request (current user is the hitcher)",
                     "type": "string"
                 },
-                "vehicle_id": {
+                "vehicleID": {
                     "type": "string"
                 }
             }
@@ -3443,7 +3439,7 @@ const docTemplate = `{
                     "description": "Ride ID of the ride to start",
                     "type": "string"
                 },
-                "vehicle_id": {
+                "vehicleID": {
                     "type": "string"
                 }
             }
@@ -3629,7 +3625,7 @@ const docTemplate = `{
                     "description": "Ride ID of the ride to update location",
                     "type": "string"
                 },
-                "vehicle_id": {
+                "vehicleID": {
                     "type": "string"
                 }
             }
