@@ -95,7 +95,7 @@ func (r *RideRepository) AcceptRideRequest(rideOfferID, rideRequestID, vehicleID
 
 		// Get the ride request by ID with only necessary fields
 		var rideRequest migration.RideRequest
-		err = tx.Select("start_time, end_time, status, start_address, end_address, start_latitude, start_longitude, end_latitude, end_longitude, encoded_polyline, distance, duration,").
+		err = tx.Select("start_time, end_time, status, start_address, end_address, start_latitude, start_longitude, end_latitude, end_longitude, encoded_polyline, distance, duration").
 			Where("id = ?", rideRequestID).
 			First(&rideRequest).Error
 		if err != nil {
