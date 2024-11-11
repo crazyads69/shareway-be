@@ -52,6 +52,7 @@ type SendHitchRideRequestRequest struct {
 	RideOfferID uuid.UUID `json:"rideOfferID" binding:"required,uuid" validate:"required,uuid"`
 	// The ID of the receiver (the user who received the request) aka the driver
 	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
+	VehicleID  uuid.UUID `json:"vehicle_id,omitempty" binding:"omitempty,uuid" validate:"omitempty,uuid"`
 }
 
 // Define SendHitchRideRequestResponse schema
@@ -170,6 +171,8 @@ type CancelGiveRideRequestRequest struct {
 	RideRequestID uuid.UUID `json:"rideRequestID" binding:"required,uuid" validate:"required,uuid"`
 	// The driver who received the cancel request
 	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
+	// The vehicle id
+	VehicleID uuid.UUID `json:"vehicle_id,omitempty" binding:"omitempty,uuid" validate:"omitempty,uuid"`
 }
 
 type CancelGiveRideRequestResponse struct {
@@ -188,6 +191,8 @@ type CancelHitchRideRequestRequest struct {
 	RideOfferID uuid.UUID `json:"rideOfferID" binding:"required,uuid" validate:"required,uuid"`
 	// The hitcher who received the cancel request
 	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
+	// The vehicle id
+	VehicleID uuid.UUID `json:"vehicle_id,omitempty" binding:"omitempty,uuid" validate:"omitempty,uuid"`
 }
 
 type CancelHitchRideRequestResponse struct {
@@ -203,7 +208,8 @@ type StartRideRequest struct {
 	// Ride ID of the ride to start
 	RideID uuid.UUID `json:"rideID" binding:"required,uuid" validate:"required,uuid"`
 	// Current user location
-	CurrentLocation Point `json:"currentLocation" binding:"required" validate:"required"`
+	CurrentLocation Point     `json:"currentLocation" binding:"required" validate:"required"`
+	VehicleID       uuid.UUID `json:"vehicle_id,omitempty" binding:"omitempty,uuid" validate:"omitempty,uuid"`
 }
 
 // Define StartRideResponse schema
@@ -239,7 +245,8 @@ type EndRideRequest struct {
 	// Ride ID of the ride to end
 	RideID uuid.UUID `json:"rideID" binding:"required,uuid" validate:"required,uuid"`
 	// Current user location
-	CurrentLocation Point `json:"currentLocation" binding:"required" validate:"required"`
+	CurrentLocation Point     `json:"currentLocation" binding:"required" validate:"required"`
+	VehicleID       uuid.UUID `json:"vehicle_id,omitempty" binding:"omitempty,uuid" validate:"omitempty,uuid"`
 }
 
 // Define EndRideResponse schema
@@ -275,7 +282,8 @@ type UpdateRideLocationRequest struct {
 	// Ride ID of the ride to update location
 	RideID uuid.UUID `json:"rideID" binding:"required,uuid" validate:"required,uuid"`
 	// Current driver location
-	CurrentLocation Point `json:"currentLocation" binding:"required" validate:"required"`
+	CurrentLocation Point     `json:"currentLocation" binding:"required" validate:"required"`
+	VehicleID       uuid.UUID `json:"vehicle_id,omitempty" binding:"omitempty,uuid" validate:"omitempty,uuid"`
 }
 
 // Define UpdateRideLocationResponse schema
@@ -311,6 +319,7 @@ type CancelRideRequest struct {
 	RideID uuid.UUID `json:"rideID" binding:"required,uuid" validate:"required,uuid"`
 	// The receiver id (the hitcher) who received the cancel request
 	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
+	VehicleID  uuid.UUID `json:"vehicle_id,omitempty" binding:"omitempty,uuid" validate:"omitempty,uuid"`
 }
 
 type CancelRideResponse struct {
