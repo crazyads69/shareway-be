@@ -1,6 +1,7 @@
 package router
 
 import (
+	"shareway/controller"
 	"shareway/infra/ws"
 	"shareway/middleware"
 	"shareway/service"
@@ -95,6 +96,15 @@ func (server *APIServer) SetupRouter() {
 	// Notification routes for sending notifications
 	SetupNotificationRouter(server.router.Group("/notification", middleware.AuthMiddleware(server.Maker)), server)
 
+	// Chat
+	chatController := controller.NewChatController(
+		server.Validate,
+		server.Service.ChatService,
+	)
+
+	server.router.GET("/chat", func(c *gin.Context) {
+		chatController.HandleWS(c.Writer, c.Request)
+	})
 }
 
 // SetupSwagger configures the Swagger documentation route
