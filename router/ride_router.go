@@ -25,4 +25,5 @@ func SetupRideRouter(group *gin.RouterGroup, server *APIServer) {
 	group.POST("/start-ride", rideController.StartRide)
 	group.POST("/end-ride", rideController.EndRide)
 	group.POST("/update-ride-location", rideController.UpdateRideLocation)
+	group.POST("/cancel-ride", rideController.CancelRide)
 }

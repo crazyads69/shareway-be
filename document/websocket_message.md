@@ -220,6 +220,158 @@ Sent when a driver cancels a ride request from a hitchhiker.
 }
 ```
 
+### 7. start-ride
+
+Send when driver start the ride
+
+```json
+{
+  "type": "start-ride",
+  "data": {
+    "ride_id": "UUID",
+    "ride_offer_id": "UUID",
+    "ride_request_id": "UUID",
+    "receiver_id": "UUID",
+    "status": "string",
+    "start_time": "ISO8601 string",
+    "end_time": "ISO8601 string",
+    "start_address": "string",
+    "end_address": "string",
+    "fare": 0.0,
+    "encoded_polyline": "string",
+    "distance": 0.0,
+    "duration": 0,
+    "transaction": {
+      "transaction_id": "UUID",
+      "amount": 0.0,
+      "status": "string",
+      "payment_method": "string"
+    },
+    "driver_current_latitude": 0.0,
+    "driver_current_longitude": 0.0,
+    "rider_current_latitude": 0.0,
+    "rider_current_longitude": 0.0,
+    "start_latitude": 0.0,
+    "start_longitude": 0.0,
+    "end_latitude": 0.0,
+    "end_longitude": 0.0,
+    "vehicle": {
+      "vehicle_id": "UUID",
+      "name": "string",
+      "fuel_consumed": 0.0,
+      "license_plate": "string"
+    }
+  }
+}
+```
+
+### 8. end-ride
+
+Send when driver end the ride
+
+```json
+{
+  "type": "end-ride",
+  "data": {
+    "ride_id": "UUID",
+    "ride_offer_id": "UUID",
+    "ride_request_id": "UUID",
+    "receiver_id": "UUID",
+    "status": "string",
+    "start_time": "ISO8601 string",
+    "end_time": "ISO8601 string",
+    "start_address": "string",
+    "end_address": "string",
+    "fare": 0.0,
+    "encoded_polyline": "string",
+    "distance": 0.0,
+    "duration": 0,
+    "transaction": {
+      "transaction_id": "UUID",
+      "amount": 0.0,
+      "status": "string",
+      "payment_method": "string"
+    },
+    "driver_current_latitude": 0.0,
+    "driver_current_longitude": 0.0,
+    "rider_current_latitude": 0.0,
+    "rider_current_longitude": 0.0,
+    "start_latitude": 0.0,
+    "start_longitude": 0.0,
+    "end_latitude": 0.0,
+    "end_longitude": 0.0,
+    "vehicle": {
+      "vehicle_id": "UUID",
+      "name": "string",
+      "fuel_consumed": 0.0,
+      "license_plate": "string"
+    }
+  }
+}
+```
+
+### 9. update-ride-location
+
+Send when driver update the ride location
+
+```json
+{
+  "type": "update-ride-location",
+  "data": {
+    "ride_id": "UUID",
+    "ride_offer_id": "UUID",
+    "ride_request_id": "UUID",
+    "receiver_id": "UUID",
+    "status": "string",
+    "start_time": "ISO8601 string",
+    "end_time": "ISO8601 string",
+    "start_address": "string",
+    "end_address": "string",
+    "fare": 0.0,
+    "encoded_polyline": "string",
+    "distance": 0.0,
+    "duration": 0,
+    "transaction": {
+      "transaction_id": "UUID",
+      "amount": 0.0,
+      "status": "string",
+      "payment_method": "string"
+    },
+    "driver_current_latitude": 0.0,
+    "driver_current_longitude": 0.0,
+    "rider_current_latitude": 0.0,
+    "rider_current_longitude": 0.0,
+    "start_latitude": 0.0,
+    "start_longitude": 0.0,
+    "end_latitude": 0.0,
+    "end_longitude": 0.0,
+    "vehicle": {
+      "vehicle_id": "UUID",
+      "name": "string",
+      "fuel_consumed": 0.0,
+      "license_plate": "string"
+    }
+  }
+}
+```
+
+### 10. cancel-ride
+
+Send when the driver or hitcher want to cancel the ride
+
+```json
+```json
+{
+  "type": "cancel-ride",
+  "data": {
+    "ride_id": "UUID",
+    "ride_offer_id": "UUID",
+    "ride_request_id": "UUID",
+    "receiver_id": "UUID",
+  }
+}
+```
+
 ## Implementing WebSocket Handling in Flutter
 
 To handle these WebSocket messages in your Flutter application:

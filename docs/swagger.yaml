@@ -185,6 +185,30 @@ definitions:
     - rideOfferID
     - rideRequestID
     type: object
+  schemas.CancelRideRequest:
+    properties:
+      receiverID:
+        description: The receiver id (the hitcher) who received the cancel request
+        type: string
+      rideID:
+        description: The ride id to cancel
+        type: string
+    required:
+    - receiverID
+    - rideID
+    type: object
+  schemas.CancelRideResponse:
+    properties:
+      receiver_id:
+        type: string
+      ride_id:
+        description: Send back id of ride offer ride request to update ui
+        type: string
+      ride_offer_id:
+        type: string
+      ride_request_id:
+        type: string
+    type: object
   schemas.CreateNotificationRequest:
     properties:
       body:
@@ -2051,6 +2075,43 @@ paths:
       security:
       - BearerAuth: []
       summary: Cancel a ride request from the hitcher
+      tags:
+      - ride
+  /ride/cancel-ride:
+    post:
+      consumes:
+      - application/json
+      description: Cancels the ride
+      parameters:
+      - description: Cancel ride request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CancelRideRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully canceled ride by driver
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.CancelRideResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Cancel a ride
       tags:
       - ride
   /ride/end-ride:

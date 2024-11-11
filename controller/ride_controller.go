@@ -1901,7 +1901,338 @@ func (ctrl *RideController) UpdateRideLocation(ctx *gin.Context) {
 	helper.GinResponse(ctx, 200, response)
 }
 
-// CancelRideByDriver cancels the ride by the driver
-func (ctrl *RideController) CancelRideByDriver(ctx *gin.Context) {
+// CancelRideByDriver cancels the ride
+// CancelRideByDriver godoc
+// @Summary Cancel a ride
+// @Description Cancels the ride
+// @Tags ride
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body schemas.CancelRideRequest true "Cancel ride request"
+// @Success 200 {object} helper.Response{data=schemas.CancelRideResponse} "Successfully canceled ride by driver"
+// @Failure 400 {object} helper.Response "Invalid request"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /ride/cancel-ride [post]
+func (ctrl *RideController) CancelRide(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
 
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	var req schemas.CancelRideRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind JSON",
+			"Không thể bind JSON",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+	if err := ctrl.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Cancel the ride by the driver
+	ride, err := ctrl.RideService.CancelRide(req, data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to cancel ride by driver",
+			"Không thể hủy chuyến đi bởi tài xế",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	res := schemas.CancelRideResponse{
+		RideID:        ride.ID,
+		RideOfferID:   ride.RideOfferID,
+		RideRequestID: ride.RideRequestID,
+		ReceiverID:    req.ReceiverID,
+	}
+
+	// // Get ride offer details from ride_offer_id
+	// rideOffer, err := ctrl.RideService.GetRideOfferByID(ride.RideOfferID)
+	// if err != nil {
+	// 	response := helper.ErrorResponseWithMessage(
+	// 		err,
+	// 		"Failed to get ride offer details",
+	// 		"Không thể lấy thông tin chuyến đi",
+	// 	)
+	// 	helper.GinResponse(ctx, 500, response)
+	// 	return
+	// }
+
+	// // Get ride request details from ride_request_id
+	// rideRequest, err := ctrl.RideService.GetRideRequestByID(ride.RideRequestID)
+	// if err != nil {
+	// 	response := helper.ErrorResponseWithMessage(
+	// 		err,
+	// 		"Failed to get ride request details",
+	// 		"Không thể lấy thông tin yêu cầu chuyến đi",
+	// 	)
+	// 	helper.GinResponse(ctx, 500, response)
+	// 	return
+	// }
+
+	// Get the device token of the hitcher to send notification
+	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get receiver details",
+			"Không thể lấy thông tin người nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Prepare the WebSocket message
+	wsMessage := schemas.WebSocketMessage{
+		UserID:  req.ReceiverID.String(),
+		Type:    "cancel-ride-by-driver",
+		Payload: res,
+	}
+
+	// Convert ride to map[string]string
+	resMap, err := helper.ConvertToStringMap(res)
+
+	// Prepare the notification payload
+	notificationPayload := schemas.NotificationPayload{
+		Type: "cancel-ride-by-driver",
+		Data: resMap,
+	}
+
+	// Convert notificationPayload to map[string]string
+	notificationPayloadMap, err := helper.ConvertToStringMap(notificationPayload)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert struct to map",
+			"Không thể chuyển đổi struct sang map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Prepare the notification message
+	notification := schemas.Notification{
+		Title: "Chuyến đi của bạn đã bị hủy",
+		Body:  "Chuyến đi của bạn đã bị hủy, vui lòng thử lại sau",
+		Token: receiver.DeviceToken,
+		Data:  notificationPayloadMap,
+	}
+
+	// Send the WebSocket message using the async client
+	go func() {
+		err := ctrl.asyncClient.EnqueueWebsocketMessage(wsMessage)
+		if err != nil {
+			log.Printf("Failed to enqueue websocket message: %v", err)
+		}
+	}()
+
+	// Send the notification message using the async client
+	go func() {
+		err = ctrl.asyncClient.EnqueueFCMNotification(notification)
+		if err != nil {
+			log.Printf("Failed to enqueue FCM notification: %v", err)
+		}
+	}()
+
+	// Return success response
+	response := helper.SuccessResponse(
+		res,
+		"Successfully canceled ride by driver",
+		"Đã hủy chuyến đi bởi tài xế thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
 }
+
+// // CancelRideByHitcher cancels the ride by the hitcher
+// // CancelRideByHitcher godoc
+// // @Summary Cancel a ride by the hitcher
+// // @Description Cancels the ride by the hitcher
+// // @Tags ride
+// // @Accept json
+// // @Produce json
+// // @Security BearerAuth
+// // @Param request body schemas.CancelRideByHitcherRequest true "Cancel ride by hitcher request"
+// // @Success 200 {object} helper.Response{data=schemas.CancelRideByHitcherResponse} "Successfully canceled ride by hitcher"
+// // @Failure 400 {object} helper.Response "Invalid request"
+// // @Failure 500 {object} helper.Response "Internal server error"
+// // @Router /ride/cancel-ride-by-hitcher [post]
+// func (ctrl *RideController) CancelRideByHitcher(ctx *gin.Context) {
+// 	// Get payload from context
+// 	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+// 	// Convert payload to map
+// 	data, err := helper.ConvertToPayload(payload)
+
+// 	// If error occurs, return error response
+// 	if err != nil {
+// 		response := helper.ErrorResponseWithMessage(
+// 			fmt.Errorf("failed to convert payload"),
+// 			"Failed to convert payload",
+// 			"Không thể chuyển đổi payload",
+// 		)
+// 		helper.GinResponse(ctx, 500, response)
+// 		return
+// 	}
+
+// 	var req schemas.CancelRideByHitcherRequest
+// 	if err := ctx.ShouldBindJSON(&req); err != nil {
+// 		response := helper.ErrorResponseWithMessage(
+// 			err,
+// 			"Failed to bind JSON",
+// 			"Không thể bind JSON",
+// 		)
+// 		helper.GinResponse(ctx, 400, response)
+// 		return
+// 	}
+
+// 	if err := ctrl.validate.Struct(req); err != nil {
+// 		response := helper.ErrorResponseWithMessage(
+// 			err,
+// 			"Failed to validate request",
+// 			"Không thể validate request",
+// 		)
+// 		helper.GinResponse(ctx, 400, response)
+// 		return
+// 	}
+
+// 	// Cancel the ride by the hitcher
+// 	ride, err := ctrl.RideService.CancelRideByHitcher(req, data.UserID)
+// 	if err != nil {
+// 		response := helper.ErrorResponseWithMessage(
+// 			err,
+// 			"Failed to cancel ride by hitcher",
+// 			"Không thể hủy chuyến đi bởi người đi",
+// 		)
+// 		helper.GinResponse(ctx, 500, response)
+// 		return
+// 	}
+
+// 	// // Get ride offer details from ride_offer_id
+// 	// rideOffer, err := ctrl.RideService.GetRideOfferByID(ride.RideOfferID)
+// 	// if err != nil {
+// 	// 	response := helper.ErrorResponseWithMessage(
+// 	// 		err,
+// 	// 		"Failed to get ride offer details",
+// 	// 		"Không thể lấy thông tin chuyến đi",
+// 	// 	)
+// 	// 	helper.GinResponse(ctx, 500, response)
+// 	// 	return
+// 	// }
+
+// 	// // Get ride request details from ride_request_id
+// 	// rideRequest, err := ctrl.RideService.GetRideRequestByID(ride.RideRequestID)
+// 	// if err != nil {
+// 	// 	response := helper.ErrorResponseWithMessage(
+// 	// 		err,
+// 	// 		"Failed to get ride request details",
+// 	// 		"Không thể lấy thông tin yêu cầu chuyến đi",
+// 	// 	)
+// 	// 	helper.GinResponse(ctx, 500, response)
+// 	// 	return
+// 	// }
+
+// 	res := schemas.CancelRideByHitcherResponse{
+// 		RideID:        ride.ID,
+// 		RideOfferID:   ride.RideOfferID,
+// 		RideRequestID: ride.RideRequestID,
+// 		ReceiverID:    req.ReceiverID,
+// 	}
+
+// 	// Get the device token of the driver to send notification
+// 	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
+// 	if err != nil {
+// 		response := helper.ErrorResponseWithMessage(
+// 			err,
+// 			"Failed to get receiver details",
+// 			"Không thể lấy thông tin người nhận",
+// 		)
+// 		helper.GinResponse(ctx, 500, response)
+// 		return
+// 	}
+
+// 	// Prepare the WebSocket message
+// 	wsMessage := schemas.WebSocketMessage{
+// 		UserID:  req.ReceiverID.String(),
+// 		Type:    "cancel-ride-by-hitcher",
+// 		Payload: res,
+// 	}
+
+// 	// Convert ride to map[string]string
+// 	resMap, err := helper.ConvertToStringMap(res)
+
+// 	// Prepare the notification payload
+// 	notificationPayload := schemas.NotificationPayload{
+// 		Type: "cancel-ride-by-hitcher",
+// 		Data: resMap,
+// 	}
+
+// 	// Convert notificationPayload to map[string]string
+// 	notificationPayloadMap, err := helper.ConvertToStringMap(notificationPayload)
+// 	if err != nil {
+// 		response := helper.ErrorResponseWithMessage(
+// 			err,
+// 			"Failed to convert struct to map",
+// 			"Không thể chuyển đổi struct sang map",
+// 		)
+// 		helper.GinResponse(ctx, 500, response)
+// 		return
+// 	}
+
+// 	// Prepare the notification message
+// 	notification := schemas.Notification{
+// 		Title: "Chuyến đi của bạn đã bị hủy",
+// 		Body:  "Chuyến đi của bạn đã bị hủy, vui lòng thử lại sau",
+// 		Token: receiver.DeviceToken,
+// 		Data:  notificationPayloadMap,
+// 	}
+
+// 	// Send the WebSocket message using the async client
+// 	go func() {
+// 		err := ctrl.asyncClient.EnqueueWebsocketMessage(wsMessage)
+// 		if err != nil {
+// 			log.Printf("Failed to enqueue websocket message: %v", err)
+// 		}
+// 	}()
+
+// 	// Send the notification message using the async client
+// 	go func() {
+// 		err = ctrl.asyncClient.EnqueueFCMNotification(notification)
+// 		if err != nil {
+// 			log.Printf("Failed to enqueue FCM notification: %v", err)
+// 		}
+// 	}()
+
+// 	// Return success response
+// 	response := helper.SuccessResponse(
+// 		res,
+// 		"Successfully canceled ride by hitcher",
+// 		"Đã hủy chuyến đi bởi người đi thành công",
+// 	)
+// 	helper.GinResponse(ctx, 200, response)
+
+// }

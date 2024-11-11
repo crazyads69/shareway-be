@@ -1440,6 +1440,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/ride/cancel-ride": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels the ride",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Cancel a ride",
+                "parameters": [
+                    {
+                        "description": "Cancel ride request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.CancelRideRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully canceled ride by driver",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.CancelRideResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/ride/end-ride": {
             "post": {
                 "security": [
@@ -2306,6 +2369,41 @@ const docTemplate = `{
                 },
                 "rideRequestID": {
                     "description": "The driver who want to cancel the ride request",
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.CancelRideRequest": {
+            "type": "object",
+            "required": [
+                "receiverID",
+                "rideID"
+            ],
+            "properties": {
+                "receiverID": {
+                    "description": "The receiver id (the hitcher) who received the cancel request",
+                    "type": "string"
+                },
+                "rideID": {
+                    "description": "The ride id to cancel",
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.CancelRideResponse": {
+            "type": "object",
+            "properties": {
+                "receiver_id": {
+                    "type": "string"
+                },
+                "ride_id": {
+                    "description": "Send back id of ride offer ride request to update ui",
+                    "type": "string"
+                },
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "ride_request_id": {
                     "type": "string"
                 }
             }

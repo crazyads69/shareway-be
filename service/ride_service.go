@@ -25,6 +25,7 @@ type IRideService interface {
 	StartRide(req schemas.StartRideRequest, userID uuid.UUID) (migration.Ride, error)
 	EndRide(req schemas.EndRideRequest, userID uuid.UUID) (migration.Ride, error)
 	UpdateRideLocation(req schemas.UpdateRideLocationRequest, userID uuid.UUID) (migration.Ride, error)
+	CancelRide(req schemas.CancelRideRequest, userID uuid.UUID) (migration.Ride, error)
 }
 
 func NewRideService(repo repository.IRideRepository, hub *ws.Hub, cfg util.Config) IRideService {
@@ -73,6 +74,11 @@ func (s *RideService) EndRide(req schemas.EndRideRequest, userID uuid.UUID) (mig
 // UpdateRideLocation updates the location of a ride
 func (s *RideService) UpdateRideLocation(req schemas.UpdateRideLocationRequest, userID uuid.UUID) (migration.Ride, error) {
 	return s.repo.UpdateRideLocation(req, userID)
+}
+
+// CancelRideByDriver cancels a ride by the driver
+func (s *RideService) CancelRide(req schemas.CancelRideRequest, userID uuid.UUID) (migration.Ride, error) {
+	return s.repo.CancelRide(req, userID)
 }
 
 // Make sure the RideService implements the IRideService interface

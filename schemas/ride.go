@@ -305,3 +305,18 @@ type UpdateRideLocationResponse struct {
 	RiderCurrentLatitude   float64           `json:"rider_current_latitude"`
 	RiderCurrentLongitude  float64           `json:"rider_current_longitude"`
 }
+
+type CancelRideRequest struct {
+	// The ride id to cancel
+	RideID uuid.UUID `json:"rideID" binding:"required,uuid" validate:"required,uuid"`
+	// The receiver id (the hitcher) who received the cancel request
+	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
+}
+
+type CancelRideResponse struct {
+	// Send back id of ride offer ride request to update ui
+	RideID        uuid.UUID `json:"ride_id"`
+	ReceiverID    uuid.UUID `json:"receiver_id"`
+	RideOfferID   uuid.UUID `json:"ride_offer_id"`
+	RideRequestID uuid.UUID `json:"ride_request_id"`
+}
