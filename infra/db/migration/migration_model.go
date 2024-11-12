@@ -6,15 +6,16 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 // User represents a user in the system
 type User struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	CreatedAt time.Time `gorm:"autoCreateTime"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime"`
-	// DeletedAt         gorm.DeletedAt `gorm:"index"`
-	PhoneNumber       string `gorm:"uniqueIndex;not null"`
+	ID                uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt         time.Time      `gorm:"autoCreateTime"`
+	UpdatedAt         time.Time      `gorm:"autoUpdateTime"`
+	DeletedAt         gorm.DeletedAt `gorm:"index"`
+	PhoneNumber       string         `gorm:"uniqueIndex;not null"`
 	Email             string
 	CCCDNumber        string
 	FullName          string
@@ -36,20 +37,20 @@ type User struct {
 
 // Admin represents an administrator in the system
 type Admin struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	CreatedAt time.Time `gorm:"autoCreateTime"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime"`
-	//DeletedAt gorm.DeletedAt `gorm:"index"`
-	Username string `gorm:"uniqueIndex;not null"`
-	Password string `gorm:"not null"`
+	ID        uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt time.Time      `gorm:"autoCreateTime"`
+	UpdatedAt time.Time      `gorm:"autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+	Username  string         `gorm:"uniqueIndex;not null"`
+	Password  string         `gorm:"not null"`
 }
 
 // OTP represents a one-time password for user verification
 type OTP struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	CreatedAt time.Time `gorm:"autoCreateTime"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime"`
-	// DeletedAt   gorm.DeletedAt `gorm:"index"`
+	ID          uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt   time.Time      `gorm:"autoCreateTime"`
+	UpdatedAt   time.Time      `gorm:"autoUpdateTime"`
+	DeletedAt   gorm.DeletedAt `gorm:"index"`
 	PhoneNumber string
 	Code        string
 	Retry       int `gorm:"default:0"` // Max 3 retries
@@ -60,16 +61,16 @@ type OTP struct {
 
 // PasetoToken represents a PASETO token for user authentication
 type PasetoToken struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	CreatedAt time.Time `gorm:"autoCreateTime"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime"`
-	// DeletedAt    gorm.DeletedAt `gorm:"index"`
-	UserID       uuid.UUID `gorm:"type:uuid"`
-	User         User      `gorm:"foreignKey:UserID"`
-	AccessToken  string    `gorm:"type:text"`
-	RefreshToken string    `gorm:"type:text"`
-	Revoke       bool      `gorm:"default:false"`
-	RefreshTurns int       `gorm:"default:0"` // Max 3 refreshes per access tokee
+	ID           uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt    time.Time      `gorm:"autoCreateTime"`
+	UpdatedAt    time.Time      `gorm:"autoUpdateTime"`
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
+	UserID       uuid.UUID      `gorm:"type:uuid"`
+	User         User           `gorm:"foreignKey:UserID"`
+	AccessToken  string         `gorm:"type:text"`
+	RefreshToken string         `gorm:"type:text"`
+	Revoke       bool           `gorm:"default:false"`
+	RefreshTurns int            `gorm:"default:0"` // Max 3 refreshes per access tokee
 }
 
 // Transaction represents a payment transaction
@@ -221,8 +222,23 @@ type Chat struct {
 	ReceiverID  uuid.UUID `gorm:"type:uuid"`
 	Receiver    User      `gorm:"foreignKey:ReceiverID"`
 	Message     string
-	MessageType string `gorm:"default:'text'"` // text, image, call
-	IsRead      bool   `gorm:"default:false"`
+	MessageType string    `gorm:"default:'text'"` // text, image, missed_call, voice_call, video_call
+	RoomID      uuid.UUID `gorm:"type:uuid"`
+	Room        Room      `gorm:"foreignKey:RoomID"`
+}
+
+// Room represents a chat room between 2 users (1-1 chat)
+type Room struct {
+	ID              uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt       time.Time `gorm:"autoCreateTime"`
+	UpdatedAt       time.Time `gorm:"autoUpdateTime"`
+	User1ID         uuid.UUID `gorm:"type:uuid;index"`
+	User1           User      `gorm:"foreignKey:User1ID"`
+	User2ID         uuid.UUID `gorm:"type:uuid;index"`
+	User2           User      `gorm:"foreignKey:User2ID"`
+	LastMessageAt   time.Time `gorm:"index"`     // Add this for sorting/querying recent chats
+	LastMessageText string    `gorm:"type:text"` // Cache last message for preview
+	Chats           []Chat    `gorm:"foreignKey:RoomID"`
 }
 
 // FavoriteLocation represents a favorite location saved by a user

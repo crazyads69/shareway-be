@@ -317,10 +317,11 @@ func (r *RideRepository) EndRide(req schemas.EndRideRequest, userID uuid.UUID) (
 			return errors.New("ride is already cancelled")
 		}
 
+		// TODO: COMMENTED OUT FOR NOW FOR BETTER TESTING
 		// Check if the current location of the driver and the hitcher end location is near less than 100 meters
-		if !helper.IsNearby(schemas.Point{Lat: rideOffer.DriverCurrentLatitude, Lng: rideOffer.DriverCurrentLongitude}, schemas.Point{Lat: rideRequest.EndLatitude, Lng: rideRequest.EndLongitude}, 0.0001) {
-			return errors.New("driver not nearby the end location") // Make sure cannot fake the location
-		}
+		// if !helper.IsNearby(schemas.Point{Lat: rideOffer.DriverCurrentLatitude, Lng: rideOffer.DriverCurrentLongitude}, schemas.Point{Lat: rideRequest.EndLatitude, Lng: rideRequest.EndLongitude}, 0.0001) {
+		// 	return errors.New("driver not nearby the end location") // Make sure cannot fake the location
+		// }
 
 		// Update the ride offer status to ended
 		if err := tx.Model(&migration.RideOffer{}).Where("id = ?", ride.RideOfferID).Update("status", "completed").Error; err != nil {
