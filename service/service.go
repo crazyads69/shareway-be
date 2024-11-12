@@ -20,6 +20,7 @@ type ServiceContainer struct {
 	VehicleService      IVehicleService
 	RideService         IRideService
 	NotificationService INotificationService
+	ChatService         IChatService
 }
 
 type ServiceFactory struct {
@@ -63,6 +64,7 @@ func (f *ServiceFactory) CreateServices() *ServiceContainer {
 		VehicleService:      f.createVehicleService(),
 		RideService:         f.createRideService(),
 		NotificationService: f.createNotificationService(),
+		ChatService:         f.createChatService(),
 	}
 }
 
@@ -88,4 +90,9 @@ func (f *ServiceFactory) createRideService() IRideService {
 
 func (f *ServiceFactory) createNotificationService() INotificationService {
 	return NewNotificationService(f.repos.NotificationRepository, f.cfg, f.asynq)
+}
+
+func (f *ServiceFactory) createChatService() IChatService {
+	manager := NewManager()
+	return NewChatService(f.repos.ChatRepository, f.cfg, manager)
 }

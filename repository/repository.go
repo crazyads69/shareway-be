@@ -15,6 +15,7 @@ type RepositoryContainer struct {
 	VehicleRepository      IVehicleRepository
 	RideRepository         IRideRepository
 	NotificationRepository INotificationRepository
+	ChatRepository         IChatRepository
 	// Add other repositories here as needed
 }
 
