@@ -2223,6 +2223,9 @@ const docTemplate = `{
                 "transaction": {
                     "$ref": "#/definitions/schemas.TransactionDetail"
                 },
+                "user": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
                 }
@@ -2323,6 +2326,9 @@ const docTemplate = `{
                 },
                 "transaction": {
                     "$ref": "#/definitions/schemas.TransactionDetail"
+                },
+                "user": {
+                    "$ref": "#/definitions/schemas.UserInfo"
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"

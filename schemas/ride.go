@@ -122,6 +122,7 @@ type AcceptGiveRideRequestResponse struct {
 	EndLatitude            float64           `json:"end_latitude"`
 	EndLongitude           float64           `json:"end_longitude"`
 	Vehicle                VehicleDetail     `json:"vehicle"`
+	UserInfo               UserInfo          `json:"user"`
 	ReceiverID             uuid.UUID         `json:"receiver_id"`
 }
 
@@ -158,6 +159,7 @@ type AcceptHitchRideRequestResponse struct {
 	EndLatitude            float64           `json:"end_latitude"`
 	EndLongitude           float64           `json:"end_longitude"`
 	Vehicle                VehicleDetail     `json:"vehicle"`
+	UserInfo               UserInfo          `json:"user"`
 	DriverCurrentLatitude  float64           `json:"driver_current_latitude"`
 	DriverCurrentLongitude float64           `json:"driver_current_longitude"`
 	RiderCurrentLatitude   float64           `json:"rider_current_latitude"`

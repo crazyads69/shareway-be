@@ -562,6 +562,18 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 		return
 	}
 
+	// Get receiver device token to send notification
+	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get receiver details",
+			"Không thể lấy thông tin người nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	res := schemas.AcceptGiveRideRequestResponse{
 		ID:          ride.ID,
 		RideOfferID: ride.RideOfferID,
@@ -590,19 +602,12 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 		EndLongitude:           ride.EndLongitude,
 		Vehicle:                vehicle,
 		ReceiverID:             req.ReceiverID,
-		RideRequestID:          req.RideRequestID,
-	}
-
-	// Get receiver device token to send notification
-	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
-	if err != nil {
-		response := helper.ErrorResponseWithMessage(
-			err,
-			"Failed to get receiver details",
-			"Không thể lấy thông tin người nhận",
-		)
-		helper.GinResponse(ctx, 500, response)
-		return
+		UserInfo: schemas.UserInfo{
+			ID:          receiver.ID,
+			PhoneNumber: receiver.PhoneNumber,
+			FullName:    receiver.FullName,
+		},
+		RideRequestID: req.RideRequestID,
 	}
 
 	// Send the accepted ride offer to the driver (match the ride successfully)
@@ -786,6 +791,18 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 		return
 	}
 
+	// Get receiver device token to send notification
+	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get receiver details",
+			"Không thể lấy thông tin người nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	res := schemas.AcceptHitchRideRequestResponse{
 		ID:            ride.ID,
 		RideRequestID: ride.RideRequestID,
@@ -814,19 +831,12 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 		EndLatitude:            ride.EndLatitude,
 		EndLongitude:           ride.EndLongitude,
 		ReceiverID:             req.ReceiverID,
-		Vehicle:                vehicle,
-	}
-
-	// Get receiver device token to send notification
-	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
-	if err != nil {
-		response := helper.ErrorResponseWithMessage(
-			err,
-			"Failed to get receiver details",
-			"Không thể lấy thông tin người nhận",
-		)
-		helper.GinResponse(ctx, 500, response)
-		return
+		UserInfo: schemas.UserInfo{
+			ID:          receiver.ID,
+			PhoneNumber: receiver.PhoneNumber,
+			FullName:    receiver.FullName,
+		},
+		Vehicle: vehicle,
 	}
 
 	// Send the accepted ride request to the hitcher (match the ride successfully)

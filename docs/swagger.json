@@ -2212,6 +2212,9 @@
                 "transaction": {
                     "$ref": "#/definitions/schemas.TransactionDetail"
                 },
+                "user": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
                 }
@@ -2312,6 +2315,9 @@
                 },
                 "transaction": {
                     "$ref": "#/definitions/schemas.TransactionDetail"
+                },
+                "user": {
+                    "$ref": "#/definitions/schemas.UserInfo"
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
