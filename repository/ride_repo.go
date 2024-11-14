@@ -88,23 +88,28 @@ func (r *RideRepository) AcceptRideRequest(rideOfferID, rideRequestID, vehicleID
 		if err != nil {
 			return err
 		}
-		// Check if the ride offer is already matched
-		if rideOffer.Status == "matched" {
-			return errors.New("ride offer is already matched")
-		}
+
+		// TODO: COMMENTED OUT FOR NOW FOR BETTER TESTING
+		// // Check if the ride offer is already matched
+		// if rideOffer.Status == "matched" {
+		// 	return errors.New("ride offer is already matched")
+		// }
 
 		// Get the ride request by ID with only necessary fields
 		var rideRequest migration.RideRequest
 		err = tx.Select("start_time, end_time, status, start_address, end_address, start_latitude, start_longitude, end_latitude, end_longitude, encoded_polyline, distance, duration").
 			Where("id = ?", rideRequestID).
 			First(&rideRequest).Error
+
 		if err != nil {
 			return err
 		}
-		// Check if the ride request is already matched
-		if rideRequest.Status == "matched" {
-			return errors.New("ride request is already matched")
-		}
+
+		// TODO: COMMENTED OUT FOR NOW FOR BETTER TESTING
+		// // Check if the ride request is already matched
+		// if rideRequest.Status == "matched" {
+		// 	return errors.New("ride request is already matched")
+		// }
 
 		// Create a new ride
 		ride = migration.Ride{
@@ -214,20 +219,21 @@ func (r *RideRepository) StartRide(req schemas.StartRideRequest, userID uuid.UUI
 			return err
 		}
 
-		// Check if the ride is already started
-		if ride.Status == "ongoing" {
-			return errors.New("ride is already started")
-		}
+		// TODO: COMMENTED OUT FOR NOW FOR BETTER TESTING
+		// // Check if the ride is already started
+		// if ride.Status == "ongoing" {
+		// 	return errors.New("ride is already started")
+		// }
 
-		// Check if the ride is already ended
-		if ride.Status == "completed" {
-			return errors.New("ride is already ended")
-		}
+		// // Check if the ride is already ended
+		// if ride.Status == "completed" {
+		// 	return errors.New("ride is already ended")
+		// }
 
-		// Check if the ride is already cancelled
-		if ride.Status == "cancelled" {
-			return errors.New("ride is already cancelled")
-		}
+		// // Check if the ride is already cancelled
+		// if ride.Status == "cancelled" {
+		// 	return errors.New("ride is already cancelled")
+		// }
 
 		// Check if the current location of the driver and hitcher is near less than 100 meters
 		if !helper.IsNearby(schemas.Point{Lat: rideOffer.DriverCurrentLatitude, Lng: rideOffer.DriverCurrentLongitude}, schemas.Point{Lat: rideRequest.RiderCurrentLatitude, Lng: rideRequest.RiderCurrentLongitude}, 0.0001) {
@@ -307,15 +313,16 @@ func (r *RideRepository) EndRide(req schemas.EndRideRequest, userID uuid.UUID) (
 			return err
 		}
 
-		// Check if the ride is already ended
-		if ride.Status == "completed" {
-			return errors.New("ride is already ended")
-		}
+		// TODO: COMMENTED OUT FOR NOW FOR BETTER TESTING
+		// // Check if the ride is already ended
+		// if ride.Status == "completed" {
+		// 	return errors.New("ride is already ended")
+		// }
 
-		// Check if the ride is already cancelled
-		if ride.Status == "cancelled" {
-			return errors.New("ride is already cancelled")
-		}
+		// // Check if the ride is already cancelled
+		// if ride.Status == "cancelled" {
+		// 	return errors.New("ride is already cancelled")
+		// }
 
 		// TODO: COMMENTED OUT FOR NOW FOR BETTER TESTING
 		// Check if the current location of the driver and the hitcher end location is near less than 100 meters
@@ -383,15 +390,16 @@ func (r *RideRepository) UpdateRideLocation(req schemas.UpdateRideLocationReques
 			return err
 		}
 
-		// Check if the ride is already ended
-		if ride.Status == "completed" {
-			return errors.New("ride is already ended")
-		}
+		// TODO: COMMENTED OUT FOR NOW FOR BETTER TESTING
+		// // Check if the ride is already ended
+		// if ride.Status == "completed" {
+		// 	return errors.New("ride is already ended")
+		// }
 
-		// Check if the ride is already cancelled
-		if ride.Status == "cancelled" {
-			return errors.New("ride is already cancelled")
-		}
+		// // Check if the ride is already cancelled
+		// if ride.Status == "cancelled" {
+		// 	return errors.New("ride is already cancelled")
+		// }
 
 		// Update the driver's current location
 		if err := tx.Model(&migration.RideOffer{}).Where("id = ?", ride.RideOfferID).Update("driver_current_latitude", req.CurrentLocation.Lat).Error; err != nil {
@@ -449,15 +457,16 @@ func (r *RideRepository) CancelRide(req schemas.CancelRideRequest, userID uuid.U
 			return err
 		}
 
-		// Check if the ride is already ended
-		if ride.Status == "completed" {
-			return errors.New("ride is already ended")
-		}
+		// TODO: COMMENTED OUT FOR NOW FOR BETTER TESTING
+		// // Check if the ride is already ended
+		// if ride.Status == "completed" {
+		// 	return errors.New("ride is already ended")
+		// }
 
-		// Check if the ride is already cancelled
-		if ride.Status == "cancelled" {
-			return errors.New("ride is already cancelled")
-		}
+		// // Check if the ride is already cancelled
+		// if ride.Status == "cancelled" {
+		// 	return errors.New("ride is already cancelled")
+		// }
 
 		// Update the ride offer status to cancelled
 		if err := tx.Model(&migration.RideOffer{}).Where("id = ?", ride.RideOfferID).Update("status", "cancelled").Error; err != nil {
