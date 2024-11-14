@@ -94,13 +94,17 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 
 		fare := (vehicle.FuelConsumed / 100) * fuelPrice * float64(totalDistance)
 
+		// Decode polyline to get start and end locations
+		locations := helper.DecodePolyline(string(firstRoute.Overview_polyline.Points))
+		startLocation := locations[0]
+		endLocation := locations[len(locations)-1]
 		// Create ride offer
 		rideOffer := migration.RideOffer{
 			UserID:                 userID,
-			StartLatitude:          firstLeg.Start_location.Lat,
-			StartLongitude:         firstLeg.Start_location.Lng,
-			EndLatitude:            lastLeg.End_location.Lat,
-			EndLongitude:           lastLeg.End_location.Lng,
+			StartLatitude:          startLocation.Lat,
+			StartLongitude:         startLocation.Lng,
+			EndLatitude:            endLocation.Lat,
+			EndLongitude:           endLocation.Lng,
 			EncodedPolyline:        polyline.Polyline(firstRoute.Overview_polyline.Points), // Use gorm.Expr to prevent escaping
 			DriverCurrentLatitude:  currentLocation.Lat,
 			DriverCurrentLongitude: currentLocation.Lng,
@@ -174,13 +178,19 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 			return errors.New("ride offer already exists for the user in that time frame")
 		}
 
+		// Decode polyline to get start and end locations
+		// The poly is encoded from start to end, so we can get the start and end locations directly
+		locations := helper.DecodePolyline(string(firstRoute.Overview_polyline.Points))
+		startLocation := locations[0]
+		endLocation := locations[len(locations)-1]
+
 		// Create ride request
 		rideRequest := migration.RideRequest{
 			UserID:                userID,
-			StartLatitude:         firstLeg.Start_location.Lat,
-			StartLongitude:        firstLeg.Start_location.Lng,
-			EndLatitude:           lastLeg.End_location.Lat,
-			EndLongitude:          lastLeg.End_location.Lng,
+			StartLatitude:         startLocation.Lat,
+			StartLongitude:        startLocation.Lng,
+			EndLatitude:           endLocation.Lat,
+			EndLongitude:          endLocation.Lng,
 			RiderCurrentLatitude:  currentLocation.Lat,
 			RiderCurrentLongitude: currentLocation.Lng,
 			StartAddress:          firstLeg.Start_address,
