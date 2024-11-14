@@ -30,6 +30,7 @@ type MapsRepository struct {
 func NewMapsRepository(db *gorm.DB) IMapsRepository {
 	return &MapsRepository{db: db}
 }
+
 func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point, startTime time.Time, vehicleID uuid.UUID) (uuid.UUID, error) {
 	if len(route.Routes) == 0 || len(route.Routes[0].Legs) == 0 {
 		return uuid.Nil, errors.New("invalid route data")
@@ -94,17 +95,13 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 
 		fare := (vehicle.FuelConsumed / 100) * fuelPrice * float64(totalDistance)
 
-		// Decode polyline to get start and end locations
-		locations := helper.DecodePolyline(string(firstRoute.Overview_polyline.Points))
-		startLocation := locations[0]
-		endLocation := locations[len(locations)-1]
 		// Create ride offer
 		rideOffer := migration.RideOffer{
 			UserID:                 userID,
-			StartLatitude:          startLocation.Lat,
-			StartLongitude:         startLocation.Lng,
-			EndLatitude:            endLocation.Lat,
-			EndLongitude:           endLocation.Lng,
+			StartLatitude:          firstLeg.Start_location.Lat,
+			StartLongitude:         firstLeg.Start_location.Lng,
+			EndLatitude:            lastLeg.End_location.Lat,
+			EndLongitude:           lastLeg.End_location.Lng,
 			EncodedPolyline:        polyline.Polyline(firstRoute.Overview_polyline.Points), // Use gorm.Expr to prevent escaping
 			DriverCurrentLatitude:  currentLocation.Lat,
 			DriverCurrentLongitude: currentLocation.Lng,
@@ -133,6 +130,7 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 
 	return rideOfferID, nil
 }
+
 func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point, startTime time.Time) (uuid.UUID, error) {
 	if len(route.Routes) == 0 || len(route.Routes[0].Legs) == 0 {
 		return uuid.Nil, errors.New("invalid route data")
@@ -178,19 +176,13 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 			return errors.New("ride offer already exists for the user in that time frame")
 		}
 
-		// Decode polyline to get start and end locations
-		// The poly is encoded from start to end, so we can get the start and end locations directly
-		locations := helper.DecodePolyline(string(firstRoute.Overview_polyline.Points))
-		startLocation := locations[0]
-		endLocation := locations[len(locations)-1]
-
 		// Create ride request
 		rideRequest := migration.RideRequest{
 			UserID:                userID,
-			StartLatitude:         startLocation.Lat,
-			StartLongitude:        startLocation.Lng,
-			EndLatitude:           endLocation.Lat,
-			EndLongitude:          endLocation.Lng,
+			StartLatitude:         firstLeg.Start_location.Lat,
+			StartLongitude:        firstLeg.Start_location.Lng,
+			EndLatitude:           lastLeg.End_location.Lat,
+			EndLongitude:          lastLeg.End_location.Lng,
 			RiderCurrentLatitude:  currentLocation.Lat,
 			RiderCurrentLongitude: currentLocation.Lng,
 			StartAddress:          firstLeg.Start_address,
