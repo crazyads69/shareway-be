@@ -1,8 +1,8 @@
 package service
 
 import (
+	"shareway/infra/bucket"
 	"shareway/infra/fpt"
-	"shareway/infra/rabbitmq"
 	"shareway/infra/task"
 	"shareway/infra/ws"
 	"shareway/repository"
@@ -20,6 +20,7 @@ type ServiceContainer struct {
 	VehicleService      IVehicleService
 	RideService         IRideService
 	NotificationService INotificationService
+	ChatService         IChatService
 }
 
 type ServiceFactory struct {
@@ -30,11 +31,12 @@ type ServiceFactory struct {
 	maker     *token.PasetoMaker
 	redis     *redis.Client
 	hub       *ws.Hub
-	rabbitmq  *rabbitmq.RabbitMQ
-	asynq     *task.AsyncClient
+	// rabbitmq   *rabbitmq.RabbitMQ
+	asynq      *task.AsyncClient
+	cloudinary *bucket.CloudinaryService
 }
 
-func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, redisClient *redis.Client, hub *ws.Hub, asynq *task.AsyncClient) *ServiceFactory {
+func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, redisClient *redis.Client, hub *ws.Hub, asynq *task.AsyncClient, cloudinary *bucket.CloudinaryService) *ServiceFactory {
 	repoFactory := repository.NewRepositoryFactory(db, redisClient, cfg)
 	repos := repoFactory.CreateRepositories()
 
@@ -44,14 +46,15 @@ func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, r
 	encryptor := util.NewEncryptor(cfg)
 
 	return &ServiceFactory{
-		repos:     repos,
-		cfg:       cfg,
-		fptReader: fptReader,
-		encryptor: encryptor,
-		maker:     token,
-		redis:     redisClient,
-		hub:       hub,
-		asynq:     asynq,
+		repos:      repos,
+		cfg:        cfg,
+		fptReader:  fptReader,
+		encryptor:  encryptor,
+		maker:      token,
+		redis:      redisClient,
+		hub:        hub,
+		cloudinary: cloudinary,
+		asynq:      asynq,
 	}
 }
 
@@ -63,6 +66,7 @@ func (f *ServiceFactory) CreateServices() *ServiceContainer {
 		VehicleService:      f.createVehicleService(),
 		RideService:         f.createRideService(),
 		NotificationService: f.createNotificationService(),
+		ChatService:         f.createChatService(),
 	}
 }
 
@@ -88,4 +92,8 @@ func (f *ServiceFactory) createRideService() IRideService {
 
 func (f *ServiceFactory) createNotificationService() INotificationService {
 	return NewNotificationService(f.repos.NotificationRepository, f.cfg, f.asynq)
+}
+
+func (f *ServiceFactory) createChatService() IChatService {
+	return NewChatService(f.repos.ChatRepository, f.hub, f.cfg, f.cloudinary)
 }

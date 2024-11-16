@@ -56,6 +56,9 @@ type Config struct {
 	NotificationTimeout            int    `mapstructure:"NOTIFICATION_TIMEOUT"`
 	AmqpWebSocketQueue             string `mapstructure:"AMQP_WEBSOCKET_QUEUE"`
 	MaxWebSocketRetries            int    `mapstructure:"MAX_WEBSOCKET_RETRIES"`
+	CloudinaryCloudName            string `mapstructure:"CLOUDINARY_CLOUD_NAME"`
+	CloudinaryAPIKey               string `mapstructure:"CLOUDINARY_API_KEY"`
+	CloudinaryAPISecret            string `mapstructure:"CLOUDINARY_API_SECRET"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

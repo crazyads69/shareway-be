@@ -1,3 +1,4 @@
+// shareway/infra/ws/websocket_handler.go
 package ws
 
 import (

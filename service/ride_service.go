@@ -17,6 +17,8 @@ type RideService struct {
 }
 
 type IRideService interface {
+	CreateNewChatRoom(userID1, userID2 uuid.UUID) error
+	GetChatRoomByUserIDs(userID1, userID2 uuid.UUID) (migration.Room, error)
 	GetRideOfferByID(rideOfferID uuid.UUID) (migration.RideOffer, error)
 	GetRideRequestByID(rideRequestID uuid.UUID) (migration.RideRequest, error)
 	GetTransactionByRideID(rideID uuid.UUID) (migration.Transaction, error)
@@ -34,6 +36,11 @@ func NewRideService(repo repository.IRideRepository, hub *ws.Hub, cfg util.Confi
 		hub:  hub,
 		cfg:  cfg,
 	}
+}
+
+// CreateNewChatRoom creates a new chat room between two users
+func (s *RideService) CreateNewChatRoom(userID1, userID2 uuid.UUID) error {
+	return s.repo.CreateNewChatRoom(userID1, userID2)
 }
 
 // GetRideOfferByID fetches a ride offer by its ID
@@ -79,6 +86,10 @@ func (s *RideService) UpdateRideLocation(req schemas.UpdateRideLocationRequest, 
 // CancelRideByDriver cancels a ride by the driver
 func (s *RideService) CancelRide(req schemas.CancelRideRequest, userID uuid.UUID) (migration.Ride, error) {
 	return s.repo.CancelRide(req, userID)
+}
+
+func (s *RideService) GetChatRoomByUserIDs(userID1, userID2 uuid.UUID) (migration.Room, error) {
+	return s.repo.GetChatRoomByUserIDs(userID1, userID2)
 }
 
 // Make sure the RideService implements the IRideService interface

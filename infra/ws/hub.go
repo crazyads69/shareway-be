@@ -1,3 +1,4 @@
+// shareway/infra/ws/hub.go
 package ws
 
 import (

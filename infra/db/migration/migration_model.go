@@ -238,6 +238,7 @@ type Room struct {
 	User2           User      `gorm:"foreignKey:User2ID"`
 	LastMessageAt   time.Time `gorm:"index"`     // Add this for sorting/querying recent chats
 	LastMessageText string    `gorm:"type:text"` // Cache last message for preview
+	LastMessageID   uuid.UUID `gorm:"type:uuid"` // Cache last message ID for preview
 	Chats           []Chat    `gorm:"foreignKey:RoomID"`
 }
 

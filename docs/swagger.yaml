@@ -217,6 +217,19 @@ definitions:
       ride_request_id:
         type: string
     type: object
+  schemas.ChatRoomResponse:
+    properties:
+      last_message:
+        type: string
+      last_message_at:
+        type: string
+      last_message_id:
+        type: string
+      receiver_info:
+        $ref: '#/definitions/schemas.UserInfo'
+      room_id:
+        type: string
+    type: object
   schemas.CreateNotificationRequest:
     properties:
       body:
@@ -352,6 +365,34 @@ definitions:
     required:
     - current_location
     - point
+    type: object
+  schemas.GetAllChatRoomsRequest:
+    properties:
+      userID:
+        type: string
+    required:
+    - userID
+    type: object
+  schemas.GetAllChatRoomsResponse:
+    properties:
+      chatRooms:
+        items:
+          $ref: '#/definitions/schemas.ChatRoomResponse'
+        type: array
+    type: object
+  schemas.GetChatMessagesRequest:
+    properties:
+      chatRoomID:
+        type: string
+    required:
+    - chatRoomID
+    type: object
+  schemas.GetChatMessagesResponse:
+    properties:
+      messages:
+        items:
+          $ref: '#/definitions/schemas.MessageResponse'
+        type: array
     type: object
   schemas.GetUserProfileResponse:
     properties:
@@ -652,6 +693,22 @@ definitions:
       offset:
         type: integer
     type: object
+  schemas.MessageResponse:
+    properties:
+      created_at:
+        type: string
+      message:
+        type: string
+      message_id:
+        type: string
+      message_type:
+        description: text or image or missed_call, video_call, voice_call
+        type: string
+      receiver_id:
+        type: string
+      sender_id:
+        type: string
+    type: object
   schemas.PlusCode:
     properties:
       compound_code:
@@ -893,6 +950,42 @@ definitions:
     - receiverID
     - rideOfferID
     - rideRequestID
+    type: object
+  schemas.SendImageResponse:
+    properties:
+      createdAt:
+        type: string
+      image_url:
+        type: string
+      messageID:
+        type: string
+      receiverID:
+        type: string
+    type: object
+  schemas.SendMessageRequest:
+    properties:
+      chatRoomID:
+        type: string
+      message:
+        description: Default type is "text"
+        type: string
+      receiverID:
+        type: string
+    required:
+    - chatRoomID
+    - message
+    - receiverID
+    type: object
+  schemas.SendMessageResponse:
+    properties:
+      createdAt:
+        type: string
+      message:
+        type: string
+      messageID:
+        type: string
+      receiverID:
+        type: string
     type: object
   schemas.StartRideRequest:
     properties:
@@ -1621,6 +1714,163 @@ paths:
       summary: Verify registration OTP
       tags:
       - auth
+  /chat/get-chat-messages:
+    post:
+      consumes:
+      - application/json
+      description: Get all messages of a chat room
+      parameters:
+      - description: Get chat messages request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.GetChatMessagesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Chat messages fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GetChatMessagesResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all messages of a chat room
+      tags:
+      - chat
+  /chat/get-chat-rooms:
+    post:
+      consumes:
+      - application/json
+      description: Get all chat rooms of a user
+      parameters:
+      - description: Get all chat rooms request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.GetAllChatRoomsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Chat rooms fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GetAllChatRoomsResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all chat rooms of a user
+      tags:
+      - chat
+  /chat/send-image:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Send an image to the chat room
+      parameters:
+      - description: Chat room ID
+        in: formData
+        name: chatRoomID
+        required: true
+        type: string
+      - description: Image file
+        in: formData
+        name: image
+        required: true
+        type: file
+      - description: Receiver ID
+        in: formData
+        name: receiverID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Image sent successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.SendImageResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Send an image to the chat room
+      tags:
+      - chat
+  /chat/send-message:
+    post:
+      consumes:
+      - application/json
+      description: Send a message to the chat room
+      parameters:
+      - description: Send message request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.SendMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Message sent successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.SendMessageResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Send a message to the chat room
+      tags:
+      - chat
   /map/autocomplete:
     get:
       consumes:

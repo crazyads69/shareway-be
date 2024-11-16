@@ -12,6 +12,9 @@ import (
 )
 
 type IRideRepository interface {
+	CreateNewChatRoom(userID1, userID2 uuid.UUID) error
+	GetChatRoomByUserIDs(userID1, userID2 uuid.UUID) (migration.Room, error)
+	InitFirstMessage(roomID uuid.UUID, senderID uuid.UUID, message string) error
 	GetRideOfferByID(rideOfferID uuid.UUID) (migration.RideOffer, error)
 	GetRideRequestByID(rideRequestID uuid.UUID) (migration.RideRequest, error)
 	GetTransactionByRideID(rideID uuid.UUID) (migration.Transaction, error)
@@ -36,6 +39,84 @@ var (
 	ErrRideOfferNotFound   = errors.New("ride offer not found")
 	ErrRideRequestNotFound = errors.New("ride request not found")
 )
+
+// CreateNewChatRoom creates a new chat room between two users
+func (r *RideRepository) CreateNewChatRoom(userID1, userID2 uuid.UUID) error {
+	// Create a new chat room
+	var chatRoom migration.Room
+	// Ensure user IDs are in a consistent order
+	if userID1.String() > userID2.String() {
+		userID1, userID2 = userID2, userID1
+	}
+
+	// Check if the chat room already exists
+	err := r.db.Model(&migration.Room{}).
+		Where("user1_id = ? AND user2_id = ?", userID1, userID2).
+		Or("user1_id = ? AND user2_id = ?", userID2, userID1).
+		First(&chatRoom).Error
+	if err == nil {
+		return nil
+	}
+
+	// Create the chat room
+	chatRoom = migration.Room{
+		User1ID: userID1,
+		User2ID: userID2,
+	}
+	if err := r.db.Create(&chatRoom).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// InitFirstMessage initializes the first message in a chat room
+func (r *RideRepository) InitFirstMessage(roomID uuid.UUID, senderID uuid.UUID, message string) error {
+	// Create a new message
+	newMessage := migration.Chat{
+		RoomID:      roomID,
+		SenderID:    senderID,
+		Message:     message,
+		MessageType: "text",
+	}
+
+	// Create the message
+	if err := r.db.Create(&newMessage).Error; err != nil {
+		return err
+	}
+
+	// Update the chat room with the last message ID and message content
+	if err := r.db.Model(&migration.Room{}).Where("id = ?", roomID).Updates(map[string]interface{}{
+		"last_message_id":   newMessage.ID,
+		"last_message_text": message,
+		"last_message_time": newMessage.CreatedAt,
+	}).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// GetChatRoomByUserIDs fetches a chat room by user IDs
+func (r *RideRepository) GetChatRoomByUserIDs(userID1, userID2 uuid.UUID) (migration.Room, error) {
+	var chatRoom migration.Room
+	// Ensure user IDs are in a consistent order
+	if userID1.String() > userID2.String() {
+		userID1, userID2 = userID2, userID1
+	}
+
+	err := r.db.Model(&migration.Room{}).
+		Where("user1_id = ? AND user2_id = ?", userID1, userID2).
+		Or("user1_id = ? AND user2_id = ?", userID2, userID1).
+		First(&chatRoom).
+		Error
+
+	if err != nil {
+		return migration.Room{}, err
+	}
+
+	return chatRoom, nil
+}
 
 // GetRideOfferByID fetches a ride offer by its ID
 func (r *RideRepository) GetRideOfferByID(rideOfferID uuid.UUID) (migration.RideOffer, error) {
@@ -147,6 +228,13 @@ func (r *RideRepository) AcceptRideRequest(rideOfferID, rideRequestID, vehicleID
 		// if err := tx.Model(&migration.RideRequest{}).Where("id = ?", rideRequestID).Update("status", "matched").Error; err != nil {
 		// 	return err
 		// }
+
+		// Create new chat room (between the driver and the hitcher of the ride)
+		// When a ride is accepted, a chat room is created between the driver and the hitcher of the ride
+		// then system automatically sends a message to the chat room to notify the hitcher that the ride is accepted
+		if err := r.CreateNewChatRoom(rideOffer.UserID, rideRequest.UserID); err != nil {
+			return err
+		}
 
 		return nil
 	})

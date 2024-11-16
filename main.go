@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 
+	"shareway/infra/bucket"
 	"shareway/infra/crawler"
 	"shareway/infra/db"
 	"shareway/infra/fcm"
@@ -35,6 +36,9 @@ func init() {
 func main() {
 	// Validator
 	validate := validator.New()
+
+	// Create a context
+	ctx := context.Background()
 
 	// Load config file using viper
 	cfg, err := util.LoadConfig(".")
@@ -86,6 +90,9 @@ func main() {
 	// Initialize Redis client
 	redisClient := db.NewRedisClient(cfg)
 
+	// Initialize the Cloudinary service
+	cloudinaryService := bucket.NewCloudinary(ctx, cfg)
+
 	// Create a cron job to update the vehicle data from the VR website
 	vrCrawler := crawler.NewVrCrawler(database)
 	fuelCrawler := crawler.NewFuelCrawler(database)
@@ -127,7 +134,7 @@ func main() {
 	scheduler.Start()
 
 	// Initialize services using the service factory pattern (dependency injection also included repository pattern)
-	serviceFactory := service.NewServiceFactory(database, cfg, maker, redisClient, hub, asynqClient)
+	serviceFactory := service.NewServiceFactory(database, cfg, maker, redisClient, hub, asynqClient, cloudinaryService)
 	services := serviceFactory.CreateServices()
 
 	// Create new API server

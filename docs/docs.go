@@ -666,6 +666,270 @@ const docTemplate = `{
                 }
             }
         },
+        "/chat/get-chat-messages": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all messages of a chat room",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Get all messages of a chat room",
+                "parameters": [
+                    {
+                        "description": "Get chat messages request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.GetChatMessagesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Chat messages fetched successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GetChatMessagesResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/get-chat-rooms": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all chat rooms of a user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Get all chat rooms of a user",
+                "parameters": [
+                    {
+                        "description": "Get all chat rooms request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.GetAllChatRoomsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Chat rooms fetched successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GetAllChatRoomsResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/send-image": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Send an image to the chat room",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Send an image to the chat room",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Chat room ID",
+                        "name": "chatRoomID",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Image file",
+                        "name": "image",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Receiver ID",
+                        "name": "receiverID",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Image sent successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.SendImageResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/send-message": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Send a message to the chat room",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Send a message to the chat room",
+                "parameters": [
+                    {
+                        "description": "Send message request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.SendMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Message sent successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.SendMessageResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/map/autocomplete": {
             "get": {
                 "security": [
@@ -2421,6 +2685,26 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.ChatRoomResponse": {
+            "type": "object",
+            "properties": {
+                "last_message": {
+                    "type": "string"
+                },
+                "last_message_at": {
+                    "type": "string"
+                },
+                "last_message_id": {
+                    "type": "string"
+                },
+                "receiver_info": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "room_id": {
+                    "type": "string"
+                }
+            }
+        },
         "schemas.CreateNotificationRequest": {
             "type": "object",
             "required": [
@@ -2627,6 +2911,50 @@ const docTemplate = `{
                             "$ref": "#/definitions/schemas.Point"
                         }
                     ]
+                }
+            }
+        },
+        "schemas.GetAllChatRoomsRequest": {
+            "type": "object",
+            "required": [
+                "userID"
+            ],
+            "properties": {
+                "userID": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.GetAllChatRoomsResponse": {
+            "type": "object",
+            "properties": {
+                "chatRooms": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ChatRoomResponse"
+                    }
+                }
+            }
+        },
+        "schemas.GetChatMessagesRequest": {
+            "type": "object",
+            "required": [
+                "chatRoomID"
+            ],
+            "properties": {
+                "chatRoomID": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.GetChatMessagesResponse": {
+            "type": "object",
+            "properties": {
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.MessageResponse"
+                    }
                 }
             }
         },
@@ -3079,6 +3407,30 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.MessageResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "message_id": {
+                    "type": "string"
+                },
+                "message_type": {
+                    "description": "text or image or missed_call, video_call, voice_call",
+                    "type": "string"
+                },
+                "receiver_id": {
+                    "type": "string"
+                },
+                "sender_id": {
+                    "type": "string"
+                }
+            }
+        },
         "schemas.PlusCode": {
             "type": "object",
             "properties": {
@@ -3422,6 +3774,60 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "vehicleID": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.SendImageResponse": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "messageID": {
+                    "type": "string"
+                },
+                "receiverID": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.SendMessageRequest": {
+            "type": "object",
+            "required": [
+                "chatRoomID",
+                "message",
+                "receiverID"
+            ],
+            "properties": {
+                "chatRoomID": {
+                    "type": "string"
+                },
+                "message": {
+                    "description": "Default type is \"text\"",
+                    "type": "string"
+                },
+                "receiverID": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.SendMessageResponse": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "messageID": {
+                    "type": "string"
+                },
+                "receiverID": {
                     "type": "string"
                 }
             }

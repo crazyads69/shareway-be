@@ -97,6 +97,8 @@ func (server *APIServer) SetupRouter() {
 	SetupRideRouter(server.router.Group("/ride", middleware.AuthMiddleware(server.Maker)), server)
 	// Notification routes for sending notifications
 	SetupNotificationRouter(server.router.Group("/notification", middleware.AuthMiddleware(server.Maker)), server)
+	// Chat routes for sending messages
+	SetupChatRouter(server.router.Group("/chat", middleware.AuthMiddleware(server.Maker)), server)
 
 }
 

@@ -1,3 +1,4 @@
+// shareway/infra/ws/client.go
 package ws
 
 import (
