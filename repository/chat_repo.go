@@ -27,6 +27,7 @@ type IChatRepository interface {
 	UploadImage(req schemas.SendImageRequest, userID uuid.UUID, imageURL string) (migration.Chat, error)
 	GetAllChatRooms(userID uuid.UUID) ([]migration.Room, error)
 	GetChatMessages(req schemas.GetChatMessagesRequest, userID uuid.UUID) ([]migration.Chat, error)
+	UpdateCallStatus(req schemas.UpdateCallStatusRequest, userID uuid.UUID) (migration.Chat, error)
 }
 
 // GetChatRoomByUserIDs fetches a chat room by the user IDs
@@ -162,3 +163,51 @@ func (r *ChatRepository) GetChatMessages(req schemas.GetChatMessagesRequest, use
 
 	return messages, nil
 }
+
+// UpdateCallStatus updates the call status in a chat room
+func (r *ChatRepository) UpdateCallStatus(req schemas.UpdateCallStatusRequest, userID uuid.UUID) (migration.Chat, error) {
+	// Create a new chat message
+	var newChat migration.Chat
+	newChat.RoomID = req.ChatRoomID
+	newChat.SenderID = userID
+	newChat.ReceiverID = req.ReceiverID
+	newChat.MessageType = req.CallType // video_call or voice_call
+
+	// Based on the call status, set the message
+	switch req.CallStatus {
+	case "missed":
+		newChat.Message = "Cuộc gọi nhỡ"
+		newChat.CallStatus = "missed"
+	case "rejected":
+		newChat.Message = "Cuộc gọi bị từ chối"
+		newChat.CallStatus = "rejected"
+	case "ended":
+		newChat.Message = "Cuộc gọi kết thúc"
+		newChat.CallStatus = "ended"
+	}
+
+	// Check if have duration
+	if req.Duration > 0 {
+		newChat.CallDuration = req.Duration
+	}
+
+	// Save the chat message
+	err := r.db.Create(&newChat).Error
+	if err != nil {
+		return migration.Chat{}, err
+	}
+
+	// Update the chat room lastest message
+	// Update the chat room with the last message ID and message content
+	if err := r.db.Model(&migration.Room{}).Where("id = ?", req.ChatRoomID).Updates(map[string]interface{}{
+		"last_message_id":   newChat.ID,
+		"last_message_text": newChat.Message,
+		"last_message_at":   newChat.CreatedAt,
+	}).Error; err != nil {
+		return migration.Chat{}, err
+	}
+
+	return newChat, nil
+}
+
+var _ IChatRepository = (*ChatRepository)(nil)

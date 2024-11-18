@@ -631,6 +631,17 @@ definitions:
     - is_verified
     - phone_number
     type: object
+  schemas.InitiateCallResponse:
+    properties:
+      caller_id:
+        type: string
+      chatroom_id:
+        type: string
+      token_publisher:
+        type: string
+      token_subscriber:
+        type: string
+    type: object
   schemas.LoginRequest:
     properties:
       phone_number:
@@ -695,6 +706,12 @@ definitions:
     type: object
   schemas.MessageResponse:
     properties:
+      call_duration:
+        description: Call duration in seconds
+        type: integer
+      call_status:
+        description: missed or ended or rejected
+        type: string
       created_at:
         type: string
       message:
@@ -705,8 +722,6 @@ definitions:
         description: text or image or missed_call, video_call, voice_call
         type: string
       receiver_id:
-        type: string
-      sender_id:
         type: string
     type: object
   schemas.PlusCode:
@@ -953,13 +968,22 @@ definitions:
     type: object
   schemas.SendImageResponse:
     properties:
+      call_duration:
+        description: Call duration in seconds
+        type: integer
+      call_status:
+        description: missed or ended or rejected
+        type: string
       createdAt:
         type: string
-      image_url:
+      message:
+        type: string
+      message_type:
+        description: text or image or missed_call, video_call, voice_call
         type: string
       messageID:
         type: string
-      receiverID:
+      receiver_id:
         type: string
     type: object
   schemas.SendMessageRequest:
@@ -978,13 +1002,22 @@ definitions:
     type: object
   schemas.SendMessageResponse:
     properties:
+      call_duration:
+        description: Call duration in seconds
+        type: integer
+      call_status:
+        description: missed or ended or rejected
+        type: string
       createdAt:
         type: string
       message:
         type: string
-      messageID:
+      message_id:
         type: string
-      receiverID:
+      message_type:
+        description: text or image or missed_call, video_call, voice_call
+        type: string
+      receiver_id:
         type: string
     type: object
   schemas.StartRideRequest:
@@ -1106,6 +1139,56 @@ definitions:
       status:
         type: string
       transaction_id:
+        type: string
+    type: object
+  schemas.UpdateCallStatusRequest:
+    properties:
+      callStatus:
+        enum:
+        - missed
+        - ended
+        - rejected
+        type: string
+      callType:
+        enum:
+        - video_call
+        - voice_call
+        type: string
+      chatRoomID:
+        type: string
+      duration:
+        type: integer
+      receiverID:
+        type: string
+    required:
+    - callStatus
+    - callType
+    - chatRoomID
+    - receiverID
+    type: object
+  schemas.UpdateCallStatusResponse:
+    properties:
+      call_duration:
+        description: Call duration in seconds
+        type: integer
+      call_status:
+        description: missed or ended or rejected
+        type: string
+      chat_room_id:
+        type: string
+      created_at:
+        description: Call status update time
+        type: string
+      message:
+        description: Call status message
+        type: string
+      message_id:
+        type: string
+      message_type:
+        description: text or image or missed_call, video_call, voice_call
+        type: string
+      receiver_id:
+        description: User who received the call
         type: string
     type: object
   schemas.UpdateRideLocationRequest:
@@ -1788,6 +1871,53 @@ paths:
       summary: Get all chat rooms of a user
       tags:
       - chat
+  /chat/initiate-call:
+    get:
+      consumes:
+      - application/json
+      description: Initiate a call with a user (from user to user 1:1) using Agora
+        RTC
+      parameters:
+      - description: Chat room ID
+        in: query
+        name: chatRoomID
+        required: true
+        type: string
+      - description: Receiver ID
+        in: query
+        name: receiverID
+        required: true
+        type: string
+      - description: Role (publisher or subscriber)
+        in: query
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Call initiated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.InitiateCallResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Initiate a call with a user (from user to user 1:1) using Agora RTC
+      tags:
+      - chat
   /chat/send-image:
     post:
       consumes:
@@ -1869,6 +1999,43 @@ paths:
       security:
       - BearerAuth: []
       summary: Send a message to the chat room
+      tags:
+      - chat
+  /chat/update-call-status:
+    post:
+      consumes:
+      - application/json
+      description: Update the call status of a chat room (missed, rejected, ended)
+      parameters:
+      - description: Update call status request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.UpdateCallStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Call status updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.UpdateCallStatusResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Update the call status of a chat room (missed, rejected, ended)
       tags:
       - chat
   /map/autocomplete:

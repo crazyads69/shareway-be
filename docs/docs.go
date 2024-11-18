@@ -792,6 +792,81 @@ const docTemplate = `{
                 }
             }
         },
+        "/chat/initiate-call": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Initiate a call with a user (from user to user 1:1) using Agora RTC",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Initiate a call with a user (from user to user 1:1) using Agora RTC",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Chat room ID",
+                        "name": "chatRoomID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Receiver ID",
+                        "name": "receiverID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Role (publisher or subscriber)",
+                        "name": "role",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Call initiated successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.InitiateCallResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/chat/send-image": {
             "post": {
                 "security": [
@@ -909,6 +984,69 @@ const docTemplate = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/schemas.SendMessageResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/update-call-status": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update the call status of a chat room (missed, rejected, ended)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Update the call status of a chat room (missed, rejected, ended)",
+                "parameters": [
+                    {
+                        "description": "Update call status request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.UpdateCallStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Call status updated successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.UpdateCallStatusResponse"
                                         }
                                     }
                                 }
@@ -3318,6 +3456,23 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.InitiateCallResponse": {
+            "type": "object",
+            "properties": {
+                "caller_id": {
+                    "type": "string"
+                },
+                "chatroom_id": {
+                    "type": "string"
+                },
+                "token_publisher": {
+                    "type": "string"
+                },
+                "token_subscriber": {
+                    "type": "string"
+                }
+            }
+        },
         "schemas.LoginRequest": {
             "type": "object",
             "required": [
@@ -3410,6 +3565,14 @@ const docTemplate = `{
         "schemas.MessageResponse": {
             "type": "object",
             "properties": {
+                "call_duration": {
+                    "description": "Call duration in seconds",
+                    "type": "integer"
+                },
+                "call_status": {
+                    "description": "missed or ended or rejected",
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -3424,9 +3587,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "receiver_id": {
-                    "type": "string"
-                },
-                "sender_id": {
                     "type": "string"
                 }
             }
@@ -3781,16 +3941,28 @@ const docTemplate = `{
         "schemas.SendImageResponse": {
             "type": "object",
             "properties": {
+                "call_duration": {
+                    "description": "Call duration in seconds",
+                    "type": "integer"
+                },
+                "call_status": {
+                    "description": "missed or ended or rejected",
+                    "type": "string"
+                },
                 "createdAt": {
                     "type": "string"
                 },
-                "image_url": {
+                "message": {
                     "type": "string"
                 },
                 "messageID": {
                     "type": "string"
                 },
-                "receiverID": {
+                "message_type": {
+                    "description": "text or image or missed_call, video_call, voice_call",
+                    "type": "string"
+                },
+                "receiver_id": {
                     "type": "string"
                 }
             }
@@ -3818,16 +3990,28 @@ const docTemplate = `{
         "schemas.SendMessageResponse": {
             "type": "object",
             "properties": {
+                "call_duration": {
+                    "description": "Call duration in seconds",
+                    "type": "integer"
+                },
+                "call_status": {
+                    "description": "missed or ended or rejected",
+                    "type": "string"
+                },
                 "createdAt": {
                     "type": "string"
                 },
                 "message": {
                     "type": "string"
                 },
-                "messageID": {
+                "message_id": {
                     "type": "string"
                 },
-                "receiverID": {
+                "message_type": {
+                    "description": "text or image or missed_call, video_call, voice_call",
+                    "type": "string"
+                },
+                "receiver_id": {
                     "type": "string"
                 }
             }
@@ -4014,6 +4198,76 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "transaction_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.UpdateCallStatusRequest": {
+            "type": "object",
+            "required": [
+                "callStatus",
+                "callType",
+                "chatRoomID",
+                "receiverID"
+            ],
+            "properties": {
+                "callStatus": {
+                    "type": "string",
+                    "enum": [
+                        "missed",
+                        "ended",
+                        "rejected"
+                    ]
+                },
+                "callType": {
+                    "type": "string",
+                    "enum": [
+                        "video_call",
+                        "voice_call"
+                    ]
+                },
+                "chatRoomID": {
+                    "type": "string"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "receiverID": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.UpdateCallStatusResponse": {
+            "type": "object",
+            "properties": {
+                "call_duration": {
+                    "description": "Call duration in seconds",
+                    "type": "integer"
+                },
+                "call_status": {
+                    "description": "missed or ended or rejected",
+                    "type": "string"
+                },
+                "chat_room_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "Call status update time",
+                    "type": "string"
+                },
+                "message": {
+                    "description": "Call status message",
+                    "type": "string"
+                },
+                "message_id": {
+                    "type": "string"
+                },
+                "message_type": {
+                    "description": "text or image or missed_call, video_call, voice_call",
+                    "type": "string"
+                },
+                "receiver_id": {
+                    "description": "User who received the call",
                     "type": "string"
                 }
             }

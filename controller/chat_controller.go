@@ -108,10 +108,13 @@ func (cc *ChatController) SendMessage(ctx *gin.Context) {
 	}
 
 	res := schemas.SendMessageResponse{
-		MessageID:  message.ID,
-		Message:    message.Message,
-		ReceiverID: message.ReceiverID,
-		CreatedAt:  message.CreatedAt,
+		MessageID:    message.ID,
+		Message:      message.Message,
+		ReceiverID:   message.ReceiverID,
+		CreatedAt:    message.CreatedAt,
+		MessageType:  message.MessageType,
+		CallDuration: message.CallDuration,
+		CallStatus:   message.CallStatus,
 	}
 
 	// Get receiver device token to send notification
@@ -261,10 +264,13 @@ func (cc *ChatController) SendImage(ctx *gin.Context) {
 	}
 
 	res := schemas.SendImageResponse{
-		ImageURL:   chat.Message,
-		ReceiverID: chat.ReceiverID.String(),
-		CreatedAt:  chat.CreatedAt,
-		MessageID:  chat.ID.String(),
+		MessageType:  chat.MessageType,
+		ReceiverID:   chat.ReceiverID,
+		CreatedAt:    chat.CreatedAt,
+		MessageID:    chat.ID,
+		Message:      chat.Message,
+		CallStatus:   chat.CallStatus,
+		CallDuration: chat.CallDuration,
 	}
 
 	// Get receiver device token to send notification
@@ -509,12 +515,13 @@ func (cc *ChatController) GetChatMessages(ctx *gin.Context) {
 
 	for i, message := range messages {
 		res.Messages[i] = schemas.MessageResponse{
-			ID:          message.ID,
-			Message:     message.Message,
-			SenderID:    message.SenderID,
-			ReceiverID:  message.ReceiverID,
-			CreatedAt:   message.CreatedAt,
-			MessageType: message.MessageType,
+			ID:           message.ID,
+			Message:      message.Message,
+			ReceiverID:   message.ReceiverID,
+			CallStatus:   message.CallStatus,
+			CallDuration: message.CallDuration,
+			CreatedAt:    message.CreatedAt,
+			MessageType:  message.MessageType,
 		}
 	}
 
@@ -522,6 +529,326 @@ func (cc *ChatController) GetChatMessages(ctx *gin.Context) {
 		res,
 		"Chat messages fetched successfully",
 		"Tin nhắn đã được lấy thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
+}
+
+// InitiateCall initiates a call with a user (from user to user 1:1)
+// InitiateCall godoc
+// @Summary Initiate a call with a user (from user to user 1:1) using Agora RTC
+// @Description Initiate a call with a user (from user to user 1:1) using Agora RTC
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param chatRoomID query string true "Chat room ID"
+// @Param receiverID query string true "Receiver ID"
+// @Param role query string true "Role (publisher or subscriber)"
+// @Success 200 {object} helper.Response{data=schemas.InitiateCallResponse} "Call initiated successfully"
+// @Failure 400 {object} helper.Response "Invalid request"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /chat/initiate-call [get]
+func (cc *ChatController) InitiateCall(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Bind query params
+	var req schemas.InitiateCallRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind query",
+			"Không thể bind query",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Validate request
+	if err := cc.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Generate Agora RTC token for both users
+	// The channel name is the chat room ID and the user ID is the user's ID
+	// Publisher role is used for sending video and audio
+	// Convert UUID to 32-bit unsigned integer
+	rtcTokenPublisher, err := cc.agora.GenerateToken(req.ChatRoomID, data.UserID, "publisher", 3600)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to generate RTC token for publisher",
+			"Không thể tạo token cho publisher",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	rtcTokenSubscriber, err := cc.agora.GenerateToken(req.ChatRoomID, req.ReceiverID, "subscriber", 3600)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to generate RTC token for subscriber",
+			"Không thể tạo token cho subscriber",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get receiver device token to send notification
+	receiver, err := cc.UserService.GetUserByID(req.ReceiverID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get receiver details",
+			"Không thể lấy thông tin người nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	res := schemas.InitiateCallResponse{
+		TokenPublisher:  rtcTokenPublisher,
+		TokenSubscriber: rtcTokenSubscriber,
+		CallerID:        data.UserID,
+		ChatRoomID:      req.ChatRoomID,
+		// CallType:        req.CallType,
+	}
+
+	// Prepare websocket message
+	wsMessage := schemas.WebSocketMessage{
+		Type:    "initiate-call",
+		UserID:  req.ReceiverID.String(),
+		Payload: res,
+	}
+
+	// Prepare notification message
+	resMap, err := helper.ConvertToStringMap(res)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert response to map",
+			"Không thể chuyển đổi response thành map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Prepare notification payload
+	notificationPayload := schemas.NotificationPayload{
+		Type: "initiate-call",
+		Data: resMap,
+	}
+
+	// Convert notification payload to map
+	notificationPayloadMap, err := helper.ConvertToStringMap(notificationPayload)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert notification payload to map",
+			"Không thể chuyển đổi notification payload thành map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	notification := schemas.Notification{
+		Title: "Cuộc gọi mới",
+		Body:  fmt.Sprintf("Bạn có cuộc gọi mới từ %s", receiver.FullName),
+		Data:  notificationPayloadMap,
+		Token: receiver.DeviceToken,
+	}
+
+	go func() {
+		err := cc.asyncClient.EnqueueFCMNotification(notification)
+		if err != nil {
+			log.Printf("failed to send notification: %v", err)
+		}
+	}()
+
+	go func() {
+		err := cc.asyncClient.EnqueueWebsocketMessage(wsMessage)
+		if err != nil {
+			log.Printf("failed to send websocket message: %v", err)
+		}
+	}()
+
+	response := helper.SuccessResponse(
+		res,
+		"Call initiated successfully",
+		"Cuộc gọi đã được khởi tạo thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
+
+}
+
+// UpdateCallStatus updates the call status of a chat room (missed, rejected, ended)
+// UpdateCallStatus godoc
+// @Summary Update the call status of a chat room (missed, rejected, ended)
+// @Description Update the call status of a chat room (missed, rejected, ended)
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body schemas.UpdateCallStatusRequest true "Update call status request"
+// @Success 200 {object} helper.Response{data=schemas.UpdateCallStatusResponse} "Call status updated successfully"
+// @Failure 400 {object} helper.Response "Invalid request"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /chat/update-call-status [post]
+func (cc *ChatController) UpdateCallStatus(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	var req schemas.UpdateCallStatusRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind JSON",
+			"Không thể bind JSON",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Validate request
+	if err := cc.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Update call status
+	message, err := cc.ChatService.UpdateCallStatus(req, data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to update call status",
+			"Không thể cập nhật trạng thái cuộc gọi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	res := schemas.UpdateCallStatusResponse{
+		MessageID:    message.ID,
+		Message:      message.Message,
+		ReceiverID:   message.ReceiverID,
+		CreatedAt:    message.CreatedAt,
+		CallStatus:   message.CallStatus,
+		CallDuration: message.CallDuration,
+		MessageType:  message.MessageType,
+	}
+
+	// Get receiver device token to send notification
+	receiver, err := cc.UserService.GetUserByID(req.ReceiverID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get receiver details",
+			"Không thể lấy thông tin người nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Prepare websocket message
+	wsMessage := schemas.WebSocketMessage{
+		Type:    "update-call-status",
+		UserID:  req.ReceiverID.String(),
+		Payload: res,
+	}
+
+	// Prepare notification message
+	resMap, err := helper.ConvertToStringMap(res)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert response to map",
+			"Không thể chuyển đổi response thành map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Send notification
+	notificationPayload := schemas.NotificationPayload{
+		Type: "update-call-status",
+		Data: resMap,
+	}
+	notificationPayloadMap, err := helper.ConvertToStringMap(notificationPayload)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert notification payload to map",
+			"Không thể chuyển đổi notification payload thành map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	notification := schemas.Notification{
+		Title: "Trạng thái cuộc gọi",
+		Body:  fmt.Sprintf("Trạng thái cuộc gọi từ %s", receiver.FullName),
+		Data:  notificationPayloadMap,
+		Token: receiver.DeviceToken,
+	}
+
+	go func() {
+		err := cc.asyncClient.EnqueueFCMNotification(notification)
+		if err != nil {
+			log.Printf("failed to send notification: %v", err)
+		}
+	}()
+
+	go func() {
+		err := cc.asyncClient.EnqueueWebsocketMessage(wsMessage)
+		if err != nil {
+			log.Printf("failed to send websocket message: %v", err)
+		}
+	}()
+
+	response := helper.SuccessResponse(
+		res,
+		"Call status updated successfully",
+		"Trạng thái cuộc gọi đã được cập nhật thành công",
 	)
 	helper.GinResponse(ctx, 200, response)
 }

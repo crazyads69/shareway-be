@@ -213,17 +213,19 @@ type Notification struct {
 
 // Chat represents a chat message between 2 users
 type Chat struct {
-	ID          uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	CreatedAt   time.Time `gorm:"autoCreateTime"`
-	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
-	SenderID    uuid.UUID `gorm:"type:uuid"`
-	Sender      User      `gorm:"foreignKey:SenderID"`
-	ReceiverID  uuid.UUID `gorm:"type:uuid"`
-	Receiver    User      `gorm:"foreignKey:ReceiverID"`
-	Message     string
-	MessageType string    `gorm:"default:'text'"` // text, image, missed_call, voice_call, video_call
-	RoomID      uuid.UUID `gorm:"type:uuid"`
-	Room        Room      `gorm:"foreignKey:RoomID"`
+	ID           uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt    time.Time `gorm:"autoCreateTime"`
+	UpdatedAt    time.Time `gorm:"autoUpdateTime"`
+	SenderID     uuid.UUID `gorm:"type:uuid"`
+	Sender       User      `gorm:"foreignKey:SenderID"`
+	ReceiverID   uuid.UUID `gorm:"type:uuid"`
+	Receiver     User      `gorm:"foreignKey:ReceiverID"`
+	Message      string
+	CallDuration int64     `gorm:"default:0"`        // Duration of the call in seconds
+	CallStatus   string    `gorm:"default:'missed'"` // missed, ended, rejected
+	MessageType  string    `gorm:"default:'text'"`   // text, image, voice_call, video_call
+	RoomID       uuid.UUID `gorm:"type:uuid"`
+	Room         Room      `gorm:"foreignKey:RoomID"`
 }
 
 // Room represents a chat room between 2 users (1-1 chat)

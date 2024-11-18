@@ -7,7 +7,7 @@ import (
 )
 
 func SetupChatRouter(group *gin.RouterGroup, server *APIServer) {
-	chatsController := controller.NewChatController(
+	chatController := controller.NewChatController(
 		server.Validate,
 		server.Service.RideService,
 		server.Service.MapService,
@@ -18,8 +18,10 @@ func SetupChatRouter(group *gin.RouterGroup, server *APIServer) {
 		server.Hub,
 		server.Agora,
 	)
-	group.POST("/send-message", chatsController.SendMessage)
-	group.POST("/send-image", chatsController.SendImage)
-	group.POST("/get-chat-rooms", chatsController.GetAllChatRooms)
-	group.POST("/get-chat-messages", chatsController.GetChatMessages)
+	group.POST("/send-message", chatController.SendMessage)
+	group.POST("/send-image", chatController.SendImage)
+	group.POST("/get-chat-rooms", chatController.GetAllChatRooms)
+	group.POST("/get-chat-messages", chatController.GetChatMessages)
+	group.GET("/initiate-call", chatController.InitiateCall)
+	group.POST("/update-call-status", chatController.UpdateCallStatus)
 }
