@@ -6,16 +6,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 // User represents a user in the system
 type User struct {
-	ID                uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	CreatedAt         time.Time      `gorm:"autoCreateTime"`
-	UpdatedAt         time.Time      `gorm:"autoUpdateTime"`
-	DeletedAt         gorm.DeletedAt `gorm:"index"`
-	PhoneNumber       string         `gorm:"uniqueIndex;not null"`
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	// DeletedAt         gorm.DeletedAt `gorm:"index"`
+	PhoneNumber       string `gorm:"uniqueIndex;not null"`
 	Email             string
 	CCCDNumber        string
 	FullName          string
@@ -37,20 +36,20 @@ type User struct {
 
 // Admin represents an administrator in the system
 type Admin struct {
-	ID        uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	CreatedAt time.Time      `gorm:"autoCreateTime"`
-	UpdatedAt time.Time      `gorm:"autoUpdateTime"`
-	DeletedAt gorm.DeletedAt `gorm:"index"`
-	Username  string         `gorm:"uniqueIndex;not null"`
-	Password  string         `gorm:"not null"`
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	// DeletedAt gorm.DeletedAt `gorm:"index"`
+	Username string `gorm:"uniqueIndex;not null"`
+	Password string `gorm:"not null"`
 }
 
 // OTP represents a one-time password for user verification
 type OTP struct {
-	ID          uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	CreatedAt   time.Time      `gorm:"autoCreateTime"`
-	UpdatedAt   time.Time      `gorm:"autoUpdateTime"`
-	DeletedAt   gorm.DeletedAt `gorm:"index"`
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	// DeletedAt   gorm.DeletedAt `gorm:"index"`
 	PhoneNumber string
 	Code        string
 	Retry       int `gorm:"default:0"` // Max 3 retries
@@ -61,16 +60,16 @@ type OTP struct {
 
 // PasetoToken represents a PASETO token for user authentication
 type PasetoToken struct {
-	ID           uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	CreatedAt    time.Time      `gorm:"autoCreateTime"`
-	UpdatedAt    time.Time      `gorm:"autoUpdateTime"`
-	DeletedAt    gorm.DeletedAt `gorm:"index"`
-	UserID       uuid.UUID      `gorm:"type:uuid"`
-	User         User           `gorm:"foreignKey:UserID"`
-	AccessToken  string         `gorm:"type:text"`
-	RefreshToken string         `gorm:"type:text"`
-	Revoke       bool           `gorm:"default:false"`
-	RefreshTurns int            `gorm:"default:0"` // Max 3 refreshes per access tokee
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	// DeletedAt    gorm.DeletedAt `gorm:"index"`
+	UserID       uuid.UUID `gorm:"type:uuid"`
+	User         User      `gorm:"foreignKey:UserID"`
+	AccessToken  string    `gorm:"type:text"`
+	RefreshToken string    `gorm:"type:text"`
+	Revoke       bool      `gorm:"default:false"`
+	RefreshTurns int       `gorm:"default:0"` // Max 3 refreshes per access tokee
 }
 
 // Transaction represents a payment transaction

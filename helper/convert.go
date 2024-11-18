@@ -1,8 +1,12 @@
 package helper
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+
+	"github.com/google/uuid"
 )
 
 // ConvertToStringMap converts an interface{} to map[string]string
@@ -53,4 +57,23 @@ func ConvertToStringMap(data interface{}) (map[string]string, error) {
 	}
 
 	return result, nil
+}
+
+// Recommended method: Combines hash and range checking
+func UuidToUid(id uuid.UUID) uint32 {
+	// Hash the UUID for good distribution
+	hasher := sha256.New()
+	hasher.Write(id[:])
+	hash := hasher.Sum(nil)
+
+	// Convert first 4 bytes to uint32
+	uid := binary.BigEndian.Uint32(hash[:4])
+
+	// Ensure the UID is between 1 and (2^32 - 1)
+	if uid == 0 {
+		return 1
+	}
+
+	// Return the UUID as a uint32
+	return uid
 }

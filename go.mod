@@ -15,6 +15,7 @@ require (
 	cloud.google.com/go/storage v1.40.0 // indirect
 	firebase.google.com/go v3.13.0+incompatible // indirect
 	firebase.google.com/go/v4 v4.14.1 // indirect
+	github.com/AgoraIO-Community/go-tokenbuilder v1.3.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/MicahParks/keyfunc v1.9.0 // indirect
 	github.com/PuerkitoBio/goquery v1.10.0 // indirect

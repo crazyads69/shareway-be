@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 
+	"shareway/infra/agora"
 	"shareway/infra/bucket"
 	"shareway/infra/crawler"
 	"shareway/infra/db"
@@ -50,6 +51,8 @@ func main() {
 	// Set logger configuration
 	util.ConfigLogger(cfg)
 
+	// Initialize Agora service
+	agoraService := agora.NewAgora(cfg)
 	// Init websocket hub
 	hub := ws.NewHub()
 	go hub.Run()
@@ -145,6 +148,7 @@ func main() {
 		validate,
 		hub,
 		asynqClient,
+		agoraService,
 	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Could not create router")

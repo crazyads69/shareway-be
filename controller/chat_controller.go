@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"shareway/helper"
+	"shareway/infra/agora"
 	"shareway/infra/task"
 	"shareway/infra/ws"
 	"shareway/middleware"
@@ -24,9 +25,10 @@ type ChatController struct {
 	UserService    service.IUsersService
 	VehicleService service.IVehicleService
 	ChatService    service.IChatService
+	agora          *agora.Agora
 }
 
-func NewChatController(validate *validator.Validate, rideService service.IRideService, mapService service.IMapService, userService service.IUsersService, vehicleService service.IVehicleService, chatService service.IChatService, asyncClient *task.AsyncClient, hub *ws.Hub) *ChatController {
+func NewChatController(validate *validator.Validate, rideService service.IRideService, mapService service.IMapService, userService service.IUsersService, vehicleService service.IVehicleService, chatService service.IChatService, asyncClient *task.AsyncClient, hub *ws.Hub, agora *agora.Agora) *ChatController {
 	return &ChatController{
 		validate:       validate,
 		RideService:    rideService,
@@ -36,6 +38,7 @@ func NewChatController(validate *validator.Validate, rideService service.IRideSe
 		asyncClient:    asyncClient,
 		hub:            hub,
 		ChatService:    chatService,
+		agora:          agora,
 	}
 }
 

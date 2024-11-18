@@ -16,6 +16,7 @@ func SetupChatRouter(group *gin.RouterGroup, server *APIServer) {
 		server.Service.ChatService,
 		server.AsyncClient,
 		server.Hub,
+		server.Agora,
 	)
 	group.POST("/send-message", chatsController.SendMessage)
 	group.POST("/send-image", chatsController.SendImage)

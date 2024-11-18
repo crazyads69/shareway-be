@@ -1,6 +1,7 @@
 package router
 
 import (
+	"shareway/infra/agora"
 	"shareway/infra/task"
 	"shareway/infra/ws"
 	"shareway/middleware"
@@ -28,10 +29,11 @@ type APIServer struct {
 	Validate    *validator.Validate
 	Hub         *ws.Hub
 	AsyncClient *task.AsyncClient
+	Agora       *agora.Agora
 }
 
 // NewAPIServer creates and initializes a new APIServer instance
-func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.ServiceContainer, Validate *validator.Validate, Hub *ws.Hub, AsyncClient *task.AsyncClient) (*APIServer, error) {
+func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.ServiceContainer, Validate *validator.Validate, Hub *ws.Hub, AsyncClient *task.AsyncClient, Agora *agora.Agora) (*APIServer, error) {
 	r := gin.Default()
 
 	if cfg.GinMode != "release" {
@@ -54,6 +56,7 @@ func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.Se
 		Validate:    Validate,
 		Hub:         Hub,
 		AsyncClient: AsyncClient,
+		Agora:       Agora,
 	}, nil
 }
 
