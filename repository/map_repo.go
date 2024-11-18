@@ -94,14 +94,48 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 		}
 
 		fare := (vehicle.FuelConsumed / 100) * fuelPrice * float64(totalDistance)
+		// Decode the polyline and get the list of coordinates
+		decodePolyline := helper.DecodePolyline(firstRoute.Overview_polyline.Points)
+		startLocation := schemas.Point{
+			Lat: firstLeg.Start_location.Lat,
+			Lng: firstLeg.Start_location.Lng,
+		}
+		endLocation := schemas.Point{
+			Lat: lastLeg.End_location.Lat,
+			Lng: lastLeg.End_location.Lng,
+		}
+
+		// Get the correct start and end locations on the route
+		newStartLocaton := helper.GetNearestPointOnRoute(decodePolyline, startLocation)
+		newEndLocation := helper.GetNearestPointOnRoute(decodePolyline, endLocation)
 
 		// Create ride offer
+		// rideOffer := migration.RideOffer{
+		// 	UserID:                 userID,
+		// 	StartLatitude:          firstLeg.Start_location.Lat,
+		// 	StartLongitude:         firstLeg.Start_location.Lng,
+		// 	EndLatitude:            lastLeg.End_location.Lat,
+		// 	EndLongitude:           lastLeg.End_location.Lng,
+		// 	EncodedPolyline:        polyline.Polyline(firstRoute.Overview_polyline.Points), // Use gorm.Expr to prevent escaping
+		// 	DriverCurrentLatitude:  currentLocation.Lat,
+		// 	DriverCurrentLongitude: currentLocation.Lng,
+		// 	StartAddress:           firstLeg.Start_address,
+		// 	EndAddress:             lastLeg.End_address,
+		// 	Distance:               float64(totalDistance),
+		// 	Duration:               totalDuration,
+		// 	Status:                 "created",
+		// 	StartTime:              startTime,
+		// 	EndTime:                endTime,
+		// 	VehicleID:              vehicleID,
+		// 	Fare:                   fare,
+		// }
+
 		rideOffer := migration.RideOffer{
 			UserID:                 userID,
-			StartLatitude:          firstLeg.Start_location.Lat,
-			StartLongitude:         firstLeg.Start_location.Lng,
-			EndLatitude:            lastLeg.End_location.Lat,
-			EndLongitude:           lastLeg.End_location.Lng,
+			StartLatitude:          newStartLocaton.Lat,
+			StartLongitude:         newStartLocaton.Lng,
+			EndLatitude:            newEndLocation.Lat,
+			EndLongitude:           newEndLocation.Lng,
 			EncodedPolyline:        polyline.Polyline(firstRoute.Overview_polyline.Points), // Use gorm.Expr to prevent escaping
 			DriverCurrentLatitude:  currentLocation.Lat,
 			DriverCurrentLongitude: currentLocation.Lng,
@@ -176,13 +210,45 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 			return errors.New("ride offer already exists for the user in that time frame")
 		}
 
+		decodePolyline := helper.DecodePolyline(firstRoute.Overview_polyline.Points)
+		startLocation := schemas.Point{
+			Lat: firstLeg.Start_location.Lat,
+			Lng: firstLeg.Start_location.Lng,
+		}
+		endLocation := schemas.Point{
+			Lat: lastLeg.End_location.Lat,
+			Lng: lastLeg.End_location.Lng,
+		}
+
+		// Get the correct start and end locations on the route
+		newStartLocaton := helper.GetNearestPointOnRoute(decodePolyline, startLocation)
+		newEndLocation := helper.GetNearestPointOnRoute(decodePolyline, endLocation)
+
 		// Create ride request
+		// rideRequest := migration.RideRequest{
+		// 	UserID:                userID,
+		// 	StartLatitude:         firstLeg.Start_location.Lat,
+		// 	StartLongitude:        firstLeg.Start_location.Lng,
+		// 	EndLatitude:           lastLeg.End_location.Lat,
+		// 	EndLongitude:          lastLeg.End_location.Lng,
+		// 	RiderCurrentLatitude:  currentLocation.Lat,
+		// 	RiderCurrentLongitude: currentLocation.Lng,
+		// 	StartAddress:          firstLeg.Start_address,
+		// 	EndAddress:            lastLeg.End_address,
+		// 	Status:                "created",
+		// 	EncodedPolyline:       polyline.Polyline(firstRoute.Overview_polyline.Points), // Use gorm.Expr to prevent escaping
+		// 	Distance:              float64(totalDistance),
+		// 	Duration:              totalDuration,
+		// 	StartTime:             startTime,
+		// 	EndTime:               endTime,
+		// }
+
 		rideRequest := migration.RideRequest{
 			UserID:                userID,
-			StartLatitude:         firstLeg.Start_location.Lat,
-			StartLongitude:        firstLeg.Start_location.Lng,
-			EndLatitude:           lastLeg.End_location.Lat,
-			EndLongitude:          lastLeg.End_location.Lng,
+			StartLatitude:         newStartLocaton.Lat,
+			StartLongitude:        newStartLocaton.Lng,
+			EndLatitude:           newEndLocation.Lat,
+			EndLongitude:          newEndLocation.Lng,
 			RiderCurrentLatitude:  currentLocation.Lat,
 			RiderCurrentLongitude: currentLocation.Lng,
 			StartAddress:          firstLeg.Start_address,

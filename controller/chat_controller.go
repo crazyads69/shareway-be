@@ -593,7 +593,8 @@ func (cc *ChatController) InitiateCall(ctx *gin.Context) {
 	// The channel name is the chat room ID and the user ID is the user's ID
 	// Publisher role is used for sending video and audio
 	// Convert UUID to 32-bit unsigned integer
-	rtcTokenPublisher, err := cc.agora.GenerateToken(req.ChatRoomID, data.UserID, "publisher", 3600)
+	// Check if the expiry time is not empty
+	rtcTokenPublisher, err := cc.agora.GenerateToken(req.ChatRoomID, data.UserID, "publisher", req.ExpireTime)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -604,7 +605,7 @@ func (cc *ChatController) InitiateCall(ctx *gin.Context) {
 		return
 	}
 
-	rtcTokenSubscriber, err := cc.agora.GenerateToken(req.ChatRoomID, req.ReceiverID, "subscriber", 3600)
+	rtcTokenSubscriber, err := cc.agora.GenerateToken(req.ChatRoomID, req.ReceiverID, "subscriber", req.ExpireTime)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,

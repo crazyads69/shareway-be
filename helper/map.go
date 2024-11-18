@@ -317,3 +317,23 @@ func IsTimeOverlap(offer migration.RideOffer, request migration.RideRequest) boo
 func IsNearby(current, target schemas.Point, distance float64) bool {
 	return squaredDistance(current, target) <= distance*distance
 }
+
+// Get the nearest point on the route to the given point on the start and end of the route
+func GetNearestPointOnRoute(polyline []schemas.Point, point schemas.Point) schemas.Point {
+	if len(polyline) == 0 {
+		return schemas.Point{}
+	}
+
+	minDistSq := math.MaxFloat64
+	var nearestPoint schemas.Point
+
+	for _, p := range polyline {
+		distSq := squaredDistance(p, point)
+		if distSq < minDistSq {
+			minDistSq = distSq
+			nearestPoint = p
+		}
+	}
+
+	return nearestPoint
+}
