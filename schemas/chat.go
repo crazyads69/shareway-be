@@ -16,13 +16,12 @@ type SendMessageRequest struct {
 
 // Define SendMessageResponse schema
 type SendMessageResponse struct {
-	MessageID    uuid.UUID `json:"message_id"`
-	Message      string    `json:"message"`
-	ReceiverID   uuid.UUID `json:"receiver_id"`
-	CallStatus   string    `json:"call_status"`   // missed or ended or rejected
-	CallDuration int64     `json:"call_duration"` // Call duration in seconds
-	MessageType  string    `json:"message_type"`  // text or image or missed_call, video_call, voice_call
-	CreatedAt    time.Time `json:"created_at"`
+	MessageID   uuid.UUID `json:"message_id"`
+	Message     string    `json:"message"`
+	ReceiverID  uuid.UUID `json:"receiver_id"`
+	SenderID    uuid.UUID `json:"sender_id"`
+	MessageType string    `json:"message_type"` // text or image or missed_call, video_call, voice_call
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 // Define SendImageRequest schema
@@ -33,13 +32,12 @@ type SendImageRequest struct {
 }
 
 type SendImageResponse struct {
-	ReceiverID   uuid.UUID `json:"receiver_id"`
-	CreatedAt    time.Time `json:"created_at"`
-	CallStatus   string    `json:"call_status"`   // missed or ended or rejected
-	CallDuration int64     `json:"call_duration"` // Call duration in seconds
-	MessageType  string    `json:"message_type"`  // text or image or missed_call, video_call, voice_call
-	MessageID    uuid.UUID `json:"message_id"`
-	Message      string    `json:"message"`
+	ReceiverID  uuid.UUID `json:"receiver_id"`
+	SenderID    uuid.UUID `json:"sender_id"`
+	CreatedAt   time.Time `json:"created_at"`
+	MessageType string    `json:"message_type"` // text or image or missed_call, video_call, voice_call
+	MessageID   uuid.UUID `json:"message_id"`
+	Message     string    `json:"message"`
 }
 
 // Define GetAllChatRoomsRequest schema
@@ -74,13 +72,12 @@ type GetChatMessagesResponse struct {
 // Define MessageResponse schema
 
 type MessageResponse struct {
-	ID           uuid.UUID `json:"message_id"`
-	Message      string    `json:"message"`
-	CreatedAt    time.Time `json:"created_at"`
-	ReceiverID   uuid.UUID `json:"receiver_id"`
-	CallStatus   string    `json:"call_status"`   // missed or ended or rejected
-	CallDuration int64     `json:"call_duration"` // Call duration in seconds
-	MessageType  string    `json:"message_type"`  // text or image or missed_call, video_call, voice_call
+	ID          uuid.UUID `json:"message_id"`
+	Message     string    `json:"message"`
+	SenderID    uuid.UUID `json:"sender_id"`
+	CreatedAt   time.Time `json:"created_at"`
+	ReceiverID  uuid.UUID `json:"receiver_id"`
+	MessageType string    `json:"message_type"` // text or image or missed_call, video_call, voice_call
 }
 
 // Define InitiateCallRequest schema as query parameters
@@ -98,26 +95,25 @@ type InitiateCallResponse struct {
 	TokenSubscriber string    `json:"token_subscriber"`
 	ChatRoomID      uuid.UUID `json:"chatroom_id"`
 	CallerID        uuid.UUID `json:"caller_id"`
+	ReceiverID      uuid.UUID `json:"receiver_id"`
 	// CallType        string    `json:"call_type"`
 }
 
 // Define UpdateCallStatusRequest schema
 type UpdateCallStatusRequest struct {
 	ChatRoomID uuid.UUID `json:"chatRoomID" binding:"required"`
-	CallStatus string    `json:"callStatus" binding:"required" validate:"required,oneof=missed ended rejected"`
-	CallType   string    `json:"callType" binding:"required" validate:"required,oneof=video_call voice_call"`
-	Duration   int64     `json:"duration" binding:"omitempty"`
+	CallType   string    `json:"callType" binding:"required" validate:"required,oneof=video_call voice_call missed_call"`
+	Duration   int64     `json:"duration" binding:"required" default:"3600"`
 	ReceiverID uuid.UUID `json:"receiverID" binding:"required"`
 }
 
 // Define UpdateCallStatusResponse schema
 type UpdateCallStatusResponse struct {
-	ChatRoomID   uuid.UUID `json:"chat_room_id"`
-	CallStatus   string    `json:"call_status"`   // missed or ended or rejected
-	CallDuration int64     `json:"call_duration"` // Call duration in seconds
-	Message      string    `json:"message"`       // Call status message
-	MessageID    uuid.UUID `json:"message_id"`
-	CreatedAt    time.Time `json:"created_at"`   // Call status update time
-	ReceiverID   uuid.UUID `json:"receiver_id"`  // User who received the call
-	MessageType  string    `json:"message_type"` // text or image or missed_call, video_call, voice_call
+	ChatRoomID  uuid.UUID `json:"chat_room_id"`
+	Message     string    `json:"message"`   // Call status message
+	SenderID    uuid.UUID `json:"sender_id"` // User who initiated the call
+	MessageID   uuid.UUID `json:"message_id"`
+	CreatedAt   time.Time `json:"created_at"`   // Call status update time
+	ReceiverID  uuid.UUID `json:"receiver_id"`  // User who received the call
+	MessageType string    `json:"message_type"` // text or image or missed_call, video_call, voice_call
 }

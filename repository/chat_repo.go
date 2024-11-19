@@ -1,8 +1,10 @@
 package repository
 
 import (
+	"fmt"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -171,24 +173,25 @@ func (r *ChatRepository) UpdateCallStatus(req schemas.UpdateCallStatusRequest, u
 	newChat.RoomID = req.ChatRoomID
 	newChat.SenderID = userID
 	newChat.ReceiverID = req.ReceiverID
-	newChat.MessageType = req.CallType // video_call or voice_call
+	newChat.MessageType = req.CallType // video_call or voice_call or missed_call
 
-	// Based on the call status, set the message
-	switch req.CallStatus {
-	case "missed":
-		newChat.Message = "Cuộc gọi nhỡ"
-		newChat.CallStatus = "missed"
-	case "rejected":
-		newChat.Message = "Cuộc gọi bị từ chối"
-		newChat.CallStatus = "rejected"
-	case "ended":
-		newChat.Message = "Cuộc gọi kết thúc"
-		newChat.CallStatus = "ended"
-	}
-
-	// Check if have duration
+	// Handle call duration if provided from second to (giờ phút giây)
 	if req.Duration > 0 {
-		newChat.CallDuration = req.Duration
+		hours := req.Duration / 3600
+		minutes := (req.Duration % 3600) / 60
+		seconds := req.Duration % 60
+
+		var timeStr string
+		if hours > 0 {
+			timeStr += fmt.Sprintf("%d giờ ", hours)
+		}
+		if minutes > 0 {
+			timeStr += fmt.Sprintf("%d phút ", minutes)
+		}
+		if seconds > 0 {
+			timeStr += fmt.Sprintf("%d giây", seconds)
+		}
+		newChat.Message = strings.TrimSpace(timeStr)
 	}
 
 	// Save the chat message
@@ -199,9 +202,22 @@ func (r *ChatRepository) UpdateCallStatus(req schemas.UpdateCallStatusRequest, u
 
 	// Update the chat room lastest message
 	// Update the chat room with the last message ID and message content
+	// Handle the message content based on the call type
+	// If the call type is missed_call, display "Cuộc gọi nhỡ"
+	// If the call type is video_call, display "Cuộc gọi video"
+	// If the call type is voice_call, display "Cuộc gọi"
+	var messageContent string
+	switch req.CallType {
+	case "missed_call":
+		messageContent = "Cuộc gọi nhỡ"
+	case "video_call":
+		messageContent = "Cuộc gọi video"
+	case "voice_call":
+		messageContent = "Cuộc gọi"
+	}
 	if err := r.db.Model(&migration.Room{}).Where("id = ?", req.ChatRoomID).Updates(map[string]interface{}{
 		"last_message_id":   newChat.ID,
-		"last_message_text": newChat.Message,
+		"last_message_text": messageContent,
 		"last_message_at":   newChat.CreatedAt,
 	}).Error; err != nil {
 		return migration.Chat{}, err

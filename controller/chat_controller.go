@@ -108,13 +108,12 @@ func (cc *ChatController) SendMessage(ctx *gin.Context) {
 	}
 
 	res := schemas.SendMessageResponse{
-		MessageID:    message.ID,
-		Message:      message.Message,
-		ReceiverID:   message.ReceiverID,
-		CreatedAt:    message.CreatedAt,
-		MessageType:  message.MessageType,
-		CallDuration: message.CallDuration,
-		CallStatus:   message.CallStatus,
+		MessageID:   message.ID,
+		Message:     message.Message,
+		ReceiverID:  message.ReceiverID,
+		CreatedAt:   message.CreatedAt,
+		MessageType: message.MessageType,
+		SenderID:    message.SenderID,
 	}
 
 	// Get receiver device token to send notification
@@ -264,13 +263,12 @@ func (cc *ChatController) SendImage(ctx *gin.Context) {
 	}
 
 	res := schemas.SendImageResponse{
-		MessageType:  chat.MessageType,
-		ReceiverID:   chat.ReceiverID,
-		CreatedAt:    chat.CreatedAt,
-		MessageID:    chat.ID,
-		Message:      chat.Message,
-		CallStatus:   chat.CallStatus,
-		CallDuration: chat.CallDuration,
+		MessageType: chat.MessageType,
+		ReceiverID:  chat.ReceiverID,
+		CreatedAt:   chat.CreatedAt,
+		MessageID:   chat.ID,
+		Message:     chat.Message,
+		SenderID:    chat.SenderID,
 	}
 
 	// Get receiver device token to send notification
@@ -515,13 +513,12 @@ func (cc *ChatController) GetChatMessages(ctx *gin.Context) {
 
 	for i, message := range messages {
 		res.Messages[i] = schemas.MessageResponse{
-			ID:           message.ID,
-			Message:      message.Message,
-			ReceiverID:   message.ReceiverID,
-			CallStatus:   message.CallStatus,
-			CallDuration: message.CallDuration,
-			CreatedAt:    message.CreatedAt,
-			MessageType:  message.MessageType,
+			ID:          message.ID,
+			Message:     message.Message,
+			SenderID:    message.SenderID,
+			ReceiverID:  message.ReceiverID,
+			CreatedAt:   message.CreatedAt,
+			MessageType: message.MessageType,
 		}
 	}
 
@@ -633,6 +630,7 @@ func (cc *ChatController) InitiateCall(ctx *gin.Context) {
 		TokenSubscriber: rtcTokenSubscriber,
 		CallerID:        data.UserID,
 		ChatRoomID:      req.ChatRoomID,
+		ReceiverID:      req.ReceiverID,
 		// CallType:        req.CallType,
 	}
 
@@ -769,13 +767,12 @@ func (cc *ChatController) UpdateCallStatus(ctx *gin.Context) {
 	}
 
 	res := schemas.UpdateCallStatusResponse{
-		MessageID:    message.ID,
-		Message:      message.Message,
-		ReceiverID:   message.ReceiverID,
-		CreatedAt:    message.CreatedAt,
-		CallStatus:   message.CallStatus,
-		CallDuration: message.CallDuration,
-		MessageType:  message.MessageType,
+		MessageID:   message.ID,
+		Message:     message.Message,
+		ReceiverID:  message.ReceiverID,
+		CreatedAt:   message.CreatedAt,
+		SenderID:    message.SenderID,
+		MessageType: message.MessageType,
 	}
 
 	// Get receiver device token to send notification

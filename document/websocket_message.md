@@ -381,8 +381,7 @@ Send when user send a text message to another user
   "data": {
     "message_id": "UUID",
     "receiver_id": "UUID",
-    "call_status": "string",
-    "call_duration": 0,
+    "sender_id": "UUID",
     "message": "string",
     "message_type": "string", // text, image, video_call, voice_call
     "created_at": "ISO8601 string"
@@ -400,11 +399,10 @@ Send when the user send an image message to another user
   "data": {
     "message_id": "UUID",
     "receiver_id": "UUID",
-    "call_status": "string",
-    "call_duration": 0,
-    "message": "string", // image url in this case
-    "message_type": "string", // text, image, video_call, voice_call
-    "created_at": "ISO8601 string"
+    "sender_id": "UUID",
+    "message_type": "string", // text, image, video_call, voice_call, missed_call
+    "created_at": "ISO8601 string",
+    "message": "string", // image url
   }
 }
 ```
@@ -418,6 +416,7 @@ Send when the user want to initiate a call to another user
   "type": "initiate-call",
   "data": {
     "caller_id": "UUID",
+    "receiver_id": "UUID",
     "chatroom_id": "UUID",
     "token_publisher": "string",
     "token_subscriber": "string",
@@ -433,11 +432,10 @@ Send when the user update the call status (ended call, reject call, missed call)
 {
   "type": "update-call-status",
   "data": {
-    "call_status": "string", // ended, reject, missed
-    "call_duration": 0,
     "message_id": "UUID",
     "receiver_id": "UUID",
-    "message_type": "string", // text, image, video_call, voice_call
+    "sender_id": "UUID",
+    "message_type": "string", // text, image, video_call, voice_call, missed_call
     "created_at": "ISO8601 string",
     "message": "string",
     "chatroom_id": "UUID",

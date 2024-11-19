@@ -85,9 +85,9 @@ func (c *Client) readPump() {
 	}()
 
 	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.conn.SetReadDeadline(time.Now().UTC().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error {
-		c.conn.SetReadDeadline(time.Now().Add(pongWait))
+		c.conn.SetReadDeadline(time.Now().UTC().Add(pongWait))
 		return nil
 	})
 
@@ -121,7 +121,7 @@ func (c *Client) writePump() {
 				return
 			}
 
-			err := c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			err := c.conn.SetWriteDeadline(time.Now().UTC().Add(writeWait))
 			if err != nil {
 				c.mu.Unlock()
 				return
@@ -146,7 +146,7 @@ func (c *Client) writePump() {
 
 		case <-ticker.C:
 			c.mu.Lock()
-			if err := c.conn.SetWriteDeadline(time.Now().Add(writeWait)); err != nil {
+			if err := c.conn.SetWriteDeadline(time.Now().UTC().Add(writeWait)); err != nil {
 				c.mu.Unlock()
 				return
 			}

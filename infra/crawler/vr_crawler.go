@@ -94,7 +94,7 @@ func (c *VrCrawler) UpdateOrCreateVehicles(vehicles []migration.VehicleType) err
 				}
 			} else if result.Error == nil {
 				existingVehicle.FuelConsumed = vehicle.FuelConsumed
-				existingVehicle.UpdatedAt = time.Now()
+				existingVehicle.UpdatedAt = time.Now().UTC()
 				if err := tx.Save(&existingVehicle).Error; err != nil {
 					return err
 				}

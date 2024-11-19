@@ -259,7 +259,7 @@ func (r *RabbitMQ) PublishWebSocketMessage(ctx context.Context, message schemas.
 			ContentType:  "application/json",
 			Body:         body,
 			DeliveryMode: amqp.Persistent,
-			Timestamp:    time.Now(),
+			Timestamp:    time.Now().UTC(),
 		})
 	if err != nil {
 		return fmt.Errorf("failed to publish WebSocket message: %w", err)
@@ -317,7 +317,7 @@ func (r *RabbitMQ) PublishNotification(ctx context.Context, notification schemas
 			ContentType:  "application/json",
 			Body:         body,
 			DeliveryMode: amqp.Persistent,
-			Timestamp:    time.Now(),
+			Timestamp:    time.Now().UTC(),
 		})
 	if err != nil {
 		return fmt.Errorf("failed to publish message: %w", err)

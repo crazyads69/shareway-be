@@ -3465,6 +3465,9 @@ const docTemplate = `{
                 "chatroom_id": {
                     "type": "string"
                 },
+                "receiver_id": {
+                    "type": "string"
+                },
                 "token_publisher": {
                     "type": "string"
                 },
@@ -3565,14 +3568,6 @@ const docTemplate = `{
         "schemas.MessageResponse": {
             "type": "object",
             "properties": {
-                "call_duration": {
-                    "description": "Call duration in seconds",
-                    "type": "integer"
-                },
-                "call_status": {
-                    "description": "missed or ended or rejected",
-                    "type": "string"
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -3587,6 +3582,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "receiver_id": {
+                    "type": "string"
+                },
+                "sender_id": {
                     "type": "string"
                 }
             }
@@ -3941,14 +3939,6 @@ const docTemplate = `{
         "schemas.SendImageResponse": {
             "type": "object",
             "properties": {
-                "call_duration": {
-                    "description": "Call duration in seconds",
-                    "type": "integer"
-                },
-                "call_status": {
-                    "description": "missed or ended or rejected",
-                    "type": "string"
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -3963,6 +3953,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "receiver_id": {
+                    "type": "string"
+                },
+                "sender_id": {
                     "type": "string"
                 }
             }
@@ -3990,14 +3983,6 @@ const docTemplate = `{
         "schemas.SendMessageResponse": {
             "type": "object",
             "properties": {
-                "call_duration": {
-                    "description": "Call duration in seconds",
-                    "type": "integer"
-                },
-                "call_status": {
-                    "description": "missed or ended or rejected",
-                    "type": "string"
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -4012,6 +3997,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "receiver_id": {
+                    "type": "string"
+                },
+                "sender_id": {
                     "type": "string"
                 }
             }
@@ -4205,32 +4193,26 @@ const docTemplate = `{
         "schemas.UpdateCallStatusRequest": {
             "type": "object",
             "required": [
-                "callStatus",
                 "callType",
                 "chatRoomID",
+                "duration",
                 "receiverID"
             ],
             "properties": {
-                "callStatus": {
-                    "type": "string",
-                    "enum": [
-                        "missed",
-                        "ended",
-                        "rejected"
-                    ]
-                },
                 "callType": {
                     "type": "string",
                     "enum": [
                         "video_call",
-                        "voice_call"
+                        "voice_call",
+                        "missed_call"
                     ]
                 },
                 "chatRoomID": {
                     "type": "string"
                 },
                 "duration": {
-                    "type": "integer"
+                    "type": "integer",
+                    "default": 3600
                 },
                 "receiverID": {
                     "type": "string"
@@ -4240,14 +4222,6 @@ const docTemplate = `{
         "schemas.UpdateCallStatusResponse": {
             "type": "object",
             "properties": {
-                "call_duration": {
-                    "description": "Call duration in seconds",
-                    "type": "integer"
-                },
-                "call_status": {
-                    "description": "missed or ended or rejected",
-                    "type": "string"
-                },
                 "chat_room_id": {
                     "type": "string"
                 },
@@ -4268,6 +4242,10 @@ const docTemplate = `{
                 },
                 "receiver_id": {
                     "description": "User who received the call",
+                    "type": "string"
+                },
+                "sender_id": {
+                    "description": "User who initiated the call",
                     "type": "string"
                 }
             }
