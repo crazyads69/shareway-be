@@ -42,7 +42,7 @@ type Admin struct {
 	// DeletedAt gorm.DeletedAt `gorm:"index"`
 	Username string `gorm:"uniqueIndex;not null"`
 	Password string `gorm:"not null"`
-	FullName string `gorm:"not null"`
+	FullName string
 	Role     string `gorm:"default:'admin'"`
 }
 
