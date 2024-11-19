@@ -163,7 +163,7 @@ func (r *RideRepository) AcceptRideRequest(rideOfferID, rideRequestID, vehicleID
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		// Get the ride offer by ID with only necessary fields
 		var rideOffer migration.RideOffer
-		err := tx.Select("start_time, end_time, status, fare, start_address, end_address, encoded_polyline, distance, duration, start_latitude, start_longitude, end_latitude, end_longitude").
+		err := tx.Select("user_id, start_time, end_time, status, fare, start_address, end_address, encoded_polyline, distance, duration, start_latitude, start_longitude, end_latitude, end_longitude").
 			Where("id = ?", rideOfferID).
 			First(&rideOffer).Error
 		if err != nil {
@@ -178,10 +178,9 @@ func (r *RideRepository) AcceptRideRequest(rideOfferID, rideRequestID, vehicleID
 
 		// Get the ride request by ID with only necessary fields
 		var rideRequest migration.RideRequest
-		err = tx.Select("start_time, end_time, status, start_address, end_address, start_latitude, start_longitude, end_latitude, end_longitude, encoded_polyline, distance, duration").
+		err = tx.Select("user_id, start_time, end_time, status, start_address, end_address, start_latitude, start_longitude, end_latitude, end_longitude, encoded_polyline, distance, duration").
 			Where("id = ?", rideRequestID).
 			First(&rideRequest).Error
-
 		if err != nil {
 			return err
 		}
@@ -228,6 +227,18 @@ func (r *RideRepository) AcceptRideRequest(rideOfferID, rideRequestID, vehicleID
 		// if err := tx.Model(&migration.RideRequest{}).Where("id = ?", rideRequestID).Update("status", "matched").Error; err != nil {
 		// 	return err
 		// }
+
+		// Before creating the chat room, verify both users exist
+		var userCount int64
+		err = tx.Model(&migration.User{}).
+			Where("id IN ?", []uuid.UUID{rideOffer.UserID, rideRequest.UserID}).
+			Count(&userCount).Error
+		if err != nil {
+			return err
+		}
+		if userCount != 2 {
+			return errors.New("one or both users do not exist")
+		}
 
 		// Create new chat room (between the driver and the hitcher of the ride)
 		// When a ride is accepted, a chat room is created between the driver and the hitcher of the ride
