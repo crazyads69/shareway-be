@@ -74,6 +74,8 @@ func SeedAdmin(db *gorm.DB) error {
 		ID:       uuid.New(),
 		Username: "admin",
 		Password: string(hashedPassword),
+		Role:     "admin",
+		FullName: "Quản trị viên tối cao",
 	}
 
 	// Insert admin into database
