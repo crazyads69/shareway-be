@@ -373,6 +373,8 @@ Send when the driver or hitcher want to cancel the ride
 
 ### 11. new-text-message
 
+Send when user send a text message to another user
+
 ```json
 {
   "type": "new-text-message",
@@ -389,6 +391,8 @@ Send when the driver or hitcher want to cancel the ride
 ```
 
 ### 12. new-image-message
+
+Send when the user send an image message to another user
 
 ```json
 {
@@ -407,6 +411,8 @@ Send when the driver or hitcher want to cancel the ride
 
 ### 13. initiate-call
 
+Send when the user want to initiate a call to another user
+
 ```json
 {
   "type": "initiate-call",
@@ -421,15 +427,17 @@ Send when the driver or hitcher want to cancel the ride
 
 ### 14. update-call-status
 
+Send when the user update the call status (ended call, reject call, missed call)
+
 ```json
 {
   "type": "update-call-status",
   "data": {
-    "call_status": "string",
+    "call_status": "string", // ended, reject, missed
     "call_duration": 0,
     "message_id": "UUID",
     "receiver_id": "UUID",
-    "message_type": "string",
+    "message_type": "string", // text, image, video_call, voice_call
     "created_at": "ISO8601 string",
     "message": "string",
     "chatroom_id": "UUID",
