@@ -5,6 +5,7 @@ import (
 	"shareway/helper"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -57,11 +58,13 @@ func (r *RideRepository) CreateNewChatRoom(userID1, userID2 uuid.UUID) error {
 	if err == nil {
 		return nil
 	}
-
 	// Create the chat room
 	chatRoom = migration.Room{
-		User1ID: userID1,
-		User2ID: userID2,
+		User1ID:         userID1,
+		User2ID:         userID2,
+		LastMessageAt:   time.Now().UTC(), // Set to current time
+		LastMessageText: "Hai bạn đã được kết nối. Bắt đầu trò chuyện!",
+		LastMessageID:   uuid.New(),
 	}
 	if err := r.db.Create(&chatRoom).Error; err != nil {
 		return err

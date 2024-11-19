@@ -42,6 +42,18 @@ type Admin struct {
 	// DeletedAt gorm.DeletedAt `gorm:"index"`
 	Username string `gorm:"uniqueIndex;not null"`
 	Password string `gorm:"not null"`
+	FullName string `gorm:"not null"`
+	Role     string `gorm:"default:'admin'"`
+}
+
+// SanctumToken represents a Sanctum token for user authentication (for admin)
+type SanctumToken struct {
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	// DeletedAt gorm.DeletedAt `gorm:"index"`
+	UserID uuid.UUID `gorm:"type:uuid"`
+	User   Admin     `gorm:"foreignKey:UserID"`
 }
 
 // OTP represents a one-time password for user verification

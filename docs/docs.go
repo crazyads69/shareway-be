@@ -3949,13 +3949,13 @@ const docTemplate = `{
                     "description": "missed or ended or rejected",
                     "type": "string"
                 },
-                "createdAt": {
+                "created_at": {
                     "type": "string"
                 },
                 "message": {
                     "type": "string"
                 },
-                "messageID": {
+                "message_id": {
                     "type": "string"
                 },
                 "message_type": {
@@ -3998,7 +3998,7 @@ const docTemplate = `{
                     "description": "missed or ended or rejected",
                     "type": "string"
                 },
-                "createdAt": {
+                "created_at": {
                     "type": "string"
                 },
                 "message": {

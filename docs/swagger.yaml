@@ -974,14 +974,14 @@ definitions:
       call_status:
         description: missed or ended or rejected
         type: string
-      createdAt:
+      created_at:
         type: string
       message:
         type: string
+      message_id:
+        type: string
       message_type:
         description: text or image or missed_call, video_call, voice_call
-        type: string
-      messageID:
         type: string
       receiver_id:
         type: string
@@ -1008,7 +1008,7 @@ definitions:
       call_status:
         description: missed or ended or rejected
         type: string
-      createdAt:
+      created_at:
         type: string
       message:
         type: string

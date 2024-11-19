@@ -22,7 +22,7 @@ type SendMessageResponse struct {
 	CallStatus   string    `json:"call_status"`   // missed or ended or rejected
 	CallDuration int64     `json:"call_duration"` // Call duration in seconds
 	MessageType  string    `json:"message_type"`  // text or image or missed_call, video_call, voice_call
-	CreatedAt    time.Time `json:"createdAt"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 // Define SendImageRequest schema
@@ -34,11 +34,11 @@ type SendImageRequest struct {
 
 type SendImageResponse struct {
 	ReceiverID   uuid.UUID `json:"receiver_id"`
-	CreatedAt    time.Time `json:"createdAt"`
+	CreatedAt    time.Time `json:"created_at"`
 	CallStatus   string    `json:"call_status"`   // missed or ended or rejected
 	CallDuration int64     `json:"call_duration"` // Call duration in seconds
 	MessageType  string    `json:"message_type"`  // text or image or missed_call, video_call, voice_call
-	MessageID    uuid.UUID `json:"messageID"`
+	MessageID    uuid.UUID `json:"message_id"`
 	Message      string    `json:"message"`
 }
 

@@ -360,7 +360,6 @@ Send when driver update the ride location
 Send when the driver or hitcher want to cancel the ride
 
 ```json
-```json
 {
   "type": "cancel-ride",
   "data": {
@@ -368,6 +367,72 @@ Send when the driver or hitcher want to cancel the ride
     "ride_offer_id": "UUID",
     "ride_request_id": "UUID",
     "receiver_id": "UUID",
+  }
+}
+```
+
+### 11. new-text-message
+
+```json
+{
+  "type": "new-text-message",
+  "data": {
+    "message_id": "UUID",
+    "receiver_id": "UUID",
+    "call_status": "string",
+    "call_duration": 0,
+    "message": "string",
+    "message_type": "string", // text, image, video_call, voice_call
+    "created_at": "ISO8601 string"
+  }
+}
+```
+
+### 12. new-image-message
+
+```json
+{
+  "type": "new-image-message",
+  "data": {
+    "message_id": "UUID",
+    "receiver_id": "UUID",
+    "call_status": "string",
+    "call_duration": 0,
+    "message": "string", // image url in this case
+    "message_type": "string", // text, image, video_call, voice_call
+    "created_at": "ISO8601 string"
+  }
+}
+```
+
+### 13. initiate-call
+
+```json
+{
+  "type": "initiate-call",
+  "data": {
+    "caller_id": "UUID",
+    "chatroom_id": "UUID",
+    "token_publisher": "string",
+    "token_subscriber": "string",
+  }
+}
+```
+
+### 14. update-call-status
+
+```json
+{
+  "type": "update-call-status",
+  "data": {
+    "call_status": "string",
+    "call_duration": 0,
+    "message_id": "UUID",
+    "receiver_id": "UUID",
+    "message_type": "string",
+    "created_at": "ISO8601 string",
+    "message": "string",
+    "chatroom_id": "UUID",
   }
 }
 ```
