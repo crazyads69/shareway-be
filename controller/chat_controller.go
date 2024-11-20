@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"shareway/helper"
 	"shareway/infra/agora"
 	"shareway/infra/task"
@@ -228,6 +229,17 @@ func (cc *ChatController) SendImage(ctx *gin.Context) {
 	}
 
 	var req schemas.SendImageRequest
+	// Handle multipart form parsing with explicit max size
+	if err := ctx.Request.ParseMultipartForm(10 << 20); err != nil { // 10 MB max
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to parse multipart form",
+			"Không thể xử lý form",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
 	// use shouldBind because the request is multipart/form-data
 	if err := ctx.ShouldBind(&req); err != nil {
 		response := helper.ErrorResponseWithMessage(
@@ -247,6 +259,28 @@ func (cc *ChatController) SendImage(ctx *gin.Context) {
 			"Không thể validate request",
 		)
 		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Validate image file
+	if req.Image == nil || req.Image.Size == 0 {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("missing or empty image file"),
+			"Image file is required",
+			"Cần tệp hình ảnh",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
+		return
+	}
+
+	// Validate file type
+	if !helper.IsValidImageType(req.Image.Header.Get("Content-Type")) {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("invalid image type: %s", req.Image.Header.Get("Content-Type")),
+			"Invalid image type",
+			"Loại hình ảnh không hợp lệ",
+		)
+		helper.GinResponse(ctx, http.StatusBadRequest, response)
 		return
 	}
 
