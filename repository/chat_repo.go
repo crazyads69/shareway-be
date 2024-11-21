@@ -234,16 +234,26 @@ func (r *ChatRepository) UpdateCallStatus(req schemas.UpdateCallStatusRequest, u
 
 // InitiateCall initiates a call in a chat room
 func (r *ChatRepository) InitiateCall(req schemas.InitiateCallRequest, userID uuid.UUID) (migration.Chat, error) {
+	chatRoomUUID, err := uuid.Parse(req.ChatRoomID)
+	if err != nil {
+		return migration.Chat{}, err
+	}
+
+	receiverUUID, err := uuid.Parse(req.ReceiverID)
+	if err != nil {
+		return migration.Chat{}, err
+	}
+
 	newChat := migration.Chat{
-		RoomID:      req.ChatRoomID,
+		RoomID:      chatRoomUUID,
 		SenderID:    userID,
-		ReceiverID:  req.ReceiverID,
+		ReceiverID:  receiverUUID,
 		Message:     "Cuộc gọi",
 		MessageType: "text", // Don't know video_call or voice_call so default to text
 	}
 
 	// Save the chat message
-	err := r.db.Create(&newChat).Error
+	err = r.db.Create(&newChat).Error
 	if err != nil {
 		return migration.Chat{}, err
 	}

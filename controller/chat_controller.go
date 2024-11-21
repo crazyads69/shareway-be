@@ -620,12 +620,35 @@ func (cc *ChatController) InitiateCall(ctx *gin.Context) {
 		return
 	}
 
+	// Convert string to UUID
+	chatRoomUUID, err := uuid.Parse(req.ChatRoomID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid ChatRoomID format",
+			"Định dạng ChatRoomID không hợp lệ",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	receiverUUID, err := uuid.Parse(req.ReceiverID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Invalid ReceiverID format",
+			"Định dạng ReceiverID không hợp lệ",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
 	// Generate Agora RTC token for both users
 	// The channel name is the chat room ID and the user ID is the user's ID
 	// Publisher role is used for sending video and audio
 	// Convert UUID to 32-bit unsigned integer
 	// Check if the expiry time is not empty
-	rtcTokenPublisher, err := cc.agora.GenerateToken(req.ChatRoomID, data.UserID, "publisher", req.ExpireTime)
+	rtcTokenPublisher, err := cc.agora.GenerateToken(chatRoomUUID, data.UserID, "publisher", req.ExpireTime)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -650,7 +673,7 @@ func (cc *ChatController) InitiateCall(ctx *gin.Context) {
 	}
 
 	// Get receiver device token to send notification
-	receiver, err := cc.UserService.GetUserByID(req.ReceiverID)
+	receiver, err := cc.UserService.GetUserByID(receiverUUID)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -666,13 +689,13 @@ func (cc *ChatController) InitiateCall(ctx *gin.Context) {
 		ChatRoomID: chat.RoomID,
 		CallID:     chat.ID,
 		CallerID:   data.UserID,
-		ReceiverID: req.ReceiverID,
+		ReceiverID: receiverUUID,
 	}
 
 	// Prepare websocket message
 	wsMessage := schemas.WebSocketMessage{
 		Type:    "initiate-call",
-		UserID:  req.ReceiverID.String(),
+		UserID:  receiverUUID.String(),
 		Payload: res,
 	}
 
