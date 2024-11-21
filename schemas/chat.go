@@ -82,10 +82,9 @@ type MessageResponse struct {
 
 // Define InitiateCallRequest schema as query parameters
 type InitiateCallRequest struct {
-	ChatRoomID uuid.UUID `json:"chatRoomID" binding:"required,uuid" validate:"required,uuid"`
-	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
-	ExpireTime uint32    `json:"expireTime" binding:"required" validate:"required"`
-	// CallType   string    `json:"callType" binding:"required" validate:"required,oneof=video_call voice_call"`
+	ChatRoomID uuid.UUID `form:"chatRoomID" binding:"required,uuid" validate:"required,uuid"`
+	ReceiverID uuid.UUID `form:"receiverID" binding:"required,uuid" validate:"required,uuid"`
+	ExpireTime uint32    `form:"expireTime" binding:"required" validate:"required"`
 }
 
 // Define InitiateCallResponse schema
