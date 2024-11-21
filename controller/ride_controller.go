@@ -2246,3 +2246,142 @@ func (ctrl *RideController) CancelRide(ctx *gin.Context) {
 // 	helper.GinResponse(ctx, 200, response)
 
 // }
+
+// GetAllPendingRide get all ride request and ride offer that are not cancelled of the user
+// GetAllPendingRide godoc
+// @Summary Get all pending ride
+// @Description Get all ride request and ride offer that are not cancelled of the user
+// @Tags ride
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} schemas.GetAllPendingRideResponse "Successfully got all pending ride"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /ride/get-all-pending-ride [get]
+func (ctrl *RideController) GetAllPendingRide(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get all ride request and ride offer that are not cancelled of the user
+	pendingRideOffer, pendingRideRequest, err := ctrl.RideService.GetAllPendingRide(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get all pending ride",
+			"Không thể lấy tất cả chuyến đi đang chờ",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	pendingRideOfferDetails := make([]schemas.RideOfferDetail, 0, len(pendingRideOffer))
+	for _, rideOffer := range pendingRideOffer {
+		driver, err := ctrl.UserService.GetUserByID(rideOffer.UserID)
+		if err != nil {
+			helper.GinResponse(ctx, 500, helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get driver details",
+				"Không thể lấy thông tin tài xế",
+			))
+			return
+		}
+
+		vehicle, err := ctrl.VehicleService.GetVehicleFromID(rideOffer.VehicleID)
+		if err != nil {
+			helper.GinResponse(ctx, 500, helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get vehicle details",
+				"Không thể lấy thông tin phương tiện",
+			))
+			return
+		}
+
+		pendingRideOfferDetails = append(pendingRideOfferDetails, schemas.RideOfferDetail{
+			ID:      rideOffer.ID,
+			Vehicle: vehicle,
+			User: schemas.UserInfo{
+				ID:          driver.ID,
+				FullName:    driver.FullName,
+				PhoneNumber: driver.PhoneNumber,
+			},
+			StartTime:              rideOffer.StartTime,
+			StartLatitude:          rideOffer.StartLatitude,
+			StartLongitude:         rideOffer.StartLongitude,
+			EndLatitude:            rideOffer.EndLatitude,
+			EndLongitude:           rideOffer.EndLongitude,
+			StartAddress:           rideOffer.StartAddress,
+			EndAddress:             rideOffer.EndAddress,
+			EncodedPolyline:        string(rideOffer.EncodedPolyline),
+			Distance:               rideOffer.Distance,
+			Duration:               rideOffer.Duration,
+			DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+			DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+			Status:                 rideOffer.Status,
+			EndTime:                rideOffer.EndTime,
+			Fare:                   rideOffer.Fare,
+		})
+	}
+
+	pendingRideRequestDetails := make([]schemas.RideRequestDetail, 0, len(pendingRideRequest))
+	for _, rideRequest := range pendingRideRequest {
+		rider, err := ctrl.UserService.GetUserByID(rideRequest.UserID)
+		if err != nil {
+			helper.GinResponse(ctx, 500, helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get rider details",
+				"Không thể lấy thông tin người đi",
+			))
+			return
+		}
+
+		pendingRideRequestDetails = append(pendingRideRequestDetails, schemas.RideRequestDetail{
+			ID: rideRequest.ID,
+			User: schemas.UserInfo{
+				ID:          rider.ID,
+				FullName:    rider.FullName,
+				PhoneNumber: rider.PhoneNumber,
+			},
+			StartTime:             rideRequest.StartTime,
+			StartLatitude:         rideRequest.StartLatitude,
+			StartLongitude:        rideRequest.StartLongitude,
+			EndLatitude:           rideRequest.EndLatitude,
+			EndLongitude:          rideRequest.EndLongitude,
+			StartAddress:          rideRequest.StartAddress,
+			EndAddress:            rideRequest.EndAddress,
+			EncodedPolyline:       string(rideRequest.EncodedPolyline),
+			Distance:              rideRequest.Distance,
+			Duration:              rideRequest.Duration,
+			RiderCurrentLatitude:  rideRequest.RiderCurrentLatitude,
+			RiderCurrentLongitude: rideRequest.RiderCurrentLongitude,
+			Status:                rideRequest.Status,
+			EndTime:               rideRequest.EndTime,
+		})
+	}
+	res := schemas.GetAllPendingRideResponse{
+		PendingRideOffer:   pendingRideOfferDetails,
+		PendingRideRequest: pendingRideRequestDetails,
+	}
+
+	// Return success response
+	response := helper.SuccessResponse(
+		res,
+		"Successfully got all pending ride",
+		"Đã lấy tất cả chuyến đi đang chờ thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
+
+}

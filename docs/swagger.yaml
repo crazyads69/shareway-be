@@ -380,6 +380,18 @@ definitions:
           $ref: '#/definitions/schemas.ChatRoomResponse'
         type: array
     type: object
+  schemas.GetAllPendingRideResponse:
+    properties:
+      pending_ride_offer:
+        items:
+          $ref: '#/definitions/schemas.RideOfferDetail'
+        type: array
+      pending_ride_request:
+        description: The pending ride request of the user
+        items:
+          $ref: '#/definitions/schemas.RideRequestDetail'
+        type: array
+    type: object
   schemas.GetChatMessagesRequest:
     properties:
       chatRoomID:
@@ -2569,6 +2581,28 @@ paths:
       security:
       - BearerAuth: []
       summary: End a ride
+      tags:
+      - ride
+  /ride/get-all-pending-ride:
+    get:
+      consumes:
+      - application/json
+      description: Get all ride request and ride offer that are not cancelled of the
+        user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully got all pending ride
+          schema:
+            $ref: '#/definitions/schemas.GetAllPendingRideResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get all pending ride
       tags:
       - ride
   /ride/give-ride-request:

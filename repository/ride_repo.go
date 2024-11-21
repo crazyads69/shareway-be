@@ -25,6 +25,7 @@ type IRideRepository interface {
 	EndRide(req schemas.EndRideRequest, userID uuid.UUID) (migration.Ride, error)
 	UpdateRideLocation(req schemas.UpdateRideLocationRequest, userID uuid.UUID) (migration.Ride, error)
 	CancelRide(req schemas.CancelRideRequest, userID uuid.UUID) (migration.Ride, error)
+	GetAllPendingRide(userID uuid.UUID) ([]migration.RideOffer, []migration.RideRequest, error)
 }
 
 type RideRepository struct {
@@ -598,6 +599,32 @@ func (r *RideRepository) CancelRide(req schemas.CancelRideRequest, userID uuid.U
 	}
 
 	return ride, nil
+}
+
+// GetAllPendingRide fetches all pending rides for a user
+func (r *RideRepository) GetAllPendingRide(userID uuid.UUID) ([]migration.RideOffer, []migration.RideRequest, error) {
+	var rideOffers []migration.RideOffer
+	var rideRequests []migration.RideRequest
+
+	// Get all ride offers that not have status cancelled or completed
+	err := r.db.Model(&migration.RideOffer{}).
+		Where("user_id = ? AND status NOT IN ('cancelled', 'completed')", userID).
+		Find(&rideOffers).
+		Error
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Get all ride requests that not have status cancelled or completed
+	err = r.db.Model(&migration.RideRequest{}).
+		Where("user_id = ? AND status NOT IN ('cancelled', 'completed')", userID).
+		Find(&rideRequests).
+		Error
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return rideOffers, rideRequests, nil
 }
 
 // Make sure the RideRepository implements the IRideRepository interface

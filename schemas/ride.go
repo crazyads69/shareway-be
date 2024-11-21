@@ -327,3 +327,19 @@ type CancelRideResponse struct {
 	RideOfferID   uuid.UUID `json:"ride_offer_id"`
 	RideRequestID uuid.UUID `json:"ride_request_id"`
 }
+
+// Define GetPendingRide schema
+// This schema is used to get the pending ride request and offer of the user
+// type GetAllPendingRideRequest struct {
+// 	// The ID of the user
+// 	UserID uuid.UUID `json:"userID" binding:"required,uuid" validate:"required,uuid"`
+// }
+
+// Define GetPendingRideResponse schema
+type GetAllPendingRideResponse struct {
+	// The pending ride request of the user
+	PendingRideRequest []RideRequestDetail `json:"pending_ride_request"`
+	// The pending ride offer of the user
+
+	PendingRideOffer []RideOfferDetail `json:"pending_ride_offer"`
+}

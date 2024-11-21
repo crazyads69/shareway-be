@@ -1968,6 +1968,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/ride/get-all-pending-ride": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all ride request and ride offer that are not cancelled of the user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Get all pending ride",
+                "responses": {
+                    "200": {
+                        "description": "Successfully got all pending ride",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.GetAllPendingRideResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/ride/give-ride-request": {
             "post": {
                 "security": [
@@ -3070,6 +3104,24 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/schemas.ChatRoomResponse"
+                    }
+                }
+            }
+        },
+        "schemas.GetAllPendingRideResponse": {
+            "type": "object",
+            "properties": {
+                "pending_ride_offer": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.RideOfferDetail"
+                    }
+                },
+                "pending_ride_request": {
+                    "description": "The pending ride request of the user",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.RideRequestDetail"
                     }
                 }
             }
