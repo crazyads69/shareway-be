@@ -824,6 +824,13 @@ const docTemplate = `{
                         "name": "receiverID",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Token expiry time in seconds",
+                        "name": "expireTime",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {

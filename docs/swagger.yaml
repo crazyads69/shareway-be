@@ -1875,6 +1875,11 @@ paths:
         name: receiverID
         required: true
         type: string
+      - description: Token expiry time in seconds
+        in: query
+        name: expireTime
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
