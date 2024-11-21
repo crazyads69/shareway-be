@@ -824,13 +824,6 @@ const docTemplate = `{
                         "name": "receiverID",
                         "in": "query",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Role (publisher or subscriber)",
-                        "name": "role",
-                        "in": "query",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -3459,6 +3452,10 @@ const docTemplate = `{
         "schemas.InitiateCallResponse": {
             "type": "object",
             "properties": {
+                "call_id": {
+                    "description": "the call id is the message id of the chat message",
+                    "type": "string"
+                },
                 "caller_id": {
                     "type": "string"
                 },
@@ -3468,10 +3465,7 @@ const docTemplate = `{
                 "receiver_id": {
                     "type": "string"
                 },
-                "token_publisher": {
-                    "type": "string"
-                },
-                "token_subscriber": {
+                "token": {
                     "type": "string"
                 }
             }
@@ -4193,12 +4187,16 @@ const docTemplate = `{
         "schemas.UpdateCallStatusRequest": {
             "type": "object",
             "required": [
+                "callID",
                 "callType",
                 "chatRoomID",
                 "duration",
                 "receiverID"
             ],
             "properties": {
+                "callID": {
+                    "type": "string"
+                },
                 "callType": {
                     "type": "string",
                     "enum": [

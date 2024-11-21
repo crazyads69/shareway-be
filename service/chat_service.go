@@ -34,6 +34,7 @@ type IChatService interface {
 	GetAllChatRooms(userID uuid.UUID) ([]migration.Room, error)
 	GetChatMessages(req schemas.GetChatMessagesRequest, userID uuid.UUID) ([]migration.Chat, error)
 	UpdateCallStatus(req schemas.UpdateCallStatusRequest, userID uuid.UUID) (migration.Chat, error)
+	InitiateCall(req schemas.InitiateCallRequest, userID uuid.UUID) (migration.Chat, error)
 }
 
 // SendMessage sends a message to a chat room
@@ -71,6 +72,11 @@ func (s *ChatService) GetChatMessages(req schemas.GetChatMessagesRequest, userID
 // UpdateCallStatus updates the call status in a chat room
 func (s *ChatService) UpdateCallStatus(req schemas.UpdateCallStatusRequest, userID uuid.UUID) (migration.Chat, error) {
 	return s.repo.UpdateCallStatus(req, userID)
+}
+
+// InitiateCall initiates a call in a chat room
+func (s *ChatService) InitiateCall(req schemas.InitiateCallRequest, userID uuid.UUID) (migration.Chat, error) {
+	return s.repo.InitiateCall(req, userID)
 }
 
 // Ensure ChatService implements IChatService

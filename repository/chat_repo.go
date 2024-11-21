@@ -30,6 +30,7 @@ type IChatRepository interface {
 	GetAllChatRooms(userID uuid.UUID) ([]migration.Room, error)
 	GetChatMessages(req schemas.GetChatMessagesRequest, userID uuid.UUID) ([]migration.Chat, error)
 	UpdateCallStatus(req schemas.UpdateCallStatusRequest, userID uuid.UUID) (migration.Chat, error)
+	InitiateCall(req schemas.InitiateCallRequest, userID uuid.UUID) (migration.Chat, error)
 }
 
 // GetChatRoomByUserIDs fetches a chat room by the user IDs
@@ -168,12 +169,15 @@ func (r *ChatRepository) GetChatMessages(req schemas.GetChatMessagesRequest, use
 
 // UpdateCallStatus updates the call status in a chat room
 func (r *ChatRepository) UpdateCallStatus(req schemas.UpdateCallStatusRequest, userID uuid.UUID) (migration.Chat, error) {
-	// Create a new chat message
-	var newChat migration.Chat
-	newChat.RoomID = req.ChatRoomID
-	newChat.SenderID = userID
-	newChat.ReceiverID = req.ReceiverID
-	newChat.MessageType = req.CallType // video_call or voice_call or missed_call
+	// Get the current message from the chat room use call_id
+	var chat migration.Chat
+	err := r.db.First(&chat, req.CallID).Error
+	if err != nil {
+		return migration.Chat{}, err
+	}
+
+	// Update the chat message wit necessary information
+	chat.MessageType = req.CallType // video_call or voice_call or missed_call
 
 	// Handle call duration if provided from second to (giờ phút giây)
 	if req.Duration > 0 {
@@ -191,12 +195,14 @@ func (r *ChatRepository) UpdateCallStatus(req schemas.UpdateCallStatusRequest, u
 		if seconds > 0 {
 			timeStr += fmt.Sprintf("%d giây", seconds)
 		}
-		newChat.Message = strings.TrimSpace(timeStr)
+		if timeStr == "" {
+			timeStr = "0 giây"
+		}
+		chat.Message = strings.TrimSpace(timeStr)
 	}
 
-	// Save the chat message
-	err := r.db.Create(&newChat).Error
-	if err != nil {
+	// Update the chat message
+	if err := r.db.Save(&chat).Error; err != nil {
 		return migration.Chat{}, err
 	}
 
@@ -216,13 +222,33 @@ func (r *ChatRepository) UpdateCallStatus(req schemas.UpdateCallStatusRequest, u
 		messageContent = "Cuộc gọi"
 	}
 	if err := r.db.Model(&migration.Room{}).Where("id = ?", req.ChatRoomID).Updates(map[string]interface{}{
-		"last_message_id":   newChat.ID,
+		"last_message_id":   chat.ID,
 		"last_message_text": messageContent,
-		"last_message_at":   newChat.CreatedAt,
+		"last_message_at":   chat.CreatedAt,
 	}).Error; err != nil {
 		return migration.Chat{}, err
 	}
 
+	return chat, nil
+}
+
+// InitiateCall initiates a call in a chat room
+func (r *ChatRepository) InitiateCall(req schemas.InitiateCallRequest, userID uuid.UUID) (migration.Chat, error) {
+	newChat := migration.Chat{
+		RoomID:      req.ChatRoomID,
+		SenderID:    userID,
+		ReceiverID:  req.ReceiverID,
+		Message:     "Cuộc gọi",
+		MessageType: "text", // Don't know video_call or voice_call so default to text
+	}
+
+	// Save the chat message
+	err := r.db.Create(&newChat).Error
+	if err != nil {
+		return migration.Chat{}, err
+	}
+
+	// This is initiated call so no need to update the chat room lastest message
 	return newChat, nil
 }
 

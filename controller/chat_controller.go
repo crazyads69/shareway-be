@@ -574,7 +574,6 @@ func (cc *ChatController) GetChatMessages(ctx *gin.Context) {
 // @Security BearerAuth
 // @Param chatRoomID query string true "Chat room ID"
 // @Param receiverID query string true "Receiver ID"
-// @Param role query string true "Role (publisher or subscriber)"
 // @Success 200 {object} helper.Response{data=schemas.InitiateCallResponse} "Call initiated successfully"
 // @Failure 400 {object} helper.Response "Invalid request"
 // @Failure 500 {object} helper.Response "Internal server error"
@@ -636,12 +635,14 @@ func (cc *ChatController) InitiateCall(ctx *gin.Context) {
 		return
 	}
 
-	rtcTokenSubscriber, err := cc.agora.GenerateToken(req.ChatRoomID, req.ReceiverID, "subscriber", req.ExpireTime)
+	// Save the call message to the chat room
+	// The message type is video_call or voice_call
+	chat, err := cc.ChatService.InitiateCall(req, data.UserID)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
-			"Failed to generate RTC token for subscriber",
-			"Không thể tạo token cho subscriber",
+			"Failed to initiate call",
+			"Không thể khởi tạo cuộc gọi",
 		)
 		helper.GinResponse(ctx, 500, response)
 		return
@@ -660,12 +661,11 @@ func (cc *ChatController) InitiateCall(ctx *gin.Context) {
 	}
 
 	res := schemas.InitiateCallResponse{
-		TokenPublisher:  rtcTokenPublisher,
-		TokenSubscriber: rtcTokenSubscriber,
-		CallerID:        data.UserID,
-		ChatRoomID:      req.ChatRoomID,
-		ReceiverID:      req.ReceiverID,
-		// CallType:        req.CallType,
+		Token:      rtcTokenPublisher,
+		ChatRoomID: chat.RoomID,
+		CallID:     chat.ID,
+		CallerID:   data.UserID,
+		ReceiverID: req.ReceiverID,
 	}
 
 	// Prepare websocket message

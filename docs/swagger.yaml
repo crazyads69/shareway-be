@@ -633,15 +633,16 @@ definitions:
     type: object
   schemas.InitiateCallResponse:
     properties:
+      call_id:
+        description: the call id is the message id of the chat message
+        type: string
       caller_id:
         type: string
       chatroom_id:
         type: string
       receiver_id:
         type: string
-      token_publisher:
-        type: string
-      token_subscriber:
+      token:
         type: string
     type: object
   schemas.LoginRequest:
@@ -1133,6 +1134,8 @@ definitions:
     type: object
   schemas.UpdateCallStatusRequest:
     properties:
+      callID:
+        type: string
       callType:
         enum:
         - video_call
@@ -1147,6 +1150,7 @@ definitions:
       receiverID:
         type: string
     required:
+    - callID
     - callType
     - chatRoomID
     - duration
@@ -1869,11 +1873,6 @@ paths:
       - description: Receiver ID
         in: query
         name: receiverID
-        required: true
-        type: string
-      - description: Role (publisher or subscriber)
-        in: query
-        name: role
         required: true
         type: string
       produces:

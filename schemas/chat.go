@@ -83,28 +83,28 @@ type MessageResponse struct {
 // Define InitiateCallRequest schema as query parameters
 type InitiateCallRequest struct {
 	ChatRoomID uuid.UUID `json:"chatRoomID" binding:"required,uuid" validate:"required,uuid"`
-	Role       string    `json:"role" binding:"required" validate:"required,oneof=publisher subscriber"` // publisher or subscriber
-	ReceiverID uuid.UUID `json:"receiverID" binding:"required" validate:"required,uuid"`
+	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
 	ExpireTime uint32    `json:"expireTime" binding:"required" validate:"required"`
 	// CallType   string    `json:"callType" binding:"required" validate:"required,oneof=video_call voice_call"`
 }
 
 // Define InitiateCallResponse schema
 type InitiateCallResponse struct {
-	TokenPublisher  string    `json:"token_publisher"`
-	TokenSubscriber string    `json:"token_subscriber"`
-	ChatRoomID      uuid.UUID `json:"chatroom_id"`
-	CallerID        uuid.UUID `json:"caller_id"`
-	ReceiverID      uuid.UUID `json:"receiver_id"`
+	Token      string    `json:"token"`
+	ChatRoomID uuid.UUID `json:"chatroom_id"`
+	CallID     uuid.UUID `json:"call_id"` // the call id is the message id of the chat message
+	CallerID   uuid.UUID `json:"caller_id"`
+	ReceiverID uuid.UUID `json:"receiver_id"`
 	// CallType        string    `json:"call_type"`
 }
 
 // Define UpdateCallStatusRequest schema
 type UpdateCallStatusRequest struct {
-	ChatRoomID uuid.UUID `json:"chatRoomID" binding:"required"`
+	ChatRoomID uuid.UUID `json:"chatRoomID" binding:"required,uuid" validate:"required,uuid"`
 	CallType   string    `json:"callType" binding:"required" validate:"required,oneof=video_call voice_call missed_call"`
 	Duration   int64     `json:"duration" binding:"required" default:"3600"`
-	ReceiverID uuid.UUID `json:"receiverID" binding:"required"`
+	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
+	CallID     uuid.UUID `json:"callID" binding:"required,uuid" validate:"required,uuid"`
 }
 
 // Define UpdateCallStatusResponse schema
