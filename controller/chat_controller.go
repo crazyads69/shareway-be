@@ -574,7 +574,6 @@ func (cc *ChatController) GetChatMessages(ctx *gin.Context) {
 // @Security BearerAuth
 // @Param chatRoomID query string true "Chat room ID"
 // @Param receiverID query string true "Receiver ID"
-// @Param expireTime query int true "Token expiry time in seconds"
 // @Success 200 {object} helper.Response{data=schemas.InitiateCallResponse} "Call initiated successfully"
 // @Failure 400 {object} helper.Response "Invalid request"
 // @Failure 500 {object} helper.Response "Internal server error"
@@ -648,7 +647,7 @@ func (cc *ChatController) InitiateCall(ctx *gin.Context) {
 	// Publisher role is used for sending video and audio
 	// Convert UUID to 32-bit unsigned integer
 	// Check if the expiry time is not empty
-	rtcTokenPublisher, err := cc.agora.GenerateToken(chatRoomUUID, data.UserID, "subcriber", req.ExpireTime)
+	rtcTokenPublisher, err := cc.agora.GenerateToken(chatRoomUUID, data.UserID, "subcriber")
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,

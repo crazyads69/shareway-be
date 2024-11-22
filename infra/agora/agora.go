@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"shareway/helper"
 	"shareway/util"
-	"time"
 
 	rtctokenbuilder2 "github.com/AgoraIO-Community/go-tokenbuilder/rtctokenbuilder"
 	"github.com/google/uuid"
@@ -19,7 +18,7 @@ func NewAgora(cfg util.Config) *Agora {
 		cfg: cfg,
 	}
 }
-func (a *Agora) GenerateToken(channelName uuid.UUID, userID uuid.UUID, role string, expireTimestamp uint32) (string, error) {
+func (a *Agora) GenerateToken(channelName uuid.UUID, userID uuid.UUID, role string) (string, error) {
 	var rtcRole rtctokenbuilder2.Role
 	if role == "publisher" {
 		rtcRole = rtctokenbuilder2.RolePublisher
@@ -29,12 +28,6 @@ func (a *Agora) GenerateToken(channelName uuid.UUID, userID uuid.UUID, role stri
 
 	// Generate consistent UID
 	uid := helper.UuidToUid(userID)
-
-	// Current timestamp in seconds
-	currentTime := time.Now().UTC().Unix()
-
-	// Calculate absolute expiration time
-	expireTime := uint32(currentTime) + expireTimestamp
 
 	// Use proper channel name format (string)
 	channelNameStr := channelName.String()
@@ -55,7 +48,7 @@ func (a *Agora) GenerateToken(channelName uuid.UUID, userID uuid.UUID, role stri
 		channelNameStr,
 		uid,
 		rtcRole,
-		expireTime,
+		3600, // 1 hour expiration
 	)
 
 	if err != nil {
