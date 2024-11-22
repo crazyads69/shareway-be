@@ -59,7 +59,7 @@ func (s *OTPService) SendOTP(ctx context.Context, phoneNumber string) (string, e
 	}
 
 	if cooldown > 0 {
-		return "", fmt.Errorf("Please wait %d seconds before requesting a new OTP", int(cooldown.Seconds()))
+		return "", fmt.Errorf("please wait %d seconds before requesting a new OTP", int(cooldown.Seconds()))
 	}
 
 	// Generate and send OTP

@@ -43,17 +43,22 @@ type Admin struct {
 	Username string `gorm:"uniqueIndex;not null"`
 	Password string `gorm:"not null"`
 	FullName string
-	Role     string `gorm:"default:'admin'"`
+	Role     string         `gorm:"default:'admin'"`
+	Tokens   []SanctumToken `gorm:"foreignKey:AdminID"` // Add reverse relation
+
 }
 
 // SanctumToken represents a Sanctum token for user authentication (for admin)
 type SanctumToken struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ID        int64     `gorm:"primaryKey;autoIncrement"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
-	// DeletedAt gorm.DeletedAt `gorm:"index"`
-	UserID uuid.UUID `gorm:"type:uuid"`
-	User   Admin     `gorm:"foreignKey:UserID"`
+	AdminID   uuid.UUID `gorm:"type:uuid"`
+	Admin     Admin     `gorm:"foreignKey:AdminID"`
+	Token     string
+	ExpiredAt time.Time
+	IsRevoked bool   `gorm:"default:false"` // Revoke the token if needed to prevent further usage
+	Ability   string `gorm:"default:'*'"`   // Default is "*" for admin
 }
 
 // OTP represents a one-time password for user verification

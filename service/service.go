@@ -7,6 +7,7 @@ import (
 	"shareway/infra/ws"
 	"shareway/repository"
 	"shareway/util"
+	"shareway/util/sanctum"
 	"shareway/util/token"
 
 	"github.com/redis/go-redis/v9"
@@ -32,8 +33,9 @@ type ServiceFactory struct {
 	redis     *redis.Client
 	hub       *ws.Hub
 	// rabbitmq   *rabbitmq.RabbitMQ
-	asynq      *task.AsyncClient
-	cloudinary *bucket.CloudinaryService
+	asynq        *task.AsyncClient
+	cloudinary   *bucket.CloudinaryService
+	sanctumToken *sanctum.SanctumToken
 }
 
 func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, redisClient *redis.Client, hub *ws.Hub, asynq *task.AsyncClient, cloudinary *bucket.CloudinaryService) *ServiceFactory {
@@ -45,16 +47,22 @@ func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, r
 	// Initialize encryptor
 	encryptor := util.NewEncryptor(cfg)
 
+	// Initialize the token
+	cryptoSanctum := sanctum.NewCryptoSanctum()
+	tokenSanctum := sanctum.NewTokenSanctum(cryptoSanctum)
+	sanctumToken := sanctum.NewSanctumToken(tokenSanctum, db)
+
 	return &ServiceFactory{
-		repos:      repos,
-		cfg:        cfg,
-		fptReader:  fptReader,
-		encryptor:  encryptor,
-		maker:      token,
-		redis:      redisClient,
-		hub:        hub,
-		cloudinary: cloudinary,
-		asynq:      asynq,
+		repos:        repos,
+		cfg:          cfg,
+		fptReader:    fptReader,
+		encryptor:    encryptor,
+		maker:        token,
+		redis:        redisClient,
+		hub:          hub,
+		cloudinary:   cloudinary,
+		asynq:        asynq,
+		sanctumToken: sanctumToken,
 	}
 }
 
