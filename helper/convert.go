@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"crypto/sha256"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -61,19 +60,18 @@ func ConvertToStringMap(data interface{}) (map[string]string, error) {
 
 // Recommended method: Combines hash and range checking
 func UuidToUid(id uuid.UUID) uint32 {
-	// Hash the UUID for good distribution
-	hasher := sha256.New()
-	hasher.Write(id[:])
-	hash := hasher.Sum(nil)
+	// Agora requires uid to be between 1 and (2^32 - 1)
+	// We should ensure consistent mapping from UUID to uint32
 
-	// Convert first 4 bytes to uint32
-	uid := binary.BigEndian.Uint32(hash[:4])
+	// Use last 4 bytes of UUID instead of hashing
+	// This ensures the same UUID always maps to the same UID
+	bytes := id[12:16]
+	uid := binary.BigEndian.Uint32(bytes)
 
-	// Ensure the UID is between 1 and (2^32 - 1)
+	// Ensure uid is not 0 (reserved in Agora)
 	if uid == 0 {
-		return 1
+		uid = 1
 	}
 
-	// Return the UUID as a uint32
 	return uid
 }
