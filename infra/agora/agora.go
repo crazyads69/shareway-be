@@ -45,9 +45,9 @@ func (a *Agora) GenerateToken(channelName uuid.UUID, userID uuid.UUID, role stri
 		a.cfg.AgoraAppID,
 		a.cfg.AgoraAppCertificate,
 		channelNameStr,
-		1, // UID is always 1
+		uint32(1), // uid,
 		rtcRole,
-		3600, // 1 hour expiration
+		uint32(600), // 10 minutes
 	)
 
 	if err != nil {
