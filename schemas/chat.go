@@ -100,7 +100,7 @@ type InitiateCallResponse struct {
 type UpdateCallStatusRequest struct {
 	ChatRoomID uuid.UUID `json:"chatRoomID" binding:"required,uuid" validate:"required,uuid"`
 	CallType   string    `json:"callType" binding:"required" validate:"required,oneof=video_call voice_call missed_call"`
-	Duration   int64     `json:"duration" binding:"required" default:"3600"`
+	Duration   int64     `json:"duration" binding:"required" validate:"required,min=0"`
 	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
 	CallID     uuid.UUID `json:"callID" binding:"required,uuid" validate:"required,uuid"`
 }

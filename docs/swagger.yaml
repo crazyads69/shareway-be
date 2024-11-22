@@ -1157,7 +1157,7 @@ definitions:
       chatRoomID:
         type: string
       duration:
-        default: 3600
+        minimum: 0
         type: integer
       receiverID:
         type: string

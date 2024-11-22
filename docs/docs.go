@@ -4262,7 +4262,7 @@ const docTemplate = `{
                 },
                 "duration": {
                     "type": "integer",
-                    "default": 3600
+                    "minimum": 0
                 },
                 "receiverID": {
                     "type": "string"
