@@ -84,7 +84,6 @@ type MessageResponse struct {
 type InitiateCallRequest struct {
 	ChatRoomID string `form:"chatRoomID" binding:"required,uuid"`
 	ReceiverID string `form:"receiverID" binding:"required,uuid"`
-	ExpireTime uint32 `form:"expireTime" binding:"required"`
 }
 
 // Define InitiateCallResponse schema
