@@ -27,7 +27,7 @@ func (a *Agora) GenerateToken(channelName string, role string) (string, error) {
 	}
 
 	// Use 0 as default uid like in Node.js code
-	uid := uint32(0)
+	uid := uint32(1)
 
 	// Validate credentials
 	if a.cfg.AgoraAppID == "" || a.cfg.AgoraAppCertificate == "" {
