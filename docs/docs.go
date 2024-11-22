@@ -3624,7 +3624,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "message_type": {
-                    "description": "text or image or missed_call, video_call, voice_call",
+                    "description": "text or image or call and missed_call",
                     "type": "string"
                 },
                 "receiver_id": {
@@ -3995,7 +3995,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "message_type": {
-                    "description": "text or image or missed_call, video_call, voice_call",
+                    "description": "text or image or call and missed_call",
                     "type": "string"
                 },
                 "receiver_id": {
@@ -4039,7 +4039,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "message_type": {
-                    "description": "text or image or missed_call, video_call, voice_call",
+                    "description": "text or image or call and missed_call",
                     "type": "string"
                 },
                 "receiver_id": {
@@ -4242,7 +4242,6 @@ const docTemplate = `{
                 "callID",
                 "callType",
                 "chatRoomID",
-                "duration",
                 "receiverID"
             ],
             "properties": {
@@ -4252,8 +4251,7 @@ const docTemplate = `{
                 "callType": {
                     "type": "string",
                     "enum": [
-                        "video_call",
-                        "voice_call",
+                        "call",
                         "missed_call"
                     ]
                 },
@@ -4261,6 +4259,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "duration": {
+                    "description": "Remove required validation because it is not parse from the validation if it is 0",
                     "type": "integer",
                     "minimum": 0
                 },
@@ -4287,7 +4286,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "message_type": {
-                    "description": "text or image or missed_call, video_call, voice_call",
+                    "description": "text or image or missed_call or call",
                     "type": "string"
                 },
                 "receiver_id": {

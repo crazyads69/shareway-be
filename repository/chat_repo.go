@@ -177,7 +177,7 @@ func (r *ChatRepository) UpdateCallStatus(req schemas.UpdateCallStatusRequest, u
 	}
 
 	// Update the chat message wit necessary information
-	chat.MessageType = req.CallType // video_call or voice_call or missed_call
+	chat.MessageType = req.CallType // call or missed_call
 
 	// Handle call duration if provided from second to (giờ phút giây)
 	if req.Duration > 0 {
@@ -209,17 +209,14 @@ func (r *ChatRepository) UpdateCallStatus(req schemas.UpdateCallStatusRequest, u
 	// Update the chat room lastest message
 	// Update the chat room with the last message ID and message content
 	// Handle the message content based on the call type
+	// If the call type is call, display "Cuộc gọi dến"
 	// If the call type is missed_call, display "Cuộc gọi nhỡ"
-	// If the call type is video_call, display "Cuộc gọi video"
-	// If the call type is voice_call, display "Cuộc gọi"
 	var messageContent string
 	switch req.CallType {
 	case "missed_call":
 		messageContent = "Cuộc gọi nhỡ"
-	case "video_call":
-		messageContent = "Cuộc gọi video"
-	case "voice_call":
-		messageContent = "Cuộc gọi"
+	case "call":
+		messageContent = "Cuộc gọi đến"
 	}
 	if err := r.db.Model(&migration.Room{}).Where("id = ?", req.ChatRoomID).Updates(map[string]interface{}{
 		"last_message_id":   chat.ID,

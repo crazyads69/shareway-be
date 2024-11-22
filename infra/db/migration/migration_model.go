@@ -233,7 +233,7 @@ type Chat struct {
 	ReceiverID  uuid.UUID `gorm:"type:uuid"`
 	Receiver    User      `gorm:"foreignKey:ReceiverID"`
 	Message     string
-	MessageType string    `gorm:"default:'text'"` // text, image, voice_call, video_call, missed_call
+	MessageType string    `gorm:"default:'text'"` // text, image, call, missed_call
 	RoomID      uuid.UUID `gorm:"type:uuid"`
 	Room        Room      `gorm:"foreignKey:RoomID"`
 }

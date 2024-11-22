@@ -728,7 +728,7 @@ definitions:
       message_id:
         type: string
       message_type:
-        description: text or image or missed_call, video_call, voice_call
+        description: text or image or call and missed_call
         type: string
       receiver_id:
         type: string
@@ -986,7 +986,7 @@ definitions:
       message_id:
         type: string
       message_type:
-        description: text or image or missed_call, video_call, voice_call
+        description: text or image or call and missed_call
         type: string
       receiver_id:
         type: string
@@ -1016,7 +1016,7 @@ definitions:
       message_id:
         type: string
       message_type:
-        description: text or image or missed_call, video_call, voice_call
+        description: text or image or call and missed_call
         type: string
       receiver_id:
         type: string
@@ -1150,13 +1150,14 @@ definitions:
         type: string
       callType:
         enum:
-        - video_call
-        - voice_call
+        - call
         - missed_call
         type: string
       chatRoomID:
         type: string
       duration:
+        description: Remove required validation because it is not parse from the validation
+          if it is 0
         minimum: 0
         type: integer
       receiverID:
@@ -1165,7 +1166,6 @@ definitions:
     - callID
     - callType
     - chatRoomID
-    - duration
     - receiverID
     type: object
   schemas.UpdateCallStatusResponse:
@@ -1181,7 +1181,7 @@ definitions:
       message_id:
         type: string
       message_type:
-        description: text or image or missed_call, video_call, voice_call
+        description: text or image or missed_call or call
         type: string
       receiver_id:
         description: User who received the call

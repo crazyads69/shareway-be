@@ -659,7 +659,7 @@ func (cc *ChatController) InitiateCall(ctx *gin.Context) {
 	}
 
 	// Save the call message to the chat room
-	// The message type is video_call or voice_call
+	// The message type is call or missed_call
 	chat, err := cc.ChatService.InitiateCall(req, data.UserID)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(

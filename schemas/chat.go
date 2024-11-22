@@ -20,7 +20,7 @@ type SendMessageResponse struct {
 	Message     string    `json:"message"`
 	ReceiverID  uuid.UUID `json:"receiver_id"`
 	SenderID    uuid.UUID `json:"sender_id"`
-	MessageType string    `json:"message_type"` // text or image or missed_call, video_call, voice_call
+	MessageType string    `json:"message_type"` // text or image or call and missed_call
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -35,7 +35,7 @@ type SendImageResponse struct {
 	ReceiverID  uuid.UUID `json:"receiver_id"`
 	SenderID    uuid.UUID `json:"sender_id"`
 	CreatedAt   time.Time `json:"created_at"`
-	MessageType string    `json:"message_type"` // text or image or missed_call, video_call, voice_call
+	MessageType string    `json:"message_type"` // text or image or call and missed_call
 	MessageID   uuid.UUID `json:"message_id"`
 	Message     string    `json:"message"`
 }
@@ -77,7 +77,7 @@ type MessageResponse struct {
 	SenderID    uuid.UUID `json:"sender_id"`
 	CreatedAt   time.Time `json:"created_at"`
 	ReceiverID  uuid.UUID `json:"receiver_id"`
-	MessageType string    `json:"message_type"` // text or image or missed_call, video_call, voice_call
+	MessageType string    `json:"message_type"` // text or image or call and missed_call
 }
 
 // Define InitiateCallRequest schema as query parameters
@@ -99,8 +99,8 @@ type InitiateCallResponse struct {
 // Define UpdateCallStatusRequest schema
 type UpdateCallStatusRequest struct {
 	ChatRoomID uuid.UUID `json:"chatRoomID" binding:"required,uuid" validate:"required,uuid"`
-	CallType   string    `json:"callType" binding:"required" validate:"required,oneof=video_call voice_call missed_call"`
-	Duration   int64     `json:"duration" binding:"required" validate:"required,min=0"`
+	CallType   string    `json:"callType" binding:"required" validate:"required,oneof=call missed_call"`
+	Duration   int64     `json:"duration" validate:"min=0"` // Remove required validation because it is not parse from the validation if it is 0
 	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
 	CallID     uuid.UUID `json:"callID" binding:"required,uuid" validate:"required,uuid"`
 }
@@ -113,5 +113,5 @@ type UpdateCallStatusResponse struct {
 	MessageID   uuid.UUID `json:"message_id"`
 	CreatedAt   time.Time `json:"created_at"`   // Call status update time
 	ReceiverID  uuid.UUID `json:"receiver_id"`  // User who received the call
-	MessageType string    `json:"message_type"` // text or image or missed_call, video_call, voice_call
+	MessageType string    `json:"message_type"` // text or image or missed_call or call
 }

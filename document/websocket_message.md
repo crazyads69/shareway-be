@@ -383,7 +383,7 @@ Send when user send a text message to another user
     "receiver_id": "UUID",
     "sender_id": "UUID",
     "message": "string",
-    "message_type": "string", // text, image, video_call, voice_call
+    "message_type": "string", // text, image, call, missed_call
     "created_at": "ISO8601 string"
   }
 }
