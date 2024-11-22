@@ -647,7 +647,7 @@ func (cc *ChatController) InitiateCall(ctx *gin.Context) {
 	// Publisher role is used for sending video and audio
 	// Convert UUID to 32-bit unsigned integer
 	// Check if the expiry time is not empty
-	rtcTokenPublisher, err := cc.agora.GenerateToken(chatRoomUUID, data.UserID, "subcriber")
+	rtcTokenPublisher, err := cc.agora.GenerateToken(chatRoomUUID.String(), "publisher")
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
