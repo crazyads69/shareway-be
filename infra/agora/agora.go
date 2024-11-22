@@ -2,7 +2,6 @@ package agora
 
 import (
 	"fmt"
-	"shareway/helper"
 	"shareway/util"
 
 	rtctokenbuilder2 "github.com/AgoraIO-Community/go-tokenbuilder/rtctokenbuilder"
@@ -27,7 +26,7 @@ func (a *Agora) GenerateToken(channelName uuid.UUID, userID uuid.UUID, role stri
 	}
 
 	// Generate consistent UID
-	uid := helper.UuidToUid(userID)
+	// uid := helper.UuidToUid(userID)
 
 	// Use proper channel name format (string)
 	channelNameStr := channelName.String()
@@ -46,7 +45,7 @@ func (a *Agora) GenerateToken(channelName uuid.UUID, userID uuid.UUID, role stri
 		a.cfg.AgoraAppID,
 		a.cfg.AgoraAppCertificate,
 		channelNameStr,
-		uid,
+		1, // UID is always 1
 		rtcRole,
 		3600, // 1 hour expiration
 	)
