@@ -141,7 +141,7 @@ func (s *MapService) GetAutoComplete(ctx context.Context, input string, limit in
 	url := baseURL.String()
 
 	var response schemas.GoongAutoCompleteResponse
-	maxRetries := 5
+	maxRetries := MaxRetry
 	retryDelay := time.Second
 
 	for i := 0; i < maxRetries; i++ {
@@ -491,7 +491,7 @@ func (s *MapService) GetDistanceFromCurrentLocation(ctx context.Context, current
 	url := baseURL.String()
 
 	var response schemas.GoongDistanceMatrixResponse
-	maxRetries := 3
+	maxRetries := MaxRetry
 	retryDelay := time.Second
 
 	for i := 0; i < maxRetries; i++ {
