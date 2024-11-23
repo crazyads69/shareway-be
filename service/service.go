@@ -48,7 +48,7 @@ func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, r
 	encryptor := util.NewEncryptor(cfg)
 
 	// Initialize the token
-	cryptoSanctum := sanctum.NewCryptoSanctum()
+	cryptoSanctum := sanctum.NewCryptoSanctum(cfg)
 	tokenSanctum := sanctum.NewTokenSanctum(cryptoSanctum)
 	sanctumToken := sanctum.NewSanctumToken(tokenSanctum, db)
 

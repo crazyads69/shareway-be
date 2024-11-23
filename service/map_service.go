@@ -21,6 +21,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const (
+	MaxRetry = 5 // Maximum number of retries for fetching data from Goong API
+)
+
 type IMapService interface {
 	GetAutoComplete(ctx context.Context, input string, limit int, location string, radius int, moreCompound bool, currentLocation string) (schemas.GoongAutoCompleteResponse, error)
 	CreateGiveRide(ctx context.Context, input schemas.GiveRideRequest, userID uuid.UUID) (schemas.GoongDirectionsResponse, uuid.UUID, error)
@@ -62,44 +66,45 @@ func (s *MapService) GetLocationFromPlaceID(ctx context.Context, placeID string)
 	baseURL.RawQuery = params.Encode()
 	url := baseURL.String()
 
-	cacheKey := "maps:placeid:" + url
 	var response schemas.GoongPlaceDetailResponse
+	maxRetries := MaxRetry
+	retryDelay := time.Second
 
-	cachedData, err := s.redisClient.Get(ctx, cacheKey).Bytes()
-	if err == nil {
-		if err := json.Unmarshal(cachedData, &response); err == nil {
-			return schemas.Point{
-				Lat: response.Result.Geometry.Location.Lat,
-				Lng: response.Result.Geometry.Location.Lng,
-			}, nil
+	for i := 0; i < maxRetries; i++ {
+		resp, err := http.Get(url)
+		if err != nil {
+			return schemas.Point{}, err
 		}
+
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			time.Sleep(retryDelay)
+			retryDelay *= 2 // Exponential backoff
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return schemas.Point{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return schemas.Point{}, err
+		}
+
+		if err := json.Unmarshal(body, &response); err != nil {
+			return schemas.Point{}, err
+		}
+
+		return schemas.Point{
+			Lat: response.Result.Geometry.Location.Lat,
+			Lng: response.Result.Geometry.Location.Lng,
+		}, nil
 	}
 
-	resp, err := http.Get(url)
-	if err != nil {
-		return schemas.Point{}, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return schemas.Point{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return schemas.Point{}, err
-	}
-
-	if err := json.Unmarshal(body, &response); err != nil {
-		return schemas.Point{}, err
-	}
-
-	s.redisClient.Set(ctx, cacheKey, body, time.Second*time.Duration(s.cfg.GoongCachePlaceDetailDuration))
-
-	return schemas.Point{
-		Lat: response.Result.Geometry.Location.Lat,
-		Lng: response.Result.Geometry.Location.Lng,
-	}, nil
+	// If max retries reached and still no success, return an error
+	return schemas.Point{}, fmt.Errorf("max retries reached, unable to get location data")
 }
 
 // GetAutoComplete returns the auto-complete results for the given input
@@ -135,40 +140,38 @@ func (s *MapService) GetAutoComplete(ctx context.Context, input string, limit in
 	baseURL.RawQuery = params.Encode()
 	url := baseURL.String()
 
-	// Check the cache
-	cacheKey := fmt.Sprintf("maps:autocomplete:%s", url)
 	var response schemas.GoongAutoCompleteResponse
-	cachedData, err := s.redisClient.Get(ctx, cacheKey).Bytes()
-	if err == nil {
-		if err := json.Unmarshal(cachedData, &response); err == nil {
-			return response, nil
+	maxRetries := 5
+	retryDelay := time.Second
+
+	for i := 0; i < maxRetries; i++ {
+		resp, err := http.Get(url)
+		if err != nil {
+			return schemas.GoongAutoCompleteResponse{}, fmt.Errorf("failed to fetch from Goong API: %w", err)
 		}
-	}
+		defer resp.Body.Close()
 
-	// If cache miss or unmarshal failed, fetch data from Goong API
-	resp, err := http.Get(url)
-	if err != nil {
-		return schemas.GoongAutoCompleteResponse{}, fmt.Errorf("failed to fetch from Goong API: %w", err)
-	}
-	defer resp.Body.Close()
+		if resp.StatusCode == http.StatusTooManyRequests {
+			time.Sleep(retryDelay)
+			retryDelay *= 2 // Exponential backoff
+			continue
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		return schemas.GoongAutoCompleteResponse{}, fmt.Errorf("unexpected status code from Goong API: %d", resp.StatusCode)
-	}
+		if resp.StatusCode != http.StatusOK {
+			return schemas.GoongAutoCompleteResponse{}, fmt.Errorf("unexpected status code from Goong API: %d", resp.StatusCode)
+		}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return schemas.GoongAutoCompleteResponse{}, fmt.Errorf("failed to read response body: %w", err)
-	}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return schemas.GoongAutoCompleteResponse{}, fmt.Errorf("failed to read response body: %w", err)
+		}
 
-	if err := json.Unmarshal(body, &response); err != nil {
-		return schemas.GoongAutoCompleteResponse{}, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
+		if err := json.Unmarshal(body, &response); err != nil {
+			return schemas.GoongAutoCompleteResponse{}, fmt.Errorf("failed to unmarshal response: %w", err)
+		}
 
-	// Cache the response
-	if err := s.redisClient.Set(ctx, cacheKey, body, time.Second*time.Duration(s.cfg.GoongCacheAutocompleteDuration)).Err(); err != nil {
-		// Log the error but don't return it
-		log.Printf("Failed to cache response: %v", err)
+		// If we've reached here, we've successfully got and parsed the response
+		break
 	}
 
 	if currentLocation != "" {
@@ -210,8 +213,6 @@ func (s *MapService) CreateGiveRide(ctx context.Context, input schemas.GiveRideR
 		points[i] = point
 	}
 
-	// optimizedPoints := helper.OptimizeRoutePoints(points)
-
 	baseURL, err := url.Parse(fmt.Sprintf("%s/direction", s.cfg.GoongApiURL))
 	if err != nil {
 		return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("invalid base URL: %w", err)
@@ -232,20 +233,22 @@ func (s *MapService) CreateGiveRide(ctx context.Context, input schemas.GiveRideR
 	baseURL.RawQuery = params.Encode()
 	url := baseURL.String()
 
-	cacheKey := fmt.Sprintf("maps:directions:%s", url)
 	var response schemas.GoongDirectionsResponse
+	maxRetries := MaxRetry
+	retryDelay := time.Second
 
-	cachedData, err := s.redisClient.Get(ctx, cacheKey).Bytes()
-	if err == nil {
-		if err := json.Unmarshal(cachedData, &response); err != nil {
-			return schemas.GoongDirectionsResponse{}, uuid.Nil, err
-		}
-	} else {
+	for i := 0; i < maxRetries; i++ {
 		resp, err := http.Get(url)
 		if err != nil {
-			return schemas.GoongDirectionsResponse{}, uuid.Nil, err
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to fetch from Goong API: %w", err)
 		}
 		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			time.Sleep(retryDelay)
+			retryDelay *= 2 // Exponential backoff
+			continue
+		}
 
 		if resp.StatusCode != http.StatusOK {
 			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
@@ -253,16 +256,15 @@ func (s *MapService) CreateGiveRide(ctx context.Context, input schemas.GiveRideR
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return schemas.GoongDirectionsResponse{}, uuid.Nil, err
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to read response body: %w", err)
 		}
 
 		if err := json.Unmarshal(body, &response); err != nil {
-			return schemas.GoongDirectionsResponse{}, uuid.Nil, err
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to unmarshal response: %w", err)
 		}
 
-		if err := s.redisClient.Set(ctx, cacheKey, body, time.Second*time.Duration(s.cfg.GoongCacheRouteDuration)).Err(); err != nil {
-			return schemas.GoongDirectionsResponse{}, uuid.Nil, err
-		}
+		// If we've reached here, we've successfully got and parsed the response
+		break
 	}
 
 	currentLocation := schemas.Point{
@@ -303,8 +305,6 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 		points[i] = point
 	}
 
-	// optimizedPoints := helper.OptimizeRoutePoints(points)
-
 	baseURL, err := url.Parse(fmt.Sprintf("%s/direction", s.cfg.GoongApiURL))
 	if err != nil {
 		return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("invalid base URL: %w", err)
@@ -325,20 +325,22 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 	baseURL.RawQuery = params.Encode()
 	url := baseURL.String()
 
-	cacheKey := fmt.Sprintf("maps:directions:%s", url)
 	var response schemas.GoongDirectionsResponse
+	maxRetries := MaxRetry
+	retryDelay := time.Second
 
-	cachedData, err := s.redisClient.Get(ctx, cacheKey).Bytes()
-	if err == nil {
-		if err := json.Unmarshal(cachedData, &response); err != nil {
-			return schemas.GoongDirectionsResponse{}, uuid.Nil, err
-		}
-	} else {
+	for i := 0; i < maxRetries; i++ {
 		resp, err := http.Get(url)
 		if err != nil {
-			return schemas.GoongDirectionsResponse{}, uuid.Nil, err
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to fetch from Goong API: %w", err)
 		}
 		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			time.Sleep(retryDelay)
+			retryDelay *= 2 // Exponential backoff
+			continue
+		}
 
 		if resp.StatusCode != http.StatusOK {
 			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
@@ -346,16 +348,15 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return schemas.GoongDirectionsResponse{}, uuid.Nil, err
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to read response body: %w", err)
 		}
 
 		if err := json.Unmarshal(body, &response); err != nil {
-			return schemas.GoongDirectionsResponse{}, uuid.Nil, err
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to unmarshal response: %w", err)
 		}
 
-		if err := s.redisClient.Set(ctx, cacheKey, body, time.Second*time.Duration(s.cfg.GoongCacheRouteDuration)).Err(); err != nil {
-			return schemas.GoongDirectionsResponse{}, uuid.Nil, err
-		}
+		// If we've reached here, we've successfully got and parsed the response
+		break
 	}
 
 	currentLocation := schemas.Point{
@@ -399,20 +400,22 @@ func (s *MapService) GetGeoCode(ctx context.Context, point schemas.Point, curren
 	baseURL.RawQuery = params.Encode()
 	url := baseURL.String()
 
-	cacheKey := fmt.Sprintf("maps:geocode:%s", url)
 	var response schemas.GoongReverseGeocodeResponse
+	maxRetries := MaxRetry
+	retryDelay := time.Second
 
-	cachedData, err := s.redisClient.Get(ctx, cacheKey).Bytes()
-	if err != nil && err != redis.Nil {
-		return schemas.GeoCodeLocationResponse{}, fmt.Errorf("redis get error: %w", err)
-	}
-
-	if err == redis.Nil {
+	for i := 0; i < maxRetries; i++ {
 		resp, err := http.Get(url)
 		if err != nil {
 			return schemas.GeoCodeLocationResponse{}, fmt.Errorf("http get error: %w", err)
 		}
 		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			time.Sleep(retryDelay)
+			retryDelay *= 2 // Exponential backoff
+			continue
+		}
 
 		if resp.StatusCode != http.StatusOK {
 			return schemas.GeoCodeLocationResponse{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
@@ -427,13 +430,8 @@ func (s *MapService) GetGeoCode(ctx context.Context, point schemas.Point, curren
 			return schemas.GeoCodeLocationResponse{}, fmt.Errorf("unmarshal error: %w", err)
 		}
 
-		if err := s.redisClient.Set(ctx, cacheKey, body, time.Second*time.Duration(s.cfg.GoongCachePlaceDetailDuration)).Err(); err != nil {
-			return schemas.GeoCodeLocationResponse{}, fmt.Errorf("redis set error: %w", err)
-		}
-	} else {
-		if err := json.Unmarshal(cachedData, &response); err != nil {
-			return schemas.GeoCodeLocationResponse{}, fmt.Errorf("unmarshal cached data error: %w", err)
-		}
+		// If we've reached here, we've successfully got and parsed the response
+		break
 	}
 
 	optimizedResults := schemas.GeoCodeLocationResponse{
@@ -457,7 +455,7 @@ func (s *MapService) GetGeoCode(ctx context.Context, point schemas.Point, curren
 		}
 	}
 
-	// Calculate the distance from the current
+	// Calculate the distance from the current location
 	distanceMatrix, err := s.GetDistanceFromCurrentLocation(ctx, currentLocation, destinationPoints)
 	if err != nil {
 		return schemas.GeoCodeLocationResponse{}, err
@@ -492,41 +490,42 @@ func (s *MapService) GetDistanceFromCurrentLocation(ctx context.Context, current
 	baseURL.RawQuery = params.Encode()
 	url := baseURL.String()
 
-	cacheKey := fmt.Sprintf("maps:distancematrix:%s", url)
 	var response schemas.GoongDistanceMatrixResponse
+	maxRetries := 3
+	retryDelay := time.Second
 
-	cachedData, err := s.redisClient.Get(ctx, cacheKey).Bytes()
-	if err == nil {
-		if err := json.Unmarshal(cachedData, &response); err != nil {
-			return schemas.GoongDistanceMatrixResponse{}, err
+	for i := 0; i < maxRetries; i++ {
+		resp, err := http.Get(url)
+		if err != nil {
+			return schemas.GoongDistanceMatrixResponse{}, fmt.Errorf("http get error: %w", err)
 		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			time.Sleep(retryDelay)
+			retryDelay *= 2 // Exponential backoff
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return schemas.GoongDistanceMatrixResponse{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return schemas.GoongDistanceMatrixResponse{}, fmt.Errorf("read body error: %w", err)
+		}
+
+		if err := json.Unmarshal(body, &response); err != nil {
+			return schemas.GoongDistanceMatrixResponse{}, fmt.Errorf("unmarshal error: %w", err)
+		}
+
+		// If we've reached here, we've successfully got and parsed the response
 		return response, nil
 	}
 
-	resp, err := http.Get(url)
-	if err != nil {
-		return schemas.GoongDistanceMatrixResponse{}, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return schemas.GoongDistanceMatrixResponse{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return schemas.GoongDistanceMatrixResponse{}, err
-	}
-
-	if err := json.Unmarshal(body, &response); err != nil {
-		return schemas.GoongDistanceMatrixResponse{}, err
-	}
-
-	if err := s.redisClient.Set(ctx, cacheKey, body, time.Second*time.Duration(s.cfg.GoongCacheRouteDuration)).Err(); err != nil {
-		return schemas.GoongDistanceMatrixResponse{}, err
-	}
-
-	return response, nil
+	// If we've exhausted all retries
+	return schemas.GoongDistanceMatrixResponse{}, fmt.Errorf("max retries reached, unable to get distance matrix")
 }
 
 // GetRideOfferDetails returns the ride offer details for the given ride offer ID

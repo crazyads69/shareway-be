@@ -245,8 +245,8 @@ func (r *ChatRepository) InitiateCall(req schemas.InitiateCallRequest, userID uu
 		RoomID:      chatRoomUUID,
 		SenderID:    userID,
 		ReceiverID:  receiverUUID,
-		Message:     "Cuộc gọi",
-		MessageType: "text", // Don't know video_call or voice_call so default to text
+		Message:     "0",
+		MessageType: "call", // Default call type is call
 	}
 
 	// Save the chat message

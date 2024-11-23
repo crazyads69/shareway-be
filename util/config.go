@@ -61,6 +61,7 @@ type Config struct {
 	CloudinaryAPISecret            string `mapstructure:"CLOUDINARY_API_SECRET"`
 	AgoraAppID                     string `mapstructure:"AGORA_APP_ID"`
 	AgoraAppCertificate            string `mapstructure:"AGORA_APP_CERTIFICATE"`
+	BcryptCost                     int    `mapstructure:"BCRYPT_COST"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

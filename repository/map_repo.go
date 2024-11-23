@@ -106,8 +106,7 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 		}
 
 		// Get the correct start and end locations on the route
-		newStartLocaton := helper.GetNearestPointOnRoute(decodePolyline, startLocation)
-		newEndLocation := helper.GetNearestPointOnRoute(decodePolyline, endLocation)
+		newStartLocaton, newEndLocation := helper.FindClosestPoints(decodePolyline, startLocation, endLocation)
 
 		// Create ride offer
 		// rideOffer := migration.RideOffer{
@@ -221,8 +220,7 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 		}
 
 		// Get the correct start and end locations on the route
-		newStartLocaton := helper.GetNearestPointOnRoute(decodePolyline, startLocation)
-		newEndLocation := helper.GetNearestPointOnRoute(decodePolyline, endLocation)
+		newStartLocaton, newEndLocation := helper.FindClosestPoints(decodePolyline, startLocation, endLocation)
 
 		// Create ride request
 		// rideRequest := migration.RideRequest{

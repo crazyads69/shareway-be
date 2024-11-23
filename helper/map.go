@@ -252,6 +252,34 @@ func HaversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
 	return earthRadius * c
 }
 
+// FindClosestPoints finds the actual start and end points in the polyline
+func FindClosestPoints(polyline []schemas.Point, start, end schemas.Point) (startPoint, endPoint schemas.Point) {
+	minStartDist := math.MaxFloat64
+	minEndDist := math.MaxFloat64
+
+	// Initialize with first point
+	startPoint = polyline[0]
+	endPoint = polyline[0]
+
+	for _, point := range polyline {
+		// Find closest point to start
+		startDist := haversineDistance(point, start)
+		if startDist < minStartDist {
+			minStartDist = startDist
+			startPoint = point
+		}
+
+		// Find closest point to end
+		endDist := haversineDistance(point, end)
+		if endDist < minEndDist {
+			minEndDist = endDist
+			endPoint = point
+		}
+	}
+
+	return startPoint, endPoint
+}
+
 func IsTimeOverlap(offer migration.RideOffer, request migration.RideRequest) bool {
 	// Add a buffer of 30 minutes to the start and end time of the offer
 	// to account for the time it takes to pick up the hitchhiker and drop them off
