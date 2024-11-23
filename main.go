@@ -15,6 +15,7 @@ import (
 	"shareway/router"
 	"shareway/service"
 	"shareway/util"
+	"shareway/util/sanctum"
 	"shareway/util/token"
 	"syscall"
 	"time"
@@ -96,6 +97,11 @@ func main() {
 	// Initialize the Cloudinary service
 	cloudinaryService := bucket.NewCloudinary(ctx, cfg)
 
+	// Initialize the token
+	cryptoSanctum := sanctum.NewCryptoSanctum(cfg)
+	tokenSanctum := sanctum.NewTokenSanctum(cryptoSanctum)
+	sanctumToken := sanctum.NewSanctumToken(tokenSanctum, cryptoSanctum, database)
+
 	// Create a cron job to update the vehicle data from the VR website
 	vrCrawler := crawler.NewVrCrawler(database)
 	fuelCrawler := crawler.NewFuelCrawler(database)
@@ -137,7 +143,7 @@ func main() {
 	scheduler.Start()
 
 	// Initialize services using the service factory pattern (dependency injection also included repository pattern)
-	serviceFactory := service.NewServiceFactory(database, cfg, maker, redisClient, hub, asynqClient, cloudinaryService)
+	serviceFactory := service.NewServiceFactory(database, cfg, maker, redisClient, hub, asynqClient, cloudinaryService, sanctumToken)
 	services := serviceFactory.CreateServices()
 
 	// Create new API server

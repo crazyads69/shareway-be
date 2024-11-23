@@ -54,7 +54,7 @@ func NewDatabaseInstance(cfg util.Config) *gorm.DB {
 	}
 
 	// Seed admin user
-	if err := migration.SeedAdmin(db); err != nil {
+	if err := migration.SeedAdmin(db, cfg); err != nil {
 		log.Fatal().Err(err).Msg("Failed to seed admin user")
 	}
 

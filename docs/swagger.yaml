@@ -157,6 +157,21 @@ definitions:
       vehicle:
         $ref: '#/definitions/schemas.VehicleDetail'
     type: object
+  schemas.AdminInfo:
+    properties:
+      admin_id:
+        type: string
+      created_at:
+        type: string
+      full_name:
+        type: string
+      role:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
   schemas.CancelGiveRideRequestRequest:
     properties:
       receiverID:
@@ -654,6 +669,27 @@ definitions:
         type: string
       receiver_id:
         type: string
+      token:
+        type: string
+    type: object
+  schemas.LoginAdminRequest:
+    properties:
+      password:
+        maxLength: 255
+        minLength: 6
+        type: string
+      username:
+        maxLength: 255
+        minLength: 1
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  schemas.LoginAdminResponse:
+    properties:
+      admin_info:
+        $ref: '#/definitions/schemas.AdminInfo'
       token:
         type: string
     type: object
@@ -1391,6 +1427,46 @@ definitions:
 info:
   contact: {}
 paths:
+  /admin/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates an admin user and returns a token along with user
+        information
+      parameters:
+      - description: The login request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.LoginAdminRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.LoginAdminResponse'
+              type: object
+        "400":
+          description: Invalid request body or input validation failed
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      summary: Login as an admin
+      tags:
+      - admin/auth
   /auth/delete-user:
     post:
       consumes:

@@ -10,14 +10,13 @@ import (
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
-	"golang.org/x/exp/rand"
 )
 
 type ICryptoSanctum interface {
 	SHA256(plainText string) string
 	HashPassword(password string) (string, error)
 	VerifyPassword(hashedPassword string, password string) bool
-	SercureCompare(a, b string) bool // Securely compare two strings (constant time compare for password)
+	SecureCompare(hashedPassword, password string) bool // Securely compare two strings (constant time compare for password)
 }
 
 type CryptoSanctum struct {
@@ -57,16 +56,16 @@ func (c *CryptoSanctum) VerifyPassword(hashedPassword string, password string) b
 }
 
 // SecureCompare is a function to securely compare two strings (constant time compare for password) to prevent timing attacks
-func (c *CryptoSanctum) SercureCompare(a, b string) bool {
+func (c *CryptoSanctum) SecureCompare(hashedPassword, password string) bool {
+	// First, add a small constant delay to mask the length check
+	time.Sleep(1 * time.Millisecond)
+
+	// Convert strings to byte slices only once
+	aBytes := []byte(hashedPassword)
+	bBytes := []byte(password)
+
 	// Use subtle.ConstantTimeCompare to prevent timing attacks
-	if subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1 {
-		// Randomize the delay slightly to prevent timing attacks
-		time.Sleep(time.Duration(rand.Intn(10)) * time.Millisecond)
-		return true
-	}
-	// Randomize the delay slightly to prevent timing attacks
-	time.Sleep(time.Duration(rand.Intn(10)) * time.Millisecond)
-	return false
+	return subtle.ConstantTimeCompare(aBytes, bBytes) == 1
 }
 
 var _ ICryptoSanctum = (*CryptoSanctum)(nil)

@@ -1,6 +1,8 @@
 package migration
 
 import (
+	"shareway/util"
+
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -12,6 +14,7 @@ func Migrate(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&User{},
 		&Admin{},
+		&SanctumToken{},
 		&OTP{},
 		&PasetoToken{},
 		&Transaction{},
@@ -34,6 +37,7 @@ func DropAllTables(db *gorm.DB) error {
 	// Drop tables in reverse order of dependencies to avoid foreign key constraint issues
 	return db.Migrator().DropTable(&User{},
 		&Admin{},
+		&SanctumToken{},
 		&OTP{},
 		&PasetoToken{},
 		&Transaction{},
@@ -51,7 +55,7 @@ func DropAllTables(db *gorm.DB) error {
 }
 
 // SeedAdmin creates an admin user if it doesn't already exist
-func SeedAdmin(db *gorm.DB) error {
+func SeedAdmin(db *gorm.DB, cfg util.Config) error {
 	// Check if admin already exists
 	var count int64
 	if err := db.Model(&Admin{}).Where("username = ?", "admin").Count(&count).Error; err != nil {
@@ -64,7 +68,7 @@ func SeedAdmin(db *gorm.DB) error {
 	}
 
 	// Generate hashed password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), cfg.BcryptCost)
 	if err != nil {
 		return err
 	}

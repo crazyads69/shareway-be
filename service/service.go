@@ -22,6 +22,7 @@ type ServiceContainer struct {
 	RideService         IRideService
 	NotificationService INotificationService
 	ChatService         IChatService
+	AdminService        IAdminService
 }
 
 type ServiceFactory struct {
@@ -38,7 +39,7 @@ type ServiceFactory struct {
 	sanctumToken *sanctum.SanctumToken
 }
 
-func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, redisClient *redis.Client, hub *ws.Hub, asynq *task.AsyncClient, cloudinary *bucket.CloudinaryService) *ServiceFactory {
+func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, redisClient *redis.Client, hub *ws.Hub, asynq *task.AsyncClient, cloudinary *bucket.CloudinaryService, sanctumToken *sanctum.SanctumToken) *ServiceFactory {
 	repoFactory := repository.NewRepositoryFactory(db, redisClient, cfg)
 	repos := repoFactory.CreateRepositories()
 
@@ -46,11 +47,6 @@ func NewServiceFactory(db *gorm.DB, cfg util.Config, token *token.PasetoMaker, r
 	fptReader := fpt.NewFPTReader(cfg)
 	// Initialize encryptor
 	encryptor := util.NewEncryptor(cfg)
-
-	// Initialize the token
-	cryptoSanctum := sanctum.NewCryptoSanctum(cfg)
-	tokenSanctum := sanctum.NewTokenSanctum(cryptoSanctum)
-	sanctumToken := sanctum.NewSanctumToken(tokenSanctum, db)
 
 	return &ServiceFactory{
 		repos:        repos,
@@ -75,6 +71,7 @@ func (f *ServiceFactory) CreateServices() *ServiceContainer {
 		RideService:         f.createRideService(),
 		NotificationService: f.createNotificationService(),
 		ChatService:         f.createChatService(),
+		AdminService:        f.createAdminService(),
 	}
 }
 
@@ -104,4 +101,8 @@ func (f *ServiceFactory) createNotificationService() INotificationService {
 
 func (f *ServiceFactory) createChatService() IChatService {
 	return NewChatService(f.repos.ChatRepository, f.hub, f.cfg, f.cloudinary)
+}
+
+func (f *ServiceFactory) createAdminService() IAdminService {
+	return NewAdminService(f.repos.AdminRepository, f.hub, f.cfg, f.cloudinary, f.sanctumToken)
 }

@@ -1,6 +1,7 @@
 package sanctum
 
 import (
+	"errors"
 	"fmt"
 	"shareway/infra/db/migration"
 	"strconv"
@@ -20,12 +21,14 @@ type SanctumTokenPayload struct {
 
 type SanctumToken struct {
 	Token ITokenSanctum
+	Cryto ICryptoSanctum
 	db    *gorm.DB
 }
 
-func NewSanctumToken(token ITokenSanctum, db *gorm.DB) *SanctumToken {
+func NewSanctumToken(token ITokenSanctum, crypto ICryptoSanctum, db *gorm.DB) *SanctumToken {
 	return &SanctumToken{
 		Token: token,
+		Cryto: crypto,
 		db:    db,
 	}
 }
@@ -61,24 +64,29 @@ func (st *SanctumToken) CreateSanctumToken(adminID uuid.UUID, duration time.Dura
 }
 
 func (st *SanctumToken) VerifySanctumToken(token string) (*SanctumTokenPayload, error) {
-	// Split the token
-	tokenID, plainText, err := st.Token.SplitToken(token)
+	tokenID, hashedToken, err := st.Token.SplitToken(token)
 	if err != nil {
 		return nil, err
 	}
 
-	// Find the token from the database
 	var dbToken migration.SanctumToken
-	if err := st.db.Where("token = ? AND is_revoked = ?", plainText, false).
+	if err := st.db.Where("token = ? AND is_revoked = ?", hashedToken, false).
 		First(&dbToken, tokenID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("token not found")
+		}
 		return nil, err
 	}
-	// Verify the token expiration
-	if dbToken.ExpiredAt.Before(time.Now().UTC()) {
-		return nil, fmt.Errorf("token has expired")
+
+	// Use constant-time comparison
+	if !st.Cryto.SecureCompare(hashedToken, dbToken.Token) {
+		return nil, fmt.Errorf("token does not match")
 	}
 
-	// Return the token payload
+	if dbToken.ExpiredAt.Before(time.Now().UTC()) {
+		return nil, fmt.Errorf("token has expired at %s", dbToken.ExpiredAt)
+	}
+
 	return &SanctumTokenPayload{
 		AdminID:   dbToken.AdminID,
 		TokenID:   dbToken.ID,
