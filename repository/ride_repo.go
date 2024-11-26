@@ -606,18 +606,18 @@ func (r *RideRepository) GetAllPendingRide(userID uuid.UUID) ([]migration.RideOf
 	var rideOffers []migration.RideOffer
 	var rideRequests []migration.RideRequest
 
-	// Get all ride offers that not have status cancelled or completed
+	// Get all ride offers that not have status cancelled or completed and not matched (status = created)
 	err := r.db.Model(&migration.RideOffer{}).
-		Where("user_id = ? AND status NOT IN ('cancelled', 'completed')", userID).
+		Where("user_id = ? AND status = 'created'", userID).
 		Find(&rideOffers).
 		Error
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Get all ride requests that not have status cancelled or completed
+	// Get all ride requests that not have status cancelled or completed and not matched (status = created)
 	err = r.db.Model(&migration.RideRequest{}).
-		Where("user_id = ? AND status NOT IN ('cancelled', 'completed')", userID).
+		Where("user_id = ? AND status = 'created'", userID).
 		Find(&rideRequests).
 		Error
 	if err != nil {
