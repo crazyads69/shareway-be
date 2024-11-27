@@ -149,6 +149,7 @@ type GiveRideResponse struct {
 	EndTime     time.Time               `json:"end_time"`
 	Fare        float64                 `json:"fare"`
 	Vehicle     VehicleDetail           `json:"vehicle"`
+	Waypoints   []Waypoint              `json:"waypoints"`
 }
 
 // Define HitchRideRequest struct
@@ -267,6 +268,8 @@ type UserInfo struct {
 	ID          uuid.UUID `json:"user_id"`
 	PhoneNumber string    `json:"phone_number"`
 	FullName    string    `json:"full_name"`
+	AvatarURL   string    `json:"avatar_url"`
+	Gender      string    `json:"gender"`
 }
 
 // Define RideRequestDetail struct
@@ -299,6 +302,15 @@ type SuggestRideOfferResponse struct {
 	RideOffers []RideOfferDetail `json:"ride_offers"`
 }
 
+// Define Waypoint struct
+type Waypoint struct {
+	ID        uuid.UUID `json:"waypoint_id"`
+	Latitude  float64   `json:"lattitude"`
+	Longitude float64   `json:"longitude"`
+	Address   string    `json:"address"`
+	Order     int       `json:"order"`
+}
+
 // Define RideOfferDetail struct
 type RideOfferDetail struct {
 	ID                     uuid.UUID     `json:"ride_offer_id"`
@@ -319,4 +331,5 @@ type RideOfferDetail struct {
 	EndTime                time.Time     `json:"end_time"`
 	Status                 string        `json:"status"`
 	Fare                   float64       `json:"fare"`
+	Waypoints              []Waypoint    `json:"waypoints"`
 }

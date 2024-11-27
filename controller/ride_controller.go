@@ -128,12 +128,36 @@ func (ctrl *RideController) SendGiveRideRequest(ctx *gin.Context) {
 		return
 	}
 
+	// Get waypoints details from ride_offer_id
+	waypoints, err := ctrl.MapsService.GetAllWaypoints(rideOffer.ID)
+	if err != nil {
+		helper.GinResponse(ctx, 500, helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get waypoints",
+			"Không thể lấy thông tin waypoints",
+		))
+		return
+	}
+
+	waypointDetails := make([]schemas.Waypoint, 0, len(waypoints))
+	for i, waypoint := range waypoints {
+		waypointDetails[i] = schemas.Waypoint{
+			Latitude:  waypoint.Latitude,
+			Longitude: waypoint.Longitude,
+			Address:   waypoint.Address,
+			ID:        waypoint.ID,
+			Order:     waypoint.Order,
+		}
+	}
+
 	res := schemas.SendGiveRideRequestResponse{
 		ID: rideOffer.ID,
 		User: schemas.UserInfo{
 			ID:          user.ID,
-			PhoneNumber: user.PhoneNumber,
 			FullName:    user.FullName,
+			PhoneNumber: user.PhoneNumber,
+			AvatarURL:   user.AvatarURL,
+			Gender:      user.Gender,
 		},
 		Vehicle:                vehicle,
 		StartLatitude:          rideOffer.StartLatitude,
@@ -153,6 +177,7 @@ func (ctrl *RideController) SendGiveRideRequest(ctx *gin.Context) {
 		Fare:                   rideOffer.Fare,
 		ReceiverID:             req.ReceiverID,
 		RideRequestID:          req.RideRequestID,
+		Waypoints:              waypointDetails,
 	}
 
 	// Send ride offer request to the receiver
@@ -345,8 +370,10 @@ func (ctrl *RideController) SendHitchRideRequest(ctx *gin.Context) {
 		ID: rideRequest.ID,
 		User: schemas.UserInfo{
 			ID:          user.ID,
-			PhoneNumber: user.PhoneNumber,
 			FullName:    user.FullName,
+			PhoneNumber: user.PhoneNumber,
+			AvatarURL:   user.AvatarURL,
+			Gender:      user.Gender,
 		},
 		StartLatitude:         rideRequest.StartLatitude,
 		StartLongitude:        rideRequest.StartLongitude,
@@ -527,6 +554,27 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 		return
 	}
 
+	waypoints, err := ctrl.MapsService.GetAllWaypoints(rideOffer.ID)
+	if err != nil {
+		helper.GinResponse(ctx, 500, helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get waypoints",
+			"Không thể lấy thông tin waypoints",
+		))
+		return
+	}
+
+	waypointDetails := make([]schemas.Waypoint, 0, len(waypoints))
+	for i, waypoint := range waypoints {
+		waypointDetails[i] = schemas.Waypoint{
+			Latitude:  waypoint.Latitude,
+			Longitude: waypoint.Longitude,
+			Address:   waypoint.Address,
+			ID:        waypoint.ID,
+			Order:     waypoint.Order,
+		}
+	}
+
 	// Get ride request details from ride_request_id
 	rideRequest, err := ctrl.RideService.GetRideRequestByID(req.RideRequestID)
 	if err != nil {
@@ -606,8 +654,11 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 			ID:          receiver.ID,
 			PhoneNumber: receiver.PhoneNumber,
 			FullName:    receiver.FullName,
+			AvatarURL:   receiver.AvatarURL,
+			Gender:      receiver.Gender,
 		},
 		RideRequestID: req.RideRequestID,
+		Waypoints:     waypointDetails,
 	}
 
 	// Send the accepted ride offer to the driver (match the ride successfully)
@@ -756,6 +807,28 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 		return
 	}
 
+	// Get waypoints details from ride_offer_id
+	waypoints, err := ctrl.MapsService.GetAllWaypoints(rideOffer.ID)
+	if err != nil {
+		helper.GinResponse(ctx, 500, helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get waypoints",
+			"Không thể lấy thông tin waypoints",
+		))
+		return
+	}
+
+	waypointDetails := make([]schemas.Waypoint, 0, len(waypoints))
+	for i, waypoint := range waypoints {
+		waypointDetails[i] = schemas.Waypoint{
+			Latitude:  waypoint.Latitude,
+			Longitude: waypoint.Longitude,
+			Address:   waypoint.Address,
+			ID:        waypoint.ID,
+			Order:     waypoint.Order,
+		}
+	}
+
 	// Get ride request details from ride_request_id
 	rideRequest, err := ctrl.RideService.GetRideRequestByID(req.RideRequestID)
 	if err != nil {
@@ -835,8 +908,11 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 			ID:          receiver.ID,
 			PhoneNumber: receiver.PhoneNumber,
 			FullName:    receiver.FullName,
+			AvatarURL:   receiver.AvatarURL,
+			Gender:      receiver.Gender,
 		},
-		Vehicle: vehicle,
+		Vehicle:   vehicle,
+		Waypoints: waypointDetails,
 	}
 
 	// Send the accepted ride request to the hitcher (match the ride successfully)
@@ -1266,6 +1342,28 @@ func (ctrl *RideController) StartRide(ctx *gin.Context) {
 		return
 	}
 
+	// Get waypoints details from ride_offer_id
+	waypoints, err := ctrl.MapsService.GetAllWaypoints(rideOffer.ID)
+	if err != nil {
+		helper.GinResponse(ctx, 500, helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get waypoints",
+			"Không thể lấy thông tin waypoints",
+		))
+		return
+	}
+
+	waypointDetails := make([]schemas.Waypoint, 0, len(waypoints))
+	for i, waypoint := range waypoints {
+		waypointDetails[i] = schemas.Waypoint{
+			Latitude:  waypoint.Latitude,
+			Longitude: waypoint.Longitude,
+			Address:   waypoint.Address,
+			ID:        waypoint.ID,
+			Order:     waypoint.Order,
+		}
+	}
+
 	// Get ride request details from ride_request_id
 	rideRequest, err := ctrl.RideService.GetRideRequestByID(ride.RideRequestID)
 	if err != nil {
@@ -1328,6 +1426,8 @@ func (ctrl *RideController) StartRide(ctx *gin.Context) {
 			ID:          driver.ID,
 			FullName:    driver.FullName,
 			PhoneNumber: driver.PhoneNumber,
+			AvatarURL:   driver.AvatarURL,
+			Gender:      driver.Gender,
 		},
 		Status:                 ride.Status,
 		StartTime:              ride.StartTime,
@@ -1348,6 +1448,7 @@ func (ctrl *RideController) StartRide(ctx *gin.Context) {
 		EndLongitude:           ride.EndLongitude,
 		Vehicle:                vehicle,
 		ReceiverID:             rideRequest.UserID, // ReceiverID is the hitcher's user_id
+		Waypoints:              waypointDetails,
 	}
 
 	// Get receiver device token to send notification
@@ -1506,6 +1607,28 @@ func (ctrl *RideController) EndRide(ctx *gin.Context) {
 		return
 	}
 
+	// Get waypoints details from ride_id
+	waypoints, err := ctrl.MapsService.GetAllWaypoints(rideOffer.ID)
+	if err != nil {
+		helper.GinResponse(ctx, 500, helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get waypoints",
+			"Không thể lấy thông tin waypoints",
+		))
+		return
+	}
+
+	waypointDetails := make([]schemas.Waypoint, 0, len(waypoints))
+	for i, waypoint := range waypoints {
+		waypointDetails[i] = schemas.Waypoint{
+			Latitude:  waypoint.Latitude,
+			Longitude: waypoint.Longitude,
+			Address:   waypoint.Address,
+			ID:        waypoint.ID,
+			Order:     waypoint.Order,
+		}
+	}
+
 	// Get ride request details from ride_request_id
 	rideRequest, err := ctrl.RideService.GetRideRequestByID(ride.RideRequestID)
 	if err != nil {
@@ -1568,6 +1691,8 @@ func (ctrl *RideController) EndRide(ctx *gin.Context) {
 			ID:          driver.ID,
 			FullName:    driver.FullName,
 			PhoneNumber: driver.PhoneNumber,
+			AvatarURL:   driver.AvatarURL,
+			Gender:      driver.Gender,
 		},
 		Status:                 ride.Status,
 		StartTime:              ride.StartTime,
@@ -1588,6 +1713,7 @@ func (ctrl *RideController) EndRide(ctx *gin.Context) {
 		EndLongitude:           ride.EndLongitude,
 		Vehicle:                vehicle,
 		ReceiverID:             rideRequest.UserID, // ReceiverID is the hitcher's user_id
+		Waypoints:              waypointDetails,
 	}
 
 	// Get receiver device token to send notification
@@ -1746,6 +1872,27 @@ func (ctrl *RideController) UpdateRideLocation(ctx *gin.Context) {
 		return
 	}
 
+	waypoints, err := ctrl.MapsService.GetAllWaypoints(rideOffer.ID)
+	if err != nil {
+		helper.GinResponse(ctx, 500, helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get waypoints",
+			"Không thể lấy thông tin waypoints",
+		))
+		return
+	}
+
+	waypointDetails := make([]schemas.Waypoint, 0, len(waypoints))
+	for i, waypoint := range waypoints {
+		waypointDetails[i] = schemas.Waypoint{
+			Latitude:  waypoint.Latitude,
+			Longitude: waypoint.Longitude,
+			Address:   waypoint.Address,
+			ID:        waypoint.ID,
+			Order:     waypoint.Order,
+		}
+	}
+
 	// Get ride request details from ride_request_id
 	rideRequest, err := ctrl.RideService.GetRideRequestByID(ride.RideRequestID)
 	if err != nil {
@@ -1808,6 +1955,8 @@ func (ctrl *RideController) UpdateRideLocation(ctx *gin.Context) {
 			ID:          driver.ID,
 			FullName:    driver.FullName,
 			PhoneNumber: driver.PhoneNumber,
+			AvatarURL:   driver.AvatarURL,
+			Gender:      driver.Gender,
 		},
 		Status:                 ride.Status,
 		StartTime:              ride.StartTime,
@@ -1828,6 +1977,7 @@ func (ctrl *RideController) UpdateRideLocation(ctx *gin.Context) {
 		EndLongitude:           ride.EndLongitude,
 		Vehicle:                vehicle,
 		ReceiverID:             rideRequest.UserID, // ReceiverID is the hitcher's user_id
+		Waypoints:              waypointDetails,
 	}
 
 	// // Get receiver device token to send notification
@@ -2310,6 +2460,27 @@ func (ctrl *RideController) GetAllPendingRide(ctx *gin.Context) {
 			return
 		}
 
+		waypoints, err := ctrl.MapsService.GetAllWaypoints(rideOffer.ID)
+		if err != nil {
+			helper.GinResponse(ctx, 500, helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get waypoints",
+				"Không thể lấy thông tin waypoints",
+			))
+			return
+		}
+
+		waypointDetails := make([]schemas.Waypoint, 0, len(waypoints))
+		for i, waypoint := range waypoints {
+			waypointDetails[i] = schemas.Waypoint{
+				Latitude:  waypoint.Latitude,
+				Longitude: waypoint.Longitude,
+				Address:   waypoint.Address,
+				ID:        waypoint.ID,
+				Order:     waypoint.Order,
+			}
+		}
+
 		pendingRideOfferDetails = append(pendingRideOfferDetails, schemas.RideOfferDetail{
 			ID:      rideOffer.ID,
 			Vehicle: vehicle,
@@ -2317,6 +2488,8 @@ func (ctrl *RideController) GetAllPendingRide(ctx *gin.Context) {
 				ID:          driver.ID,
 				FullName:    driver.FullName,
 				PhoneNumber: driver.PhoneNumber,
+				Gender:      driver.Gender,
+				AvatarURL:   driver.AvatarURL,
 			},
 			StartTime:              rideOffer.StartTime,
 			StartLatitude:          rideOffer.StartLatitude,
@@ -2333,6 +2506,7 @@ func (ctrl *RideController) GetAllPendingRide(ctx *gin.Context) {
 			Status:                 rideOffer.Status,
 			EndTime:                rideOffer.EndTime,
 			Fare:                   rideOffer.Fare,
+			Waypoints:              waypointDetails,
 		})
 	}
 
@@ -2354,6 +2528,8 @@ func (ctrl *RideController) GetAllPendingRide(ctx *gin.Context) {
 				ID:          rider.ID,
 				FullName:    rider.FullName,
 				PhoneNumber: rider.PhoneNumber,
+				AvatarURL:   rider.AvatarURL,
+				Gender:      rider.Gender,
 			},
 			StartTime:             rideRequest.StartTime,
 			StartLatitude:         rideRequest.StartLatitude,

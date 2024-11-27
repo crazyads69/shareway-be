@@ -470,6 +470,7 @@ func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 	res := schemas.VerifyCCCDResponse{
 		User: schemas.UserResponse{
 			ID:          user.ID,
+			AvatarURL:   user.AvatarURL,
 			CreatedAt:   user.CreatedAt,
 			UpdatedAt:   user.UpdatedAt,
 			PhoneNumber: user.PhoneNumber,
@@ -478,6 +479,7 @@ func (ctrl *AuthController) VerifyCCCD(ctx *gin.Context) {
 			IsVerified:  user.IsVerified,
 			IsActivated: user.IsActivated,
 			Role:        user.Role,
+			Gender:      user.Gender,
 		},
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
@@ -645,11 +647,13 @@ func (ctrl *AuthController) VerifyLoginOTP(ctx *gin.Context) {
 	res := schemas.VerifyLoginOTPResponse{
 		User: schemas.UserResponse{
 			ID:          user.ID,
+			AvatarURL:   user.AvatarURL,
 			CreatedAt:   user.CreatedAt,
 			UpdatedAt:   user.UpdatedAt,
 			PhoneNumber: user.PhoneNumber,
 			Email:       user.Email,
 			FullName:    user.FullName,
+			Gender:      user.Gender,
 			IsVerified:  user.IsVerified,
 			IsActivated: user.IsActivated,
 			Role:        user.Role,

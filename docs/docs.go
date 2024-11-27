@@ -2372,6 +2372,67 @@ const docTemplate = `{
                 }
             }
         },
+        "/user/update-avatar": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update the avatar image of the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Update user avatar",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Avatar image file",
+                        "name": "avatar_image",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully updated avatar",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.UpdateAvatarResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/user/update-profile": {
             "post": {
                 "security": [
@@ -2721,6 +2782,12 @@ const docTemplate = `{
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
                 }
             }
         },
@@ -2825,6 +2892,12 @@ const docTemplate = `{
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
                 }
             }
         },
@@ -3099,6 +3172,12 @@ const docTemplate = `{
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
                 }
             }
         },
@@ -3192,6 +3271,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "pending_ride_offer": {
+                    "description": "The pending ride offer of the user",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/schemas.RideOfferDetail"
@@ -3312,6 +3392,12 @@ const docTemplate = `{
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
                 }
             }
         },
@@ -3992,6 +4078,12 @@ const docTemplate = `{
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
                 }
             }
         },
@@ -4265,6 +4357,12 @@ const docTemplate = `{
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
                 }
             }
         },
@@ -4350,6 +4448,17 @@ const docTemplate = `{
                 },
                 "transaction_id": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.UpdateAvatarResponse": {
+            "type": "object",
+            "required": [
+                "user"
+            ],
+            "properties": {
+                "user": {
+                    "$ref": "#/definitions/schemas.UserResponse"
                 }
             }
         },
@@ -4514,6 +4623,12 @@ const docTemplate = `{
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
                 }
             }
         },
@@ -4521,7 +4636,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "full_name",
-                "phone_number"
+                "gender"
             ],
             "properties": {
                 "email": {
@@ -4529,13 +4644,16 @@ const docTemplate = `{
                     "maxLength": 256
                 },
                 "full_name": {
-                    "description": "Email is optional",
                     "type": "string",
                     "maxLength": 256,
                     "minLength": 3
                 },
-                "phone_number": {
-                    "type": "string"
+                "gender": {
+                    "type": "string",
+                    "enum": [
+                        "male",
+                        "female"
+                    ]
                 }
             }
         },
@@ -4553,7 +4671,13 @@ const docTemplate = `{
         "schemas.UserInfo": {
             "type": "object",
             "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
                 "full_name": {
+                    "type": "string"
+                },
+                "gender": {
                     "type": "string"
                 },
                 "phone_number": {
@@ -4570,6 +4694,9 @@ const docTemplate = `{
                 "id"
             ],
             "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -4577,6 +4704,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "full_name": {
+                    "type": "string"
+                },
+                "gender": {
                     "type": "string"
                 },
                 "id": {
@@ -4708,6 +4838,26 @@ const docTemplate = `{
                     "minLength": 6
                 },
                 "phone_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.Waypoint": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "lattitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "order": {
+                    "type": "integer"
+                },
+                "waypoint_id": {
                     "type": "string"
                 }
             }

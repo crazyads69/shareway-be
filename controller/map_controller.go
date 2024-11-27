@@ -153,6 +153,18 @@ func (ctrl *MapController) CreateGiveRide(ctx *gin.Context) {
 		return
 	}
 
+	// Get a list of waypoints for the ride offer
+	waypoints, err := ctrl.MapsService.GetAllWaypoints(rideOfferID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get waypoints",
+			"Không thể lấy danh sách điểm dừng",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	// Get the vehicle details
 	vehicle, err := ctrl.VehicleService.GetVehicleFromID(rideOffer.VehicleID)
 	if err != nil {
@@ -165,6 +177,17 @@ func (ctrl *MapController) CreateGiveRide(ctx *gin.Context) {
 		return
 	}
 
+	waypointDetails := make([]schemas.Waypoint, len(waypoints))
+	for i, waypoint := range waypoints {
+		waypointDetails[i] = schemas.Waypoint{
+			ID:        waypoint.ID,
+			Latitude:  waypoint.Latitude,
+			Longitude: waypoint.Longitude,
+			Address:   waypoint.Address,
+			Order:     waypoint.Order,
+		}
+	}
+
 	// Create a response with the route and ride offer ID
 	res := schemas.GiveRideResponse{
 		Route:       route,
@@ -175,6 +198,7 @@ func (ctrl *MapController) CreateGiveRide(ctx *gin.Context) {
 		EndTime:     rideOffer.EndTime,
 		Fare:        rideOffer.Fare,
 		Vehicle:     vehicle,
+		Waypoints:   waypointDetails,
 	}
 
 	response := helper.SuccessResponse(
@@ -420,6 +444,8 @@ func (ctrl *MapController) SuggestHitchRides(ctx *gin.Context) {
 				ID:          user.ID,
 				FullName:    user.FullName,
 				PhoneNumber: user.PhoneNumber,
+				AvatarURL:   user.AvatarURL,
+				Gender:      user.Gender,
 			},
 			EncodedPolyline:       string(rideRequest.EncodedPolyline),
 			Distance:              rideRequest.Distance,
@@ -541,12 +567,35 @@ func (ctrl *MapController) SuggestGiveRides(ctx *gin.Context) {
 			helper.GinResponse(ctx, 500, response)
 			return
 		}
+		// Get a list of waypoints for the ride offer
+		waypoints, err := ctrl.MapsService.GetAllWaypoints(rideOffer.ID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get waypoints",
+				"Không thể lấy danh sách điểm dừng",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+		waypointDetails := make([]schemas.Waypoint, len(waypoints))
+		for i, waypoint := range waypoints {
+			waypointDetails[i] = schemas.Waypoint{
+				ID:        waypoint.ID,
+				Latitude:  waypoint.Latitude,
+				Longitude: waypoint.Longitude,
+				Address:   waypoint.Address,
+				Order:     waypoint.Order,
+			}
+		}
 		rideOfferDetail := schemas.RideOfferDetail{
 			ID: rideOffer.ID,
 			User: schemas.UserInfo{
 				ID:          user.ID,
 				FullName:    user.FullName,
 				PhoneNumber: user.PhoneNumber,
+				AvatarURL:   user.AvatarURL,
+				Gender:      user.Gender,
 			},
 			Vehicle:                vehicle,
 			EncodedPolyline:        string(rideOffer.EncodedPolyline),
@@ -564,6 +613,7 @@ func (ctrl *MapController) SuggestGiveRides(ctx *gin.Context) {
 			DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
 			Status:                 rideOffer.Status,
 			Fare:                   rideOffer.Fare,
+			Waypoints:              waypointDetails,
 		}
 		// Append the ride offer detail to the list
 		rideOfferDetails = append(rideOfferDetails, rideOfferDetail)

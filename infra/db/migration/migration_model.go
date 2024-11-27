@@ -17,6 +17,8 @@ type User struct {
 	PhoneNumber       string `gorm:"uniqueIndex;not null"`
 	Email             string
 	CCCDNumber        string
+	Gender            string `gorm:"default:'male'"` // gender is male or female
+	AvatarURL         string
 	FullName          string
 	IsVerified        bool `gorm:"default:false"`
 	IsActivated       bool `gorm:"default:false"` // Only activated user when first registered and verified OTP completely
@@ -143,8 +145,22 @@ type RideOffer struct {
 	Status                 string  `gorm:"default:'created'"` // created, matched, ongoing, completed, cancelled
 	Rides                  []Ride  `gorm:"foreignKey:RideOfferID"`
 	StartTime              time.Time
-	EndTime                time.Time // Time to end the ride (end time = start time + duration)
-	Fare                   float64   // Total price of the ride offer (to show to the hitchhiker)
+	EndTime                time.Time  // Time to end the ride (end time = start time + duration)
+	Fare                   float64    // Total price of the ride offer (to show to the hitchhiker)
+	Waypoints              []Waypoint `gorm:"foreignKey:RideOfferID"`
+}
+
+// Waypoint represents a waypoint of a ride offer (because a ride offer can have multiple waypoints max 5 points)
+type Waypoint struct {
+	ID          uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt   time.Time `gorm:"autoCreateTime"`
+	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
+	RideOfferID uuid.UUID `gorm:"type:uuid"`
+	RideOffer   RideOffer `gorm:"foreignKey:RideOfferID"`
+	Latitude    float64
+	Longitude   float64
+	Order       int    // Order of the waypoint in the route (1, 2, 3, 4, 5)
+	Address     string `gorm:"type:text"`
 }
 
 // RideRequest represents a ride request in the system

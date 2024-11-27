@@ -451,6 +451,8 @@ func (cc *ChatController) GetAllChatRooms(ctx *gin.Context) {
 			ID:          receiver.ID,
 			FullName:    receiver.FullName,
 			PhoneNumber: receiver.PhoneNumber,
+			Gender:      receiver.Gender,
+			AvatarURL:   receiver.AvatarURL,
 		}
 	}
 

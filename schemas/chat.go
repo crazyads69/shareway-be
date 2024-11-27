@@ -99,7 +99,7 @@ type InitiateCallResponse struct {
 // Define UpdateCallStatusRequest schema
 type UpdateCallStatusRequest struct {
 	ChatRoomID uuid.UUID `json:"chatRoomID" binding:"required,uuid" validate:"required,uuid"`
-	CallType   string    `json:"callType" binding:"required" validate:"required,oneof=call missed_call"`
+	CallType   string    `json:"callType" binding:"required,oneof=call missed_call" validate:"required,oneof=call missed_call"`
 	Duration   int64     `json:"duration" validate:"min=0"` // Remove required validation because it is not parse from the validation if it is 0
 	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
 	CallID     uuid.UUID `json:"callID" binding:"required,uuid" validate:"required,uuid"`

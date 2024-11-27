@@ -80,7 +80,7 @@ func (f *ServiceFactory) createOTPService() IOTPService {
 }
 
 func (f *ServiceFactory) createUserService() IUsersService {
-	return NewUsersService(f.repos.AuthRepository, f.encryptor, f.fptReader, f.maker, f.cfg)
+	return NewUsersService(f.repos.AuthRepository, f.encryptor, f.fptReader, f.maker, f.cfg, f.cloudinary)
 }
 
 func (f *ServiceFactory) createMapsService() IMapService {

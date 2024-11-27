@@ -83,6 +83,10 @@ definitions:
         $ref: '#/definitions/schemas.UserInfo'
       vehicle:
         $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
     type: object
   schemas.AcceptHitchRideRequestRequest:
     properties:
@@ -156,6 +160,10 @@ definitions:
         $ref: '#/definitions/schemas.UserInfo'
       vehicle:
         $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
     type: object
   schemas.AdminInfo:
     properties:
@@ -339,6 +347,10 @@ definitions:
         $ref: '#/definitions/schemas.UserInfo'
       vehicle:
         $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
     type: object
   schemas.GeoCodeLocation:
     properties:
@@ -398,6 +410,7 @@ definitions:
   schemas.GetAllPendingRideResponse:
     properties:
       pending_ride_offer:
+        description: The pending ride offer of the user
         items:
           $ref: '#/definitions/schemas.RideOfferDetail'
         type: array
@@ -479,6 +492,10 @@ definitions:
         type: string
       vehicle:
         $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
     type: object
   schemas.GoongAutoCompleteResponse:
     properties:
@@ -936,6 +953,10 @@ definitions:
         $ref: '#/definitions/schemas.UserInfo'
       vehicle:
         $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
     type: object
   schemas.RideRequestDetail:
     properties:
@@ -1124,6 +1145,10 @@ definitions:
         $ref: '#/definitions/schemas.UserInfo'
       vehicle:
         $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
     type: object
   schemas.StructuredFormatting:
     properties:
@@ -1179,6 +1204,13 @@ definitions:
         type: string
       transaction_id:
         type: string
+    type: object
+  schemas.UpdateAvatarResponse:
+    properties:
+      user:
+        $ref: '#/definitions/schemas.UserResponse'
+    required:
+    - user
     type: object
   schemas.UpdateCallStatusRequest:
     properties:
@@ -1291,6 +1323,10 @@ definitions:
         $ref: '#/definitions/schemas.UserInfo'
       vehicle:
         $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
     type: object
   schemas.UpdateUserProfileRequest:
     properties:
@@ -1298,15 +1334,17 @@ definitions:
         maxLength: 256
         type: string
       full_name:
-        description: Email is optional
         maxLength: 256
         minLength: 3
         type: string
-      phone_number:
+      gender:
+        enum:
+        - male
+        - female
         type: string
     required:
     - full_name
-    - phone_number
+    - gender
     type: object
   schemas.UpdateUserProfileResponse:
     properties:
@@ -1317,7 +1355,11 @@ definitions:
     type: object
   schemas.UserInfo:
     properties:
+      avatar_url:
+        type: string
       full_name:
+        type: string
+      gender:
         type: string
       phone_number:
         type: string
@@ -1326,11 +1368,15 @@ definitions:
     type: object
   schemas.UserResponse:
     properties:
+      avatar_url:
+        type: string
       created_at:
         type: string
       email:
         type: string
       full_name:
+        type: string
+      gender:
         type: string
       id:
         type: string
@@ -1423,6 +1469,19 @@ definitions:
     required:
     - otp
     - phone_number
+    type: object
+  schemas.Waypoint:
+    properties:
+      address:
+        type: string
+      lattitude:
+        type: number
+      longitude:
+        type: number
+      order:
+        type: integer
+      waypoint_id:
+        type: string
     type: object
 info:
   contact: {}
@@ -2866,6 +2925,42 @@ paths:
       security:
       - BearerAuth: []
       summary: Register device token for push notifications
+      tags:
+      - user
+  /user/update-avatar:
+    post:
+      consumes:
+      - application/json
+      description: Update the avatar image of the authenticated user
+      parameters:
+      - description: Avatar image file
+        in: formData
+        name: avatar_image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated avatar
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.UpdateAvatarResponse'
+              type: object
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Update user avatar
       tags:
       - user
   /user/update-profile:

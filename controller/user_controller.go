@@ -68,6 +68,8 @@ func (ctrl *UserController) GetUserProfile(ctx *gin.Context) {
 	res := schemas.GetUserProfileResponse{
 		User: schemas.UserResponse{
 			ID:          user.ID,
+			AvatarURL:   user.AvatarURL,
+			Gender:      user.Gender,
 			CreatedAt:   user.CreatedAt,
 			UpdatedAt:   user.UpdatedAt,
 			PhoneNumber: user.PhoneNumber,
@@ -208,7 +210,7 @@ func (ctrl *UserController) UpdateUserProfile(ctx *gin.Context) {
 	}
 
 	// Update user profile
-	err = ctrl.UserService.UpdateUserProfile(data.UserID, req.PhoneNumber, req.FullName, req.Email)
+	err = ctrl.UserService.UpdateUserProfile(data.UserID, req.FullName, req.Email, req.Gender)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			fmt.Errorf("failed to update user profile"),
@@ -234,8 +236,10 @@ func (ctrl *UserController) UpdateUserProfile(ctx *gin.Context) {
 	res := schemas.UpdateUserProfileResponse{
 		User: schemas.UserResponse{
 			ID:          user.ID,
+			Gender:      user.Gender,
 			CreatedAt:   user.CreatedAt,
 			UpdatedAt:   user.UpdatedAt,
+			AvatarURL:   user.AvatarURL,
 			PhoneNumber: user.PhoneNumber,
 			Email:       user.Email,
 			FullName:    user.FullName,
@@ -246,5 +250,101 @@ func (ctrl *UserController) UpdateUserProfile(ctx *gin.Context) {
 	}
 
 	response := helper.SuccessResponse(res, "Successfully updated user profile", "Cập nhật thông tin người dùng thành công")
+	helper.GinResponse(ctx, 200, response)
+}
+
+// UpdateAvatar receives avatar image and updates it in the database
+// UpdateAvatar godoc
+// @Summary Update user avatar
+// @Description Update the avatar image of the authenticated user
+// @Tags user
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param avatar_image formData file true "Avatar image file"
+// @Success 200 {object} helper.Response{data=schemas.UpdateAvatarResponse} "Successfully updated avatar"
+// @Failure 400 {object} helper.Response "Invalid input"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /user/update-avatar [post]
+func (ctrl *UserController) UpdateAvatar(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Bind request to schema
+	var req schemas.UpdateAvatarRequest
+	if err := ctx.ShouldBind(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to bind request"),
+			"Failed to bind request",
+			"Không thể bind request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Validate request
+	if err := ctrl.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Update avatar
+	avatarURL, err := ctrl.UserService.UpdateAvatar(ctx.Request.Context(), data.UserID, req.AvatarImage)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to update avatar"),
+			"Failed to update avatar",
+			"Không thể cập nhật ảnh đại diện",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Retrieve updated user information and return it
+	user, err := ctrl.UserService.GetUserByID(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get user information",
+			"Không thể lấy thông tin người dùng")
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	res := schemas.UpdateAvatarResponse{
+		User: schemas.UserResponse{
+			ID:          user.ID,
+			CreatedAt:   user.CreatedAt,
+			UpdatedAt:   user.UpdatedAt,
+			AvatarURL:   avatarURL,
+			PhoneNumber: user.PhoneNumber,
+			Email:       user.Email,
+			FullName:    user.FullName,
+			IsVerified:  user.IsVerified,
+			IsActivated: user.IsActivated,
+			Role:        user.Role,
+			Gender:      user.Gender,
+		}}
+
+	response := helper.SuccessResponse(res, "Successfully updated avatar", "Cập nhật ảnh đại diện thành công")
 	helper.GinResponse(ctx, 200, response)
 }

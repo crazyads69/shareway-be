@@ -21,6 +21,7 @@ type IMapsRepository interface {
 	SuggestRideRequests(userID uuid.UUID, rideOfferID uuid.UUID) ([]migration.RideRequest, error)
 	SuggestRideOffers(userID uuid.UUID, rideRequestID uuid.UUID) ([]migration.RideOffer, error)
 	GetRideByID(rideID uuid.UUID) (migration.Ride, error)
+	GetAllWaypoints(rideOfferID uuid.UUID) ([]migration.Waypoint, error)
 }
 
 type MapsRepository struct {
@@ -154,6 +155,34 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 		}
 
 		rideOfferID = rideOffer.ID
+
+		// Create waypoints
+		newWaypoints := make([]migration.Waypoint, 0, len(route.Geocoded_waypoints)-2) // Exclude the start and end locations
+		// TODO: Find closest points on the route for the start and end locations
+		// only need to store waypoints that are not the start or end locations
+		// And the waypoints is end location of the previous leg and start location of the next leg
+		for i, leg := range firstRoute.Legs {
+			if i == 0 {
+				continue
+			}
+			if i == len(firstRoute.Legs)-1 {
+				break
+			}
+
+			legEnd := leg.End_location
+
+			waypoint := migration.Waypoint{
+				RideOfferID: rideOfferID,
+				Latitude:    legEnd.Lat,
+				Longitude:   legEnd.Lng,
+				Order:       i,
+			}
+			newWaypoints = append(newWaypoints, waypoint)
+		}
+		if err := tx.Create(&newWaypoints).Error; err != nil {
+			return fmt.Errorf("failed to create waypoints: %w", err)
+		}
+
 		return nil
 	})
 
@@ -353,6 +382,14 @@ func (r *MapsRepository) GetRideByID(rideID uuid.UUID) (migration.Ride, error) {
 		return migration.Ride{}, err
 	}
 	return ride, nil
+}
+
+func (r *MapsRepository) GetAllWaypoints(rideOfferID uuid.UUID) ([]migration.Waypoint, error) {
+	var waypoints []migration.Waypoint
+	if err := r.db.Where("ride_offer_id = ?", rideOfferID).Order("order").Find(&waypoints).Error; err != nil {
+		return nil, err
+	}
+	return waypoints, nil
 }
 
 // Make sure to implement the IMapsRepository interface

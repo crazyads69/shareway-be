@@ -12,10 +12,12 @@ type UserResponse struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 	PhoneNumber string    `json:"phone_number"`
 	Email       string    `json:"email,omitempty"`
+	AvatarURL   string    `json:"avatar_url"`
 	FullName    string    `json:"full_name"`
 	IsVerified  bool      `json:"is_verified"`
 	IsActivated bool      `json:"is_activated"`
 	Role        string    `json:"role"`
+	Gender      string    `json:"gender"`
 }
 
 type AdminResponse struct {
