@@ -184,7 +184,7 @@ func (ctrl *MapController) CreateGiveRide(ctx *gin.Context) {
 			Latitude:  waypoint.Latitude,
 			Longitude: waypoint.Longitude,
 			Address:   waypoint.Address,
-			Order:     waypoint.Order,
+			Order:     waypoint.WaypointOrder,
 		}
 	}
 
@@ -585,7 +585,7 @@ func (ctrl *MapController) SuggestGiveRides(ctx *gin.Context) {
 				Latitude:  waypoint.Latitude,
 				Longitude: waypoint.Longitude,
 				Address:   waypoint.Address,
-				Order:     waypoint.Order,
+				Order:     waypoint.WaypointOrder,
 			}
 		}
 		rideOfferDetail := schemas.RideOfferDetail{

@@ -152,15 +152,15 @@ type RideOffer struct {
 
 // Waypoint represents a waypoint of a ride offer (because a ride offer can have multiple waypoints max 5 points)
 type Waypoint struct {
-	ID          uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	CreatedAt   time.Time `gorm:"autoCreateTime"`
-	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
-	RideOfferID uuid.UUID `gorm:"type:uuid"`
-	RideOffer   RideOffer `gorm:"foreignKey:RideOfferID"`
-	Latitude    float64
-	Longitude   float64
-	Order       int    // Order of the waypoint in the route (1, 2, 3, 4, 5)
-	Address     string `gorm:"type:text"`
+	ID            uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt     time.Time `gorm:"autoCreateTime"`
+	UpdatedAt     time.Time `gorm:"autoUpdateTime"`
+	RideOfferID   uuid.UUID `gorm:"type:uuid"`
+	RideOffer     RideOffer `gorm:"foreignKey:RideOfferID"`
+	Latitude      float64
+	Longitude     float64
+	WaypointOrder int
+	Address       string `gorm:"type:text"`
 }
 
 // RideRequest represents a ride request in the system

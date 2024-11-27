@@ -146,7 +146,7 @@ func (ctrl *RideController) SendGiveRideRequest(ctx *gin.Context) {
 			Longitude: waypoint.Longitude,
 			Address:   waypoint.Address,
 			ID:        waypoint.ID,
-			Order:     waypoint.Order,
+			Order:     waypoint.WaypointOrder,
 		}
 	}
 
@@ -571,7 +571,7 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 			Longitude: waypoint.Longitude,
 			Address:   waypoint.Address,
 			ID:        waypoint.ID,
-			Order:     waypoint.Order,
+			Order:     waypoint.WaypointOrder,
 		}
 	}
 
@@ -825,7 +825,7 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 			Longitude: waypoint.Longitude,
 			Address:   waypoint.Address,
 			ID:        waypoint.ID,
-			Order:     waypoint.Order,
+			Order:     waypoint.WaypointOrder,
 		}
 	}
 
@@ -1360,7 +1360,7 @@ func (ctrl *RideController) StartRide(ctx *gin.Context) {
 			Longitude: waypoint.Longitude,
 			Address:   waypoint.Address,
 			ID:        waypoint.ID,
-			Order:     waypoint.Order,
+			Order:     waypoint.WaypointOrder,
 		}
 	}
 
@@ -1625,7 +1625,7 @@ func (ctrl *RideController) EndRide(ctx *gin.Context) {
 			Longitude: waypoint.Longitude,
 			Address:   waypoint.Address,
 			ID:        waypoint.ID,
-			Order:     waypoint.Order,
+			Order:     waypoint.WaypointOrder,
 		}
 	}
 
@@ -1889,7 +1889,7 @@ func (ctrl *RideController) UpdateRideLocation(ctx *gin.Context) {
 			Longitude: waypoint.Longitude,
 			Address:   waypoint.Address,
 			ID:        waypoint.ID,
-			Order:     waypoint.Order,
+			Order:     waypoint.WaypointOrder,
 		}
 	}
 
@@ -2477,7 +2477,7 @@ func (ctrl *RideController) GetAllPendingRide(ctx *gin.Context) {
 				Longitude: waypoint.Longitude,
 				Address:   waypoint.Address,
 				ID:        waypoint.ID,
-				Order:     waypoint.Order,
+				Order:     waypoint.WaypointOrder,
 			}
 		}
 

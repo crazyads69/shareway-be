@@ -178,10 +178,10 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 			legEnd := leg.End_location
 
 			waypoint := migration.Waypoint{
-				RideOfferID: rideOfferID,
-				Latitude:    legEnd.Lat,
-				Longitude:   legEnd.Lng,
-				Order:       i,
+				RideOfferID:   rideOfferID,
+				Latitude:      legEnd.Lat,
+				Longitude:     legEnd.Lng,
+				WaypointOrder: i,
 			}
 			newWaypoints = append(newWaypoints, waypoint)
 		}
@@ -392,20 +392,12 @@ func (r *MapsRepository) GetRideByID(rideID uuid.UUID) (migration.Ride, error) {
 
 func (r *MapsRepository) GetAllWaypoints(rideOfferID uuid.UUID) ([]migration.Waypoint, error) {
 	var waypoints []migration.Waypoint
-	err := r.db.Where("ride_offer_id = ?", rideOfferID).Order("order").Find(&waypoints).Error
+	err := r.db.Where("ride_offer_id = ?", rideOfferID).Order("waypoint_order").Find(&waypoints).Error
 
-	// If no records are found, GORM returns ErrRecordNotFound
-	if err == gorm.ErrRecordNotFound {
-		// Return an empty slice if no waypoints are found
-		return []migration.Waypoint{}, nil
-	}
-
-	// For any other error, return it
 	if err != nil {
 		return nil, err
 	}
 
-	// If waypoints are found, return them
 	return waypoints, nil
 }
 
