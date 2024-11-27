@@ -156,6 +156,12 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 
 		rideOfferID = rideOffer.ID
 
+		// Only create waypoints if there are more than 2 legs
+		if len(firstRoute.Legs) < 2 {
+			// no need to create waypoints if there are only 1
+			return nil
+		}
+
 		// Create waypoints
 		newWaypoints := make([]migration.Waypoint, 0, len(route.Geocoded_waypoints)-2) // Exclude the start and end locations
 		// TODO: Find closest points on the route for the start and end locations
@@ -386,9 +392,20 @@ func (r *MapsRepository) GetRideByID(rideID uuid.UUID) (migration.Ride, error) {
 
 func (r *MapsRepository) GetAllWaypoints(rideOfferID uuid.UUID) ([]migration.Waypoint, error) {
 	var waypoints []migration.Waypoint
-	if err := r.db.Where("ride_offer_id = ?", rideOfferID).Order("order").Find(&waypoints).Error; err != nil {
+	err := r.db.Where("ride_offer_id = ?", rideOfferID).Order("order").Find(&waypoints).Error
+
+	// If no records are found, GORM returns ErrRecordNotFound
+	if err == gorm.ErrRecordNotFound {
+		// Return an empty slice if no waypoints are found
+		return []migration.Waypoint{}, nil
+	}
+
+	// For any other error, return it
+	if err != nil {
 		return nil, err
 	}
+
+	// If waypoints are found, return them
 	return waypoints, nil
 }
 
