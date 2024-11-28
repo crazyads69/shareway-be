@@ -181,6 +181,7 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 				RideOfferID:   rideOfferID,
 				Latitude:      legEnd.Lat,
 				Longitude:     legEnd.Lng,
+				Address:       leg.End_address, // Store the address of the end location of the leg
 				WaypointOrder: i,
 			}
 			newWaypoints = append(newWaypoints, waypoint)
