@@ -155,6 +155,7 @@ func main() {
 		hub,
 		asynqClient,
 		agoraService,
+		sanctumToken,
 	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Could not create router")
