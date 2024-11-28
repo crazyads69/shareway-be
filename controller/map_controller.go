@@ -177,14 +177,17 @@ func (ctrl *MapController) CreateGiveRide(ctx *gin.Context) {
 		return
 	}
 
-	waypointDetails := make([]schemas.Waypoint, len(waypoints))
-	for i, waypoint := range waypoints {
-		waypointDetails[i] = schemas.Waypoint{
-			ID:        waypoint.ID,
-			Latitude:  waypoint.Latitude,
-			Longitude: waypoint.Longitude,
-			Address:   waypoint.Address,
-			Order:     waypoint.WaypointOrder,
+	var waypointDetails []schemas.Waypoint
+	if waypoints != nil {
+		waypointDetails = make([]schemas.Waypoint, 0, len(waypoints))
+		for _, waypoint := range waypoints {
+			waypointDetails = append(waypointDetails, schemas.Waypoint{
+				Latitude:  waypoint.Latitude,
+				Longitude: waypoint.Longitude,
+				Address:   waypoint.Address,
+				ID:        waypoint.ID,
+				Order:     waypoint.WaypointOrder,
+			})
 		}
 	}
 
@@ -578,14 +581,17 @@ func (ctrl *MapController) SuggestGiveRides(ctx *gin.Context) {
 			helper.GinResponse(ctx, 500, response)
 			return
 		}
-		waypointDetails := make([]schemas.Waypoint, len(waypoints))
-		for i, waypoint := range waypoints {
-			waypointDetails[i] = schemas.Waypoint{
-				ID:        waypoint.ID,
-				Latitude:  waypoint.Latitude,
-				Longitude: waypoint.Longitude,
-				Address:   waypoint.Address,
-				Order:     waypoint.WaypointOrder,
+		var waypointDetails []schemas.Waypoint
+		if waypoints != nil {
+			waypointDetails = make([]schemas.Waypoint, 0, len(waypoints))
+			for _, waypoint := range waypoints {
+				waypointDetails = append(waypointDetails, schemas.Waypoint{
+					Latitude:  waypoint.Latitude,
+					Longitude: waypoint.Longitude,
+					Address:   waypoint.Address,
+					ID:        waypoint.ID,
+					Order:     waypoint.WaypointOrder,
+				})
 			}
 		}
 		rideOfferDetail := schemas.RideOfferDetail{

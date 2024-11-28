@@ -393,6 +393,11 @@ definitions:
     - current_location
     - point
     type: object
+  schemas.GetAdminProfileResponse:
+    properties:
+      admin_info:
+        $ref: '#/definitions/schemas.AdminInfo'
+    type: object
   schemas.GetAllChatRoomsRequest:
     properties:
       userID:
@@ -1526,6 +1531,27 @@ paths:
       summary: Login as an admin
       tags:
       - admin/auth
+  /admin/get-profile:
+    get:
+      consumes:
+      - application/json
+      description: Get the profile of the admin
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.GetAdminProfileResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the profile of the admin
+      tags:
+      - admin
   /auth/delete-user:
     post:
       consumes:
