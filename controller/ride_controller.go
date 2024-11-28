@@ -139,14 +139,17 @@ func (ctrl *RideController) SendGiveRideRequest(ctx *gin.Context) {
 		return
 	}
 
-	waypointDetails := make([]schemas.Waypoint, 0, len(waypoints))
-	for i, waypoint := range waypoints {
-		waypointDetails[i] = schemas.Waypoint{
-			Latitude:  waypoint.Latitude,
-			Longitude: waypoint.Longitude,
-			Address:   waypoint.Address,
-			ID:        waypoint.ID,
-			Order:     waypoint.WaypointOrder,
+	var waypointDetails []schemas.Waypoint
+	if waypoints != nil {
+		waypointDetails = make([]schemas.Waypoint, 0, len(waypoints))
+		for _, waypoint := range waypoints {
+			waypointDetails = append(waypointDetails, schemas.Waypoint{
+				Latitude:  waypoint.Latitude,
+				Longitude: waypoint.Longitude,
+				Address:   waypoint.Address,
+				ID:        waypoint.ID,
+				Order:     waypoint.WaypointOrder,
+			})
 		}
 	}
 
@@ -564,14 +567,17 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 		return
 	}
 
-	waypointDetails := make([]schemas.Waypoint, 0, len(waypoints))
-	for i, waypoint := range waypoints {
-		waypointDetails[i] = schemas.Waypoint{
-			Latitude:  waypoint.Latitude,
-			Longitude: waypoint.Longitude,
-			Address:   waypoint.Address,
-			ID:        waypoint.ID,
-			Order:     waypoint.WaypointOrder,
+	var waypointDetails []schemas.Waypoint
+	if waypoints != nil {
+		waypointDetails = make([]schemas.Waypoint, 0, len(waypoints))
+		for _, waypoint := range waypoints {
+			waypointDetails = append(waypointDetails, schemas.Waypoint{
+				Latitude:  waypoint.Latitude,
+				Longitude: waypoint.Longitude,
+				Address:   waypoint.Address,
+				ID:        waypoint.ID,
+				Order:     waypoint.WaypointOrder,
+			})
 		}
 	}
 
@@ -818,14 +824,17 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 		return
 	}
 
-	waypointDetails := make([]schemas.Waypoint, 0, len(waypoints))
-	for i, waypoint := range waypoints {
-		waypointDetails[i] = schemas.Waypoint{
-			Latitude:  waypoint.Latitude,
-			Longitude: waypoint.Longitude,
-			Address:   waypoint.Address,
-			ID:        waypoint.ID,
-			Order:     waypoint.WaypointOrder,
+	var waypointDetails []schemas.Waypoint
+	if waypoints != nil {
+		waypointDetails = make([]schemas.Waypoint, 0, len(waypoints))
+		for _, waypoint := range waypoints {
+			waypointDetails = append(waypointDetails, schemas.Waypoint{
+				Latitude:  waypoint.Latitude,
+				Longitude: waypoint.Longitude,
+				Address:   waypoint.Address,
+				ID:        waypoint.ID,
+				Order:     waypoint.WaypointOrder,
+			})
 		}
 	}
 
@@ -1353,14 +1362,17 @@ func (ctrl *RideController) StartRide(ctx *gin.Context) {
 		return
 	}
 
-	waypointDetails := make([]schemas.Waypoint, 0, len(waypoints))
-	for i, waypoint := range waypoints {
-		waypointDetails[i] = schemas.Waypoint{
-			Latitude:  waypoint.Latitude,
-			Longitude: waypoint.Longitude,
-			Address:   waypoint.Address,
-			ID:        waypoint.ID,
-			Order:     waypoint.WaypointOrder,
+	var waypointDetails []schemas.Waypoint
+	if waypoints != nil {
+		waypointDetails = make([]schemas.Waypoint, 0, len(waypoints))
+		for _, waypoint := range waypoints {
+			waypointDetails = append(waypointDetails, schemas.Waypoint{
+				Latitude:  waypoint.Latitude,
+				Longitude: waypoint.Longitude,
+				Address:   waypoint.Address,
+				ID:        waypoint.ID,
+				Order:     waypoint.WaypointOrder,
+			})
 		}
 	}
 
@@ -1618,14 +1630,17 @@ func (ctrl *RideController) EndRide(ctx *gin.Context) {
 		return
 	}
 
-	waypointDetails := make([]schemas.Waypoint, 0, len(waypoints))
-	for i, waypoint := range waypoints {
-		waypointDetails[i] = schemas.Waypoint{
-			Latitude:  waypoint.Latitude,
-			Longitude: waypoint.Longitude,
-			Address:   waypoint.Address,
-			ID:        waypoint.ID,
-			Order:     waypoint.WaypointOrder,
+	var waypointDetails []schemas.Waypoint
+	if waypoints != nil {
+		waypointDetails = make([]schemas.Waypoint, 0, len(waypoints))
+		for _, waypoint := range waypoints {
+			waypointDetails = append(waypointDetails, schemas.Waypoint{
+				Latitude:  waypoint.Latitude,
+				Longitude: waypoint.Longitude,
+				Address:   waypoint.Address,
+				ID:        waypoint.ID,
+				Order:     waypoint.WaypointOrder,
+			})
 		}
 	}
 
@@ -1881,15 +1896,17 @@ func (ctrl *RideController) UpdateRideLocation(ctx *gin.Context) {
 		))
 		return
 	}
-
-	waypointDetails := make([]schemas.Waypoint, 0, len(waypoints))
-	for i, waypoint := range waypoints {
-		waypointDetails[i] = schemas.Waypoint{
-			Latitude:  waypoint.Latitude,
-			Longitude: waypoint.Longitude,
-			Address:   waypoint.Address,
-			ID:        waypoint.ID,
-			Order:     waypoint.WaypointOrder,
+	var waypointDetails []schemas.Waypoint
+	if waypoints != nil {
+		waypointDetails = make([]schemas.Waypoint, 0, len(waypoints))
+		for _, waypoint := range waypoints {
+			waypointDetails = append(waypointDetails, schemas.Waypoint{
+				Latitude:  waypoint.Latitude,
+				Longitude: waypoint.Longitude,
+				Address:   waypoint.Address,
+				ID:        waypoint.ID,
+				Order:     waypoint.WaypointOrder,
+			})
 		}
 	}
 
@@ -2470,14 +2487,17 @@ func (ctrl *RideController) GetAllPendingRide(ctx *gin.Context) {
 			return
 		}
 
-		waypointDetails := make([]schemas.Waypoint, 0, len(waypoints))
-		for i, waypoint := range waypoints {
-			waypointDetails[i] = schemas.Waypoint{
-				Latitude:  waypoint.Latitude,
-				Longitude: waypoint.Longitude,
-				Address:   waypoint.Address,
-				ID:        waypoint.ID,
-				Order:     waypoint.WaypointOrder,
+		var waypointDetails []schemas.Waypoint
+		if waypoints != nil {
+			waypointDetails = make([]schemas.Waypoint, 0, len(waypoints))
+			for _, waypoint := range waypoints {
+				waypointDetails = append(waypointDetails, schemas.Waypoint{
+					Latitude:  waypoint.Latitude,
+					Longitude: waypoint.Longitude,
+					Address:   waypoint.Address,
+					ID:        waypoint.ID,
+					Order:     waypoint.WaypointOrder,
+				})
 			}
 		}
 
