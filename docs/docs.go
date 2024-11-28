@@ -79,6 +79,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/get-profile": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the profile of the admin",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the profile of the admin",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.GetAdminProfileResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/delete-user": {
             "post": {
                 "description": "Delete the user from the provided phone number in the database (only available in dev environment)",
@@ -3242,6 +3276,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/schemas.Point"
                         }
                     ]
+                }
+            }
+        },
+        "schemas.GetAdminProfileResponse": {
+            "type": "object",
+            "properties": {
+                "admin_info": {
+                    "$ref": "#/definitions/schemas.AdminInfo"
                 }
             }
         },

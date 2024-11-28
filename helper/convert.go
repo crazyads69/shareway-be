@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"shareway/util/sanctum"
 
 	"github.com/google/uuid"
 )
@@ -74,4 +75,13 @@ func UuidToUid(id uuid.UUID) uint32 {
 	}
 
 	return uid
+}
+
+// ConvertToAdminPayload converts the payload to a map of string and interface
+func ConvertToAdminPayload(data interface{}) (*sanctum.SanctumTokenPayload, error) {
+	payload, ok := data.(*sanctum.SanctumTokenPayload)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert payload")
+	}
+	return payload, nil
 }
