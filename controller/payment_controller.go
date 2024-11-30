@@ -35,6 +35,7 @@ func NewPaymentController(validate *validator.Validate, hub *ws.Hub, rideService
 		MapsService:    mapService,
 		UserService:    userService,
 		VehicleService: vehicleService,
+		PaymentService: paymentService,
 		asyncClient:    asyncClient,
 	}
 }
