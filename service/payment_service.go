@@ -54,7 +54,8 @@ func (p *PaymentService) LinkMomoWallet(userID uuid.UUID) (schemas.LinkWalletRes
 	var rawSignature bytes.Buffer
 	rawSignature.WriteString("accessKey=")
 	rawSignature.WriteString(p.cfg.MomoAccessKey)
-	rawSignature.WriteString("&amount=0")
+	rawSignature.WriteString("&amount=")
+	rawSignature.WriteString("10000")
 	rawSignature.WriteString("&extraData=")
 	rawSignature.WriteString("")
 	rawSignature.WriteString("&ipnUrl=")
@@ -87,7 +88,7 @@ func (p *PaymentService) LinkMomoWallet(userID uuid.UUID) (schemas.LinkWalletRes
 		PartnerCode:     p.cfg.MomoPartnerCode,
 		AccessKey:       p.cfg.MomoAccessKey,
 		RequestID:       requestID,
-		Amount:          0,
+		Amount:          10000,
 		OrderID:         requestID,
 		OrderInfo:       "Link wallet to user account",
 		RedirectURL:     p.cfg.MomoPaymentNotifyURL,
