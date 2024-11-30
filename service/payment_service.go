@@ -122,5 +122,7 @@ func (p *PaymentService) LinkMomoWallet(userID uuid.UUID) (schemas.LinkWalletRes
 		return schemas.LinkWalletResponse{}, fmt.Errorf("failed to link wallet: %s", response.Message)
 	}
 
+	// Log response
+	fmt.Printf("Link wallet response: %v\n", response)
 	return response, nil
 }
