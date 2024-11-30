@@ -105,6 +105,10 @@ func (server *APIServer) SetupRouter() {
 	SetupNotificationRouter(server.router.Group("/notification", middleware.AuthMiddleware(server.Maker)), server)
 	// Chat routes for sending messages
 	SetupChatRouter(server.router.Group("/chat", middleware.AuthMiddleware(server.Maker)), server)
+	// Payment routes for payment management
+	SetupPaymentRouter(server.router.Group("/payment", middleware.AuthMiddleware(server.Maker)), server)
+	// IPN routes for payment gateway IPN handling
+	SetupIPNRouter(server.router.Group("/ipn"), server)
 	// Admin routes for admin management
 	SetupAuthAdminRouter(server.router.Group("/admin/auth"), server)
 	// Admin routes for admin management

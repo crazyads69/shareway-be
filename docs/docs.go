@@ -1159,6 +1159,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/ipn/handle-ipn": {
+            "post": {
+                "description": "Handle IPN from payment gateway",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ipn"
+                ],
+                "summary": "Handle IPN from payment gateway",
+                "parameters": [
+                    {
+                        "description": "MoMo IPN",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.MoMoIPN"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/map/autocomplete": {
             "get": {
                 "security": [
@@ -1654,6 +1694,46 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/link-momo-wallet": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Link momo wallet to user account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payment"
+                ],
+                "summary": "Link momo wallet to user account",
+                "responses": {
+                    "200": {
+                        "description": "Link momo wallet response",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.LinkMomoWalletResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
                         "schema": {
                             "$ref": "#/definitions/helper.Response"
                         }
@@ -3737,6 +3817,15 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.LinkMomoWalletResponse": {
+            "type": "object",
+            "properties": {
+                "deeplink": {
+                    "description": "send this to fe flutter app for open momo and perform linked",
+                    "type": "string"
+                }
+            }
+        },
         "schemas.LoginAdminRequest": {
             "type": "object",
             "required": [
@@ -3877,6 +3966,56 @@ const docTemplate = `{
                 },
                 "sender_id": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.MoMoIPN": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "integer"
+                },
+                "callbackToken": {
+                    "type": "string"
+                },
+                "extraData": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "orderId": {
+                    "type": "string"
+                },
+                "orderInfo": {
+                    "type": "string"
+                },
+                "orderType": {
+                    "type": "string"
+                },
+                "partnerClientId": {
+                    "type": "string"
+                },
+                "partnerCode": {
+                    "type": "string"
+                },
+                "payType": {
+                    "type": "string"
+                },
+                "requestId": {
+                    "type": "string"
+                },
+                "responseTime": {
+                    "type": "integer"
+                },
+                "resultCode": {
+                    "type": "integer"
+                },
+                "signature": {
+                    "type": "string"
+                },
+                "transId": {
+                    "type": "integer"
                 }
             }
         },

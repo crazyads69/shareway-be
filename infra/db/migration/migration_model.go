@@ -13,18 +13,30 @@ type User struct {
 	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
-	// DeletedAt         gorm.DeletedAt `gorm:"index"`
-	PhoneNumber       string `gorm:"uniqueIndex;not null"`
-	Email             string
-	CCCDNumber        string
-	Gender            string `gorm:"default:'male'"` // gender is male or female
-	AvatarURL         string
-	FullName          string
-	IsVerified        bool `gorm:"default:false"`
-	IsActivated       bool `gorm:"default:false"` // Only activated user when first registered and verified OTP completely
-	VerifiedAt        time.Time
-	Role              string             `gorm:"default:'user'"`
-	DeviceToken       string             // FCM token for push notification
+	// DeletedAt     gorm.DeletedAt `gorm:"index"`
+	PhoneNumber string `gorm:"uniqueIndex;not null"`
+	Email       string
+	CCCDNumber  string
+	Gender      string `gorm:"default:'male'"` // gender is male or female
+	AvatarURL   string
+	FullName    string
+	IsVerified  bool `gorm:"default:false"`
+	IsActivated bool `gorm:"default:false"` // Only activated user when first registered and verified OTP completely
+	VerifiedAt  time.Time
+	Role        string `gorm:"default:'user'"`
+	DeviceToken string // FCM token for push notification
+
+	// MoMo Wallet fields
+	MomoFirstRequestID uuid.UUID `gorm:"type:uuid"`          // First request ID to link MoMo wallet (and use for get recurringToken so must store)
+	MoMoCallbackToken  string    `gorm:"type:text"`          // Token to verify callback from MoMo and get recurring token for later use
+	MoMoRecurringToken string    `gorm:"uniqueIndex"`        // Recurring token to use for later transactions
+	MoMoStatus         string    `gorm:"default:'inactive'"` // active, inactive
+	MoMoLastLinkedAt   time.Time
+	IsMomoLinked       bool `gorm:"default:false"` // Check if user has linked MoMo wallet
+
+	// New field for storing money received in app
+	BalanceInApp float64 `gorm:"default:0"` // Store balance in cents/smallest currency unit
+
 	Vehicles          []Vehicle          // One-to-many relationship with Vehicle
 	RatingsReceived   []Rating           `gorm:"foreignKey:RateeID"` // One-to-many relationship with Rating (received)
 	RatingsGiven      []Rating           `gorm:"foreignKey:RaterID"` // One-to-many relationship with Rating (given)
@@ -101,7 +113,7 @@ type Transaction struct {
 	ReceiverID    uuid.UUID `gorm:"type:uuid"`
 	Receiver      User      `gorm:"foreignKey:ReceiverID"`
 	Amount        float64
-	PaymentMethod string    `gorm:"default:'cash'"`    // cash, wallet, credit_card
+	PaymentMethod string    `gorm:"default:'cash'"`    // cash, momo
 	Status        string    `gorm:"default:'pending'"` // pending, completed, failed, refunded
 	RideID        uuid.UUID `gorm:"type:uuid"`
 	Ride          Ride      `gorm:"foreignKey:RideID"`

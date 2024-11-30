@@ -694,6 +694,12 @@ definitions:
       token:
         type: string
     type: object
+  schemas.LinkMomoWalletResponse:
+    properties:
+      deeplink:
+        description: send this to fe flutter app for open momo and perform linked
+        type: string
+    type: object
   schemas.LoginAdminRequest:
     properties:
       password:
@@ -792,6 +798,39 @@ definitions:
         type: string
       sender_id:
         type: string
+    type: object
+  schemas.MoMoIPN:
+    properties:
+      amount:
+        type: integer
+      callbackToken:
+        type: string
+      extraData:
+        type: string
+      message:
+        type: string
+      orderId:
+        type: string
+      orderInfo:
+        type: string
+      orderType:
+        type: string
+      partnerClientId:
+        type: string
+      partnerCode:
+        type: string
+      payType:
+        type: string
+      requestId:
+        type: string
+      responseTime:
+        type: integer
+      resultCode:
+        type: integer
+      signature:
+        type: string
+      transId:
+        type: integer
     type: object
   schemas.PlusCode:
     properties:
@@ -2193,6 +2232,32 @@ paths:
       summary: Update the call status of a chat room (missed, rejected, ended)
       tags:
       - chat
+  /ipn/handle-ipn:
+    post:
+      consumes:
+      - application/json
+      description: Handle IPN from payment gateway
+      parameters:
+      - description: MoMo IPN
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.MoMoIPN'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No content
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      summary: Handle IPN from payment gateway
+      tags:
+      - ipn
   /map/autocomplete:
     get:
       consumes:
@@ -2503,6 +2568,31 @@ paths:
       summary: Create a test websocket
       tags:
       - notification
+  /payment/link-momo-wallet:
+    post:
+      consumes:
+      - application/json
+      description: Link momo wallet to user account
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Link momo wallet response
+          schema:
+            $ref: '#/definitions/schemas.LinkMomoWalletResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Link momo wallet to user account
+      tags:
+      - payment
   /protected/test:
     get:
       consumes:
