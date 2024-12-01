@@ -67,17 +67,18 @@ func (ctrl *UserController) GetUserProfile(ctx *gin.Context) {
 
 	res := schemas.GetUserProfileResponse{
 		User: schemas.UserResponse{
-			ID:          user.ID,
-			AvatarURL:   user.AvatarURL,
-			Gender:      user.Gender,
-			CreatedAt:   user.CreatedAt,
-			UpdatedAt:   user.UpdatedAt,
-			PhoneNumber: user.PhoneNumber,
-			Email:       user.Email,
-			FullName:    user.FullName,
-			IsVerified:  user.IsVerified,
-			IsActivated: user.IsActivated,
-			Role:        user.Role,
+			ID:           user.ID,
+			AvatarURL:    user.AvatarURL,
+			Gender:       user.Gender,
+			CreatedAt:    user.CreatedAt,
+			UpdatedAt:    user.UpdatedAt,
+			PhoneNumber:  user.PhoneNumber,
+			Email:        user.Email,
+			FullName:     user.FullName,
+			IsVerified:   user.IsVerified,
+			IsMomoLinked: user.IsMomoLinked,
+			IsActivated:  user.IsActivated,
+			Role:         user.Role,
 		},
 	}
 
@@ -235,17 +236,18 @@ func (ctrl *UserController) UpdateUserProfile(ctx *gin.Context) {
 
 	res := schemas.UpdateUserProfileResponse{
 		User: schemas.UserResponse{
-			ID:          user.ID,
-			Gender:      user.Gender,
-			CreatedAt:   user.CreatedAt,
-			UpdatedAt:   user.UpdatedAt,
-			AvatarURL:   user.AvatarURL,
-			PhoneNumber: user.PhoneNumber,
-			Email:       user.Email,
-			FullName:    user.FullName,
-			IsVerified:  user.IsVerified,
-			IsActivated: user.IsActivated,
-			Role:        user.Role,
+			ID:           user.ID,
+			Gender:       user.Gender,
+			CreatedAt:    user.CreatedAt,
+			UpdatedAt:    user.UpdatedAt,
+			AvatarURL:    user.AvatarURL,
+			IsMomoLinked: user.IsMomoLinked,
+			PhoneNumber:  user.PhoneNumber,
+			Email:        user.Email,
+			FullName:     user.FullName,
+			IsVerified:   user.IsVerified,
+			IsActivated:  user.IsActivated,
+			Role:         user.Role,
 		},
 	}
 
@@ -332,17 +334,18 @@ func (ctrl *UserController) UpdateAvatar(ctx *gin.Context) {
 
 	res := schemas.UpdateAvatarResponse{
 		User: schemas.UserResponse{
-			ID:          user.ID,
-			CreatedAt:   user.CreatedAt,
-			UpdatedAt:   user.UpdatedAt,
-			AvatarURL:   avatarURL,
-			PhoneNumber: user.PhoneNumber,
-			Email:       user.Email,
-			FullName:    user.FullName,
-			IsVerified:  user.IsVerified,
-			IsActivated: user.IsActivated,
-			Role:        user.Role,
-			Gender:      user.Gender,
+			ID:           user.ID,
+			CreatedAt:    user.CreatedAt,
+			UpdatedAt:    user.UpdatedAt,
+			AvatarURL:    avatarURL,
+			PhoneNumber:  user.PhoneNumber,
+			Email:        user.Email,
+			IsMomoLinked: user.IsMomoLinked,
+			FullName:     user.FullName,
+			IsVerified:   user.IsVerified,
+			IsActivated:  user.IsActivated,
+			Role:         user.Role,
+			Gender:       user.Gender,
 		}}
 
 	response := helper.SuccessResponse(res, "Successfully updated avatar", "Cập nhật ảnh đại diện thành công")

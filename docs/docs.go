@@ -4861,6 +4861,9 @@ const docTemplate = `{
                 "gender": {
                     "type": "string"
                 },
+                "is_momo_linked": {
+                    "type": "boolean"
+                },
                 "phone_number": {
                     "type": "string"
                 },
@@ -4894,6 +4897,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "is_activated": {
+                    "type": "boolean"
+                },
+                "is_momo_linked": {
                     "type": "boolean"
                 },
                 "is_verified": {

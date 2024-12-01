@@ -105,7 +105,7 @@ func (p *PaymentController) LinkMomoWallet(ctx *gin.Context) {
 	}
 
 	res := schemas.LinkMomoWalletResponse{
-		Deeplink: momo.Deeplink,
+		Deeplink: momo.PayUrl, // Open browser to link momo wallet
 	}
 
 	response := helper.SuccessResponse(res, "Link momo wallet successfully", "Liên kết ví momo thành công")

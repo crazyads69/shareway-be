@@ -1405,6 +1405,8 @@ definitions:
         type: string
       gender:
         type: string
+      is_momo_linked:
+        type: boolean
       phone_number:
         type: string
       user_id:
@@ -1425,6 +1427,8 @@ definitions:
       id:
         type: string
       is_activated:
+        type: boolean
+      is_momo_linked:
         type: boolean
       is_verified:
         type: boolean

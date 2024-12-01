@@ -7,17 +7,18 @@ import (
 )
 
 type UserResponse struct {
-	ID          uuid.UUID `json:"id" binding:"required"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	PhoneNumber string    `json:"phone_number"`
-	Email       string    `json:"email,omitempty"`
-	AvatarURL   string    `json:"avatar_url"`
-	FullName    string    `json:"full_name"`
-	IsVerified  bool      `json:"is_verified"`
-	IsActivated bool      `json:"is_activated"`
-	Role        string    `json:"role"`
-	Gender      string    `json:"gender"`
+	ID           uuid.UUID `json:"id" binding:"required"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	PhoneNumber  string    `json:"phone_number"`
+	Email        string    `json:"email,omitempty"`
+	AvatarURL    string    `json:"avatar_url"`
+	FullName     string    `json:"full_name"`
+	IsVerified   bool      `json:"is_verified"`
+	IsActivated  bool      `json:"is_activated"`
+	IsMomoLinked bool      `json:"is_momo_linked"`
+	Role         string    `json:"role"`
+	Gender       string    `json:"gender"`
 }
 
 type AdminResponse struct {
