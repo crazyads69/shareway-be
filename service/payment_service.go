@@ -90,7 +90,7 @@ func (p *PaymentService) LinkMomoWallet(userID uuid.UUID, walletPhoneNumber stri
 	rawSignature.WriteString("&partnerCode=")
 	rawSignature.WriteString(p.cfg.MomoPartnerCode)
 	rawSignature.WriteString("&redirectUrl=")
-	rawSignature.WriteString(p.cfg.MomoPaymentNotifyURL)
+	rawSignature.WriteString(p.cfg.MomoPaymentRedirectURL)
 	rawSignature.WriteString("&requestId=")
 	rawSignature.WriteString(requestID)
 	rawSignature.WriteString("&requestType=")
@@ -112,7 +112,7 @@ func (p *PaymentService) LinkMomoWallet(userID uuid.UUID, walletPhoneNumber stri
 		Amount:          0,
 		OrderID:         requestID,
 		OrderInfo:       "Link wallet to user account",
-		RedirectURL:     p.cfg.MomoPaymentNotifyURL,
+		RedirectURL:     p.cfg.MomoPaymentRedirectURL,
 		IpnURL:          p.cfg.MomoPaymentNotifyURL,
 		PartnerClientID: userID.String(),
 		ExtraData:       extraDataBase64,

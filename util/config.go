@@ -68,6 +68,7 @@ type Config struct {
 	MomoPublicKey                  string `mapstructure:"MOMO_PUBLIC_KEY"`
 	MomoPaymentURL                 string `mapstructure:"MOMO_PAYMENT_URL"`
 	MomoPaymentNotifyURL           string `mapstructure:"MOMO_PAYMENT_NOTIFY_URL"`
+	MomoPaymentRedirectURL         string `mapstructure:"MOMO_PAYMENT_REDIRECT_URL"`
 }
 
 func LoadConfig(path string) (config Config, err error) {
