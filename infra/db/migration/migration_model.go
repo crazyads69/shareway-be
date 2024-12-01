@@ -189,6 +189,7 @@ type RideRequest struct {
 	EndLongitude          float64
 	RiderCurrentLatitude  float64
 	RiderCurrentLongitude float64
+	MomoTransID           int64             // MoMo transaction ID (if user paid with MoMo, then store the transaction ID here if later need to refund)
 	StartAddress          string            `gorm:"type:text"`
 	EndAddress            string            `gorm:"type:text"`
 	Status                string            `gorm:"default:'created'"` // created, matched, ongoing, completed, cancelled

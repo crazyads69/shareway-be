@@ -1696,6 +1696,69 @@
                 }
             }
         },
+        "/payment/checkout-ride": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Checkout ride with momo",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payment"
+                ],
+                "summary": "Checkout ride with momo",
+                "parameters": [
+                    {
+                        "description": "Checkout ride request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.CheckoutRideRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Link wallet response",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/payment/link-momo-wallet": {
             "post": {
                 "security": [
@@ -3140,6 +3203,28 @@
                     "$ref": "#/definitions/schemas.UserInfo"
                 },
                 "room_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.CheckoutRideRequest": {
+            "type": "object",
+            "required": [
+                "receiverID",
+                "rideOfferID",
+                "rideRequestID"
+            ],
+            "properties": {
+                "receiverID": {
+                    "description": "The ID of the receiver (the user who received the request) aka the driver",
+                    "type": "string"
+                },
+                "rideOfferID": {
+                    "description": "The ID of the ride offer (the user who received request is the driver)",
+                    "type": "string"
+                },
+                "rideRequestID": {
+                    "description": "Use for checkout with momo\nThe ID of the ride request (current user is the hitcher)",
                     "type": "string"
                 }
             }

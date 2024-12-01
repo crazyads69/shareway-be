@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"shareway/helper"
 	"shareway/infra/task"
@@ -15,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 )
 
 type IPNController struct {
@@ -43,6 +43,7 @@ func NewIPNController(validate *validator.Validate, hub *ws.Hub, rideService ser
 	}
 }
 
+// HandleIPN receives IPN from payment gateway and processes it
 // HandleIPN godoc
 // @Summary Handle IPN from payment gateway
 // @Description Handle IPN from payment gateway
@@ -54,250 +55,112 @@ func NewIPNController(validate *validator.Validate, hub *ws.Hub, rideService ser
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /ipn/handle-ipn [post]
 func (i *IPNController) HandleIPN(ctx *gin.Context) {
+	logger := log.With().Str("handler", "HandleIPN").Logger()
+
 	var req schemas.MoMoIPN
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		response := helper.ErrorResponseWithMessage(
-			err,
-			"Failed to get admin profile",
-			"Không thể lấy thông tin admin",
-		)
-		helper.GinResponse(ctx, 500, response)
+		logger.Error().Err(err).Msg("Failed to bind JSON")
+		helper.GinResponse(ctx, http.StatusBadRequest, helper.ErrorResponseWithMessage(err, "Failed to get admin profile", "Không thể lấy thông tin admin"))
 		return
 	}
 
-	// Verify IPN signature
+	logger.Info().Interface("ipn", req).Msg("Received IPN")
+
 	if !i.IPNService.VerifyIPN(req) {
-		response := helper.ErrorResponseWithMessage(
-			nil,
-			"Failed to verify IPN",
-			"Không thể xác minh IPN",
-		)
-		helper.GinResponse(ctx, 500, response)
+		logger.Error().Msg("Failed to verify IPN")
+		helper.GinResponse(ctx, http.StatusUnauthorized, helper.ErrorResponseWithMessage(nil, "Failed to verify IPN", "Không thể xác minh IPN"))
 		return
 	}
 
-	// Decode extra data and check for type
 	extraDataJSON, err := base64.StdEncoding.DecodeString(req.ExtraData)
 	if err != nil {
-		response := helper.ErrorResponseWithMessage(
-			err,
-			"Failed to decode extra data",
-			"Không thể giải mã dữ liệu thêm",
-		)
-		helper.GinResponse(ctx, 500, response)
+		logger.Error().Err(err).Str("extraData", req.ExtraData).Msg("Failed to decode extra data")
+		helper.GinResponse(ctx, http.StatusBadRequest, helper.ErrorResponseWithMessage(err, "Failed to decode extra data", "Không thể giải mã dữ liệu thêm"))
 		return
 	}
 
 	var extraData schemas.ExtraData
-	err = json.Unmarshal(extraDataJSON, &extraData)
-	if err != nil {
-		response := helper.ErrorResponseWithMessage(
-			err,
-			"Failed to unmarshal extra data",
-			"Không thể unmarshal dữ liệu thêm",
-		)
-		helper.GinResponse(ctx, 500, response)
+	if err := json.Unmarshal(extraDataJSON, &extraData); err != nil {
+		logger.Error().Err(err).RawJSON("extraDataJSON", extraDataJSON).Msg("Failed to unmarshal extra data")
+		helper.GinResponse(ctx, http.StatusBadRequest, helper.ErrorResponseWithMessage(err, "Failed to unmarshal extra data", "Không thể unmarshal dữ liệu thêm"))
 		return
 	}
 
-	// Handle IPN case
-	// Use extraData.Type to determine the type of IPN request to handle
+	logger.Info().Interface("extraData", extraData).Msg("Decoded extra data")
+
+	newPartnerClientID, err := uuid.Parse(req.PartnerClientID)
+	if err != nil {
+		logger.Error().Err(err).Str("partnerClientID", req.PartnerClientID).Msg("Failed to parse partner client ID")
+		helper.GinResponse(ctx, http.StatusBadRequest, helper.ErrorResponseWithMessage(err, "Failed to parse partner client ID", "Không thể phân tích ID khách hàng đối tác"))
+		return
+	}
+
+	receiver, err := i.UserService.GetUserByID(newPartnerClientID)
+	if err != nil {
+		logger.Error().Err(err).Str("userID", newPartnerClientID.String()).Msg("Failed to get receiver details")
+		helper.GinResponse(ctx, http.StatusInternalServerError, helper.ErrorResponseWithMessage(err, "Failed to get receiver details", "Không thể lấy thông tin người nhận"))
+		return
+	}
+
+	var wsMessage schemas.WebSocketMessage
+	var notification schemas.Notification
+
 	switch extraData.Type {
 	case "linkWallet":
-		// Check if result code is 0
 		if req.ResultCode != 0 {
-			// Send websocket message to user
-			// Get the device token of the hitcher to send notification
-			newPartnerClientID, err := uuid.Parse(req.PartnerClientID)
-			if err != nil {
-				response := helper.ErrorResponseWithMessage(
-					err,
-					"Failed to parse partner client ID",
-					"Không thể phân tích ID khách hàng đối tác",
-				)
-				helper.GinResponse(ctx, 500, response)
+			wsMessage = schemas.WebSocketMessage{UserID: newPartnerClientID.String(), Type: "link-wallet-failed"}
+			notification = schemas.Notification{Title: "Liên kết ví thất bại", Body: "Liên kết ví thất bại, vui lòng thử lại", Token: receiver.DeviceToken}
+		} else {
+			if err := i.IPNService.HandleLinkWalletCallback(req); err != nil {
+				logger.Error().Err(err).Msg("Failed to handle linking wallet callback")
+				helper.GinResponse(ctx, http.StatusInternalServerError, helper.ErrorResponseWithMessage(err, "Failed to handle linking wallet callback", "Không thể xử lý callback liên kết ví"))
 				return
 			}
-			receiver, err := i.UserService.GetUserByID(newPartnerClientID)
-			if err != nil {
-				response := helper.ErrorResponseWithMessage(
-					err,
-					"Failed to get receiver details",
-					"Không thể lấy thông tin người nhận",
-				)
-				helper.GinResponse(ctx, 500, response)
-				return
-			}
-
-			// Prepare the WebSocket message
-			wsMessage := schemas.WebSocketMessage{
-				UserID:  newPartnerClientID.String(),
-				Type:    "link-wallet-failed",
-				Payload: nil,
-			}
-
-			// Prepare the notification payload
-			notificationPayload := schemas.NotificationPayload{
-				Type: "cancel-ride-by-driver",
-				Data: nil,
-			}
-
-			// Convert notificationPayload to map[string]string
-			notificationPayloadMap, err := helper.ConvertToStringMap(notificationPayload)
-			if err != nil {
-				response := helper.ErrorResponseWithMessage(
-					err,
-					"Failed to convert struct to map",
-					"Không thể chuyển đổi struct sang map",
-				)
-				helper.GinResponse(ctx, 500, response)
-				return
-			}
-
-			// Prepare the notification message
-			notification := schemas.Notification{
-				Title: "Liên kết ví thất bại",
-				Body:  "Liên kết ví thất bại, vui lòng thử lại",
-				Token: receiver.DeviceToken,
-				Data:  notificationPayloadMap,
-			}
-
-			// Send the WebSocket message using the async client
-			go func() {
-				err := i.asyncClient.EnqueueWebsocketMessage(wsMessage)
-				if err != nil {
-					log.Printf("Failed to enqueue websocket message: %v", err)
-				}
-			}()
-
-			// Send the notification message using the async client
-			go func() {
-				err = i.asyncClient.EnqueueFCMNotification(notification)
-				if err != nil {
-					log.Printf("Failed to enqueue FCM notification: %v", err)
-				}
-			}()
-
+			wsMessage = schemas.WebSocketMessage{UserID: newPartnerClientID.String(), Type: "link-wallet-success"}
+			notification = schemas.Notification{Title: "Liên kết ví thành công", Body: "Liên kết ví thành công", Token: receiver.DeviceToken}
 		}
-		err := i.IPNService.HandleLinkWalletCallback(req)
-		if err != nil {
-			response := helper.ErrorResponseWithMessage(
-				err,
-				"Failed to handle linking wallet callback",
-				"Không thể xử lý callback liên kết ví",
-			)
-			helper.GinResponse(ctx, 500, response)
-			return
-		}
-
-		// If run to this point, it means the linking wallet is successful
-		// Send websocket message to user
-		// Get the device token of the hitcher to send notification
-		newPartnerClientID, err := uuid.Parse(req.PartnerClientID)
-		if err != nil {
-			response := helper.ErrorResponseWithMessage(
-				err,
-				"Failed to parse partner client ID",
-				"Không thể phân tích ID khách hàng đối tác",
-			)
-			helper.GinResponse(ctx, 500, response)
-			return
-		}
-		receiver, err := i.UserService.GetUserByID(newPartnerClientID)
-		if err != nil {
-			response := helper.ErrorResponseWithMessage(
-				err,
-				"Failed to get receiver details",
-				"Không thể lấy thông tin người nhận",
-			)
-			helper.GinResponse(ctx, 500, response)
-			return
-		}
-
-		// Prepare the WebSocket message
-		wsMessage := schemas.WebSocketMessage{
-			UserID:  newPartnerClientID.String(),
-			Type:    "link-wallet-success",
-			Payload: nil,
-		}
-
-		// Prepare the notification payload
-		notificationPayload := schemas.NotificationPayload{
-			Type: "link-wallet-success",
-			Data: nil,
-		}
-
-		// Convert notificationPayload to map[string]string
-		notificationPayloadMap, err := helper.ConvertToStringMap(notificationPayload)
-		if err != nil {
-			response := helper.ErrorResponseWithMessage(
-				err,
-				"Failed to convert struct to map",
-				"Không thể chuyển đổi struct sang map",
-			)
-			helper.GinResponse(ctx, 500, response)
-			return
-		}
-
-		// Prepare the notification message
-		notification := schemas.Notification{
-			Title: "Liên kết ví thành công",
-			Body:  "Liên kết ví thành công",
-			Token: receiver.DeviceToken,
-			Data:  notificationPayloadMap,
-		}
-
-		// Send the WebSocket message using the async client
-		go func() {
-			err := i.asyncClient.EnqueueWebsocketMessage(wsMessage)
-			if err != nil {
-				log.Printf("Failed to enqueue websocket message: %v", err)
-			}
-		}()
-
-		// Send the notification message using the async client
-		go func() {
-			err = i.asyncClient.EnqueueFCMNotification(notification)
-			if err != nil {
-				log.Printf("Failed to enqueue FCM notification: %v", err)
-			}
-		}()
 
 	case "payment":
-		err := i.IPNService.HandleIPN(req)
-		if err != nil {
-			response := helper.ErrorResponseWithMessage(
-				err,
-				"Failed to handle IPN",
-				"Không thể xử lý IPN",
-			)
-			helper.GinResponse(ctx, 500, response)
-			return
+		if req.ResultCode != 0 {
+			wsMessage = schemas.WebSocketMessage{UserID: newPartnerClientID.String(), Type: "payment-failed"}
+			notification = schemas.Notification{Title: "Thanh toán thất bại", Body: "Thanh toán thất bại, vui lòng thử lại", Token: receiver.DeviceToken}
+		} else {
+			if err := i.IPNService.HandleIPN(req); err != nil {
+				logger.Error().Err(err).Msg("Failed to handle IPN")
+				helper.GinResponse(ctx, http.StatusInternalServerError, helper.ErrorResponseWithMessage(err, "Failed to handle IPN", "Không thể xử lý IPN"))
+				return
+			}
+			wsMessage = schemas.WebSocketMessage{UserID: newPartnerClientID.String(), Type: "payment-success"}
+			notification = schemas.Notification{Title: "Thanh toán thành công", Body: "Thanh toán thành công", Token: receiver.DeviceToken}
 		}
+
 	default:
-		response := helper.ErrorResponseWithMessage(
-			fmt.Errorf("unknown extra data type"),
-			"Unknown extra data type",
-			"Loại dữ liệu thêm không xác định",
-		)
-		helper.GinResponse(ctx, 400, response)
+		logger.Error().Str("type", extraData.Type).Msg("Unknown extra data type")
+		helper.GinResponse(ctx, http.StatusBadRequest, helper.ErrorResponseWithMessage(fmt.Errorf("unknown extra data type"), "Unknown extra data type", "Loại dữ liệu thêm không xác định"))
 		return
 	}
-	// If callbackToken is not empty, it means this is a callback from the user after linking the wallet successfully
-	if req.CallbackToken != "" {
-		// Handle linking wallet callback token to get aesToken
-		err := i.IPNService.HandleLinkWalletCallback(req)
-		if err != nil {
-			response := helper.ErrorResponseWithMessage(
-				err,
-				"Failed to handle linking wallet callback",
-				"Không thể xử lý callback liên kết ví",
-			)
-			helper.GinResponse(ctx, 500, response)
-			return
-		}
-	}
 
-	// Answer to MOMO payment gateway status 204
+	notificationPayload := schemas.NotificationPayload{Type: wsMessage.Type}
+	notificationPayloadMap, err := helper.ConvertToStringMap(notificationPayload)
+	if err != nil {
+		logger.Error().Err(err).Interface("payload", notificationPayload).Msg("Failed to convert struct to map")
+		helper.GinResponse(ctx, http.StatusInternalServerError, helper.ErrorResponseWithMessage(err, "Failed to convert struct to map", "Không thể chuyển đổi struct sang map"))
+		return
+	}
+	notification.Data = notificationPayloadMap
+
+	go func() {
+		if err := i.asyncClient.EnqueueWebsocketMessage(wsMessage); err != nil {
+			logger.Error().Err(err).Interface("message", wsMessage).Msg("Failed to enqueue websocket message")
+		}
+	}()
+
+	go func() {
+		if err := i.asyncClient.EnqueueFCMNotification(notification); err != nil {
+			logger.Error().Err(err).Interface("notification", notification).Msg("Failed to enqueue FCM notification")
+		}
+	}()
+
+	logger.Info().Msg("IPN handled successfully")
 	ctx.Status(http.StatusNoContent)
 }

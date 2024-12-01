@@ -227,5 +227,51 @@ func (s *IPNService) DecryptAESToken(encryptedToken string) (schemas.DecodedToke
 }
 
 func (s *IPNService) HandleIPN(ipn schemas.MoMoIPN) error {
+	log.Info().
+		Str("transID", strconv.FormatInt(ipn.TransID, 10)).
+		Int64("amount", ipn.Amount).
+		Str("orderID", ipn.OrderID).
+		Str("orderType", ipn.OrderType).
+		Int("resultCode", ipn.ResultCode).
+		Msg("Received MoMo IPN")
+
+	// Decode extra data and check for type
+	log.Debug().Str("extraData", ipn.ExtraData).Msg("Decoding extra data")
+	extraDataJSON, err := base64.StdEncoding.DecodeString(ipn.ExtraData)
+	if err != nil {
+		log.Error().Err(err).Str("extraData", ipn.ExtraData).Msg("Failed to decode extra data")
+		return fmt.Errorf("failed to decode extra data: %w", err)
+	}
+	log.Debug().Str("decodedExtraData", string(extraDataJSON)).Msg("Extra data decoded")
+
+	var extraData schemas.ExtraData
+	log.Debug().Msg("Unmarshalling extra data")
+	err = json.Unmarshal(extraDataJSON, &extraData)
+	if err != nil {
+		log.Error().Err(err).Str("extraDataJSON", string(extraDataJSON)).Msg("Failed to unmarshal extra data")
+		return fmt.Errorf("failed to unmarshal extra data: %w", err)
+	}
+	log.Info().
+		Str("rideRequestID", extraData.RideRequestID.String()).
+		Msg("Extracted ride request ID from extra data")
+
+	// Store IPN transid to db with ride request ID from extra data
+	log.Info().
+		Str("transID", strconv.FormatInt(ipn.TransID, 10)).
+		Str("rideRequestID", extraData.RideRequestID.String()).
+		Msg("Storing IPN transID")
+	err = s.repo.StoreTransID(ipn.TransID, extraData.RideRequestID)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("transID", strconv.FormatInt(ipn.TransID, 10)).
+			Str("rideRequestID", extraData.RideRequestID.String()).
+			Msg("Failed to store IPN transID")
+		return fmt.Errorf("failed to store IPN transID: %w", err)
+	}
+	log.Info().
+		Str("transID", strconv.FormatInt(ipn.TransID, 10)).
+		Str("rideRequestID", extraData.RideRequestID.String()).
+		Msg("Successfully stored IPN transID")
 	return nil
 }

@@ -19,4 +19,6 @@ func SetupPaymentRouter(group *gin.RouterGroup, server *APIServer) {
 	)
 	// Link momo wallet to user account
 	group.POST("/link-momo-wallet", paymentController.LinkMomoWallet)
+	// Check out ride
+	group.POST("/checkout-ride", paymentController.CheckoutRide)
 }

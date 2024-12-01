@@ -3,10 +3,14 @@ package service
 import (
 	"bytes"
 	"crypto/hmac"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"net/http"
 	"shareway/infra/ws"
@@ -27,6 +31,8 @@ type PaymentService struct {
 
 type IPaymentService interface {
 	LinkMomoWallet(userID uuid.UUID, walletPhoneNumber string) (schemas.LinkWalletResponse, error)
+	CheckoutRide(userID uuid.UUID, req schemas.CheckoutRideRequest) error
+	encryptRSA(tokenData schemas.TokenData) (string, error)
 }
 
 func NewPaymentService(repo repository.IPaymentRepository, hub *ws.Hub, cfg util.Config) IPaymentService {
@@ -154,4 +160,173 @@ func (p *PaymentService) LinkMomoWallet(userID uuid.UUID, walletPhoneNumber stri
 
 	log.Info().Msg("Successfully linked wallet")
 	return response, nil
+}
+
+func (p *PaymentService) CheckoutRide(userID uuid.UUID, req schemas.CheckoutRideRequest) error {
+	log.Info().Msg("Starting CheckoutRide process")
+	// Get checkout token from user
+	user, err := p.repo.GetUserByID(userID)
+	if err != nil {
+		log.Error().Err(err).Str("userID", userID.String()).Msg("Failed to get user details")
+		return fmt.Errorf("failed to get user details: %w", err)
+	}
+
+	// Get ride offer details
+	rideOffer, err := p.repo.GetRideOfferByID(req.RideOfferID)
+	if err != nil {
+		log.Error().Err(err).Str("rideOfferID", req.RideOfferID.String()).Msg("Failed to get ride offer details")
+		return fmt.Errorf("failed to get ride offer details: %w", err)
+	}
+
+	// Generate request ID
+	requestID := uuid.New().String()
+
+	// Prepare token data
+	tokenData := schemas.TokenData{
+		Value:               user.MoMoRecurringToken,
+		RequireSecurityCode: false,
+	}
+
+	// Encrypt token data RSA
+	// Encrypt token data with RSA
+	encryptedToken, err := p.encryptRSA(tokenData)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to encrypt token data")
+		return fmt.Errorf("failed to encrypt token data: %w", err)
+	}
+
+	// Prepare extra data
+	extraData := schemas.ExtraData{
+		Type:          "payment",
+		RideRequestID: req.RideRequestID, // Use this to identify the ride request in IPN to update transID
+	}
+	extraDataJSON, err := json.Marshal(extraData)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to marshal extra data")
+		return fmt.Errorf("failed to marshal extra data: %w", err)
+	}
+	extraDataBase64 := base64.StdEncoding.EncodeToString(extraDataJSON)
+
+	// Build request signature
+	var rawSignature bytes.Buffer
+	rawSignature.WriteString("accessKey=")
+	rawSignature.WriteString(p.cfg.MomoAccessKey)
+	rawSignature.WriteString("&amount=")
+	rawSignature.WriteString(fmt.Sprintf("%d", int(rideOffer.Fare+0.5))) // momo requires amount in integer
+	rawSignature.WriteString("&extraData=")
+	rawSignature.WriteString(extraDataBase64)
+	rawSignature.WriteString("&orderId=")
+	rawSignature.WriteString(requestID)
+	rawSignature.WriteString("&orderInfo=")
+	rawSignature.WriteString("Thanh toán chuyến đi")
+	rawSignature.WriteString("&partnerClientId=")
+	rawSignature.WriteString(userID.String())
+	rawSignature.WriteString("&partnerCode=")
+	rawSignature.WriteString(p.cfg.MomoPartnerCode)
+	rawSignature.WriteString("&requestId=")
+	rawSignature.WriteString(requestID)
+	rawSignature.WriteString("&token=")
+	rawSignature.WriteString(encryptedToken)
+
+	// Sign request
+	hmac := hmac.New(sha256.New, []byte(p.cfg.MomoSecretKey))
+	hmac.Write(rawSignature.Bytes())
+	signature := hex.EncodeToString(hmac.Sum(nil))
+
+	// Build request payload
+	payload := schemas.CheckoutRequest{
+		PartnerClientID: userID.String(),
+		PartnerCode:     p.cfg.MomoPartnerCode,
+		RequestID:       requestID,
+		Amount:          int64(rideOffer.Fare + 0.5),
+		OrderID:         requestID,
+		OrderInfo:       "Thanh toán chuyến đi",
+		RedirectURL:     "",
+		AutoCapture:     true,
+		IpnURL:          p.cfg.MomoPaymentNotifyURL,
+		ExtraData:       extraDataBase64,
+		Token:           encryptedToken,
+		Lang:            "vi",
+		Signature:       signature,
+	}
+
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to marshal payload")
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	// Send request to MoMo API
+	url := fmt.Sprintf("%s/%s", p.cfg.MomoPaymentURL, "tokenization/pay")
+	log.Info().Str("url", url).Msg("Sending request to MoMo API")
+
+	start := time.Now()
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to send request to MoMo API")
+		return fmt.Errorf("failed to send request to MoMo API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	duration := time.Since(start)
+	log.Info().Dur("duration", duration).Int("statusCode", resp.StatusCode).Msg("Received response from MoMo API")
+
+	// Read response from MoMo API
+	var response schemas.CheckoutResponse
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to decode response from MoMo API")
+		return fmt.Errorf("failed to decode response from MoMo API: %w", err)
+	}
+	log.Debug().Interface("response", response).Msg("Decoded response from MoMo API")
+
+	// Check if response is successful
+	if response.ResultCode != 0 {
+		log.Error().Int("resultCode", response.ResultCode).Str("message", response.Message).Msg("Checkout failed")
+		return fmt.Errorf("checkout failed: %s", response.Message)
+	}
+
+	log.Info().Msg("Successfully completed CheckoutRide process")
+	return nil
+}
+
+func (p *PaymentService) encryptRSA(tokenData schemas.TokenData) (string, error) {
+	// Parse the PEM encoded public key
+	block, _ := pem.Decode([]byte(p.cfg.MomoPublicKey))
+	if block == nil {
+		return "", fmt.Errorf("failed to parse PEM block containing the public key")
+	}
+
+	// Parse the public key
+	pkixPub, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse DER encoded public key: %w", err)
+	}
+
+	// Assert that the public key is an RSA key
+	publicKey, ok := pkixPub.(*rsa.PublicKey)
+	if !ok {
+		return "", fmt.Errorf("not an RSA public key")
+	}
+
+	// Convert tokenData to JSON
+	rawJsonData, err := json.Marshal(tokenData)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal token data: %w", err)
+	}
+
+	// Encrypt the data
+	ciphertext, err := rsa.EncryptPKCS1v15(
+		rand.Reader,
+		publicKey,
+		rawJsonData,
+	)
+	if err != nil {
+		return "", fmt.Errorf("encryption error: %w", err)
+	}
+
+	// Encode the encrypted data as base64
+	hash := base64.StdEncoding.EncodeToString(ciphertext)
+
+	return hash, nil
 }

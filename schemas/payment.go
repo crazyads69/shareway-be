@@ -1,5 +1,7 @@
 package schemas
 
+import "github.com/google/uuid"
+
 type LinkMomoRequest struct {
 	// Different from phoneNumber that is used for login
 	// This is the phone number that is registered with momo wallet
@@ -42,6 +44,57 @@ type LinkMomoWalletResponse struct {
 }
 
 type ExtraData struct {
-	Type string `json:"type"`
+	Type          string    `json:"type"`
+	RideRequestID uuid.UUID `json:"rideRequestID"`
 	// Thêm các trường khác nếu cần
 }
+
+type CheckoutRequest struct {
+	StoreID         string `json:"storeId"`
+	RequestID       string `json:"requestId"`
+	OrderID         string `json:"orderId"`
+	RedirectURL     string `json:"redirectUrl"`
+	IpnURL          string `json:"ipnUrl"`
+	PartnerClientID string `json:"partnerClientId"`
+	PartnerCode     string `json:"partnerCode"`
+	PartnerName     string `json:"partnerName"`
+	Amount          int64  `json:"amount"`
+	OrderInfo       string `json:"orderInfo"`
+	ExtraData       string `json:"extraData"`
+	AutoCapture     bool   `json:"autoCapture"`
+	Lang            string `json:"lang"`
+	Token           string `json:"token"`
+	Signature       string `json:"signature"`
+}
+type CheckoutResponse struct {
+	PartnerCode     string `json:"partnerCode"`
+	OrderID         string `json:"orderId"`
+	RequestID       string `json:"requestId"`
+	Amount          int64  `json:"amount"`
+	ResponseTime    int64  `json:"responseTime"`
+	Message         string `json:"message"`
+	ResultCode      int    `json:"resultCode"`
+	PayURL          string `json:"payUrl"`
+	Deeplink        string `json:"deeplink"`
+	QRCodeURL       string `json:"qrCodeUrl"`
+	TransID         int64  `json:"transId"`
+	PartnerClientID string `json:"partnerClientId"`
+}
+
+type TokenData struct {
+	Value               string `json:"value"`
+	RequireSecurityCode bool   `json:"requireSecurityCode"`
+}
+
+type CheckoutRideRequest struct {
+	// Use for checkout with momo
+	// The ID of the ride request (current user is the hitcher)
+	RideRequestID uuid.UUID `json:"rideRequestID" binding:"required,uuid" validate:"required,uuid"`
+	// The ID of the ride offer (the user who received request is the driver)
+	RideOfferID uuid.UUID `json:"rideOfferID" binding:"required,uuid" validate:"required,uuid"`
+	// The ID of the receiver (the user who received the request) aka the driver
+	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
+}
+
+// type CheckoutRideResponse struct {
+// }
