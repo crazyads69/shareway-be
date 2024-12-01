@@ -21,10 +21,10 @@ func NewPaymentRepository(db *gorm.DB, redis *redis.Client) IPaymentRepository {
 }
 
 type IPaymentRepository interface {
-	StoreRequestID(requestID string, userID uuid.UUID) error
+	StoreRequestID(requestID string, userID uuid.UUID, walletPhoneNumber string) error
 }
 
-func (p *PaymentRepository) StoreRequestID(requestID string, userID uuid.UUID) error {
+func (p *PaymentRepository) StoreRequestID(requestID string, userID uuid.UUID, walletPhoneNumber string) error {
 	// Store request ID to db for later use
 	var user migration.User
 	if err := p.db.Where("id = ?", userID).First(&user).Error; err != nil {
@@ -36,6 +36,7 @@ func (p *PaymentRepository) StoreRequestID(requestID string, userID uuid.UUID) e
 		return err
 	}
 	user.MomoFirstRequestID = newRequestID
+	user.MomoWalletID = walletPhoneNumber
 
 	return p.db.Save(&user).Error
 }

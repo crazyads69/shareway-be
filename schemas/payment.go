@@ -1,5 +1,11 @@
 package schemas
 
+type LinkMomoRequest struct {
+	// Different from phoneNumber that is used for login
+	// This is the phone number that is registered with momo wallet
+	WalletPhoneNumber string `json:"walletPhoneNumber" binding:"required" validate:"required,min=10,max=10"`
+}
+
 type LinkWalletRequest struct {
 	PartnerCode     string `json:"partnerCode"`
 	AccessKey       string `json:"accessKey"`
@@ -33,4 +39,9 @@ type LinkWalletResponse struct {
 
 type LinkMomoWalletResponse struct {
 	Deeplink string `json:"deeplink"` // send this to fe flutter app for open momo and perform linked
+}
+
+type ExtraData struct {
+	Type string `json:"type"`
+	// Thêm các trường khác nếu cần
 }

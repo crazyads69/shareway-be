@@ -694,6 +694,18 @@ definitions:
       token:
         type: string
     type: object
+  schemas.LinkMomoRequest:
+    properties:
+      walletPhoneNumber:
+        description: |-
+          Different from phoneNumber that is used for login
+          This is the phone number that is registered with momo wallet
+        maxLength: 10
+        minLength: 10
+        type: string
+    required:
+    - walletPhoneNumber
+    type: object
   schemas.LinkMomoWalletResponse:
     properties:
       deeplink:
@@ -2577,6 +2589,13 @@ paths:
       consumes:
       - application/json
       description: Link momo wallet to user account
+      parameters:
+      - description: Link momo wallet request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.LinkMomoRequest'
       produces:
       - application/json
       responses:

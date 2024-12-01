@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -25,7 +26,7 @@ type PaymentService struct {
 }
 
 type IPaymentService interface {
-	LinkMomoWallet(userID uuid.UUID) (schemas.LinkWalletResponse, error)
+	LinkMomoWallet(userID uuid.UUID, walletPhoneNumber string) (schemas.LinkWalletResponse, error)
 }
 
 func NewPaymentService(repo repository.IPaymentRepository, hub *ws.Hub, cfg util.Config) IPaymentService {
@@ -35,7 +36,7 @@ func NewPaymentService(repo repository.IPaymentRepository, hub *ws.Hub, cfg util
 		cfg:  cfg,
 	}
 }
-func (p *PaymentService) LinkMomoWallet(userID uuid.UUID) (schemas.LinkWalletResponse, error) {
+func (p *PaymentService) LinkMomoWallet(userID uuid.UUID, walletPhoneNumber string) (schemas.LinkWalletResponse, error) {
 	log.Info().Msg("Starting LinkMomoWallet process")
 
 	// Generate request ID for linking wallet
@@ -43,20 +44,35 @@ func (p *PaymentService) LinkMomoWallet(userID uuid.UUID) (schemas.LinkWalletRes
 	log.Info().Str("requestID", requestID).Msg("Generated request ID")
 
 	// Store request ID to database
-	err := p.repo.StoreRequestID(requestID, userID)
+	err := p.repo.StoreRequestID(requestID, userID, walletPhoneNumber)
+
+	// Store the wallet phone number to database
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to store request ID in database")
 		return schemas.LinkWalletResponse{}, err
 	}
 	log.Info().Msg("Stored request ID in database")
 
+	extraType := schemas.ExtraData{
+		Type: "linkWallet",
+	}
+
+	// Encode extra data to JSON
+	extraData, err := json.Marshal(extraType)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to marshal extra data")
+		return schemas.LinkWalletResponse{}, err
+	}
+
+	// Encode extra data to base64
+	extraDataBase64 := base64.StdEncoding.EncodeToString(extraData)
 	// Build request signature
 	var rawSignature bytes.Buffer
 	rawSignature.WriteString("accessKey=")
 	rawSignature.WriteString(p.cfg.MomoAccessKey)
 	rawSignature.WriteString("&amount=0")
 	rawSignature.WriteString("&extraData=")
-	rawSignature.WriteString("")
+	rawSignature.WriteString(extraDataBase64)
 	rawSignature.WriteString("&ipnUrl=")
 	rawSignature.WriteString(p.cfg.MomoPaymentNotifyURL)
 	rawSignature.WriteString("&orderId=")
@@ -93,7 +109,7 @@ func (p *PaymentService) LinkMomoWallet(userID uuid.UUID) (schemas.LinkWalletRes
 		RedirectURL:     p.cfg.MomoPaymentNotifyURL,
 		IpnURL:          p.cfg.MomoPaymentNotifyURL,
 		PartnerClientID: userID.String(),
-		ExtraData:       "",
+		ExtraData:       extraDataBase64,
 		RequestType:     "linkWallet",
 		Lang:            "vi",
 		Signature:       signature,

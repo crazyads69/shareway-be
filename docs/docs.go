@@ -1725,6 +1725,17 @@ const docTemplate = `{
                     "payment"
                 ],
                 "summary": "Link momo wallet to user account",
+                "parameters": [
+                    {
+                        "description": "Link momo wallet request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.LinkMomoRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Link momo wallet response",
@@ -3814,6 +3825,20 @@ const docTemplate = `{
                 },
                 "token": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.LinkMomoRequest": {
+            "type": "object",
+            "required": [
+                "walletPhoneNumber"
+            ],
+            "properties": {
+                "walletPhoneNumber": {
+                    "description": "Different from phoneNumber that is used for login\nThis is the phone number that is registered with momo wallet",
+                    "type": "string",
+                    "maxLength": 10,
+                    "minLength": 10
                 }
             }
         },

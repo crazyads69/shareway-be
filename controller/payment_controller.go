@@ -47,6 +47,7 @@ func NewPaymentController(validate *validator.Validate, hub *ws.Hub, rideService
 // @Accept json
 // @Produce json
 // @Security BearerAuth
+// @Param body body schemas.LinkMomoRequest true "Link momo wallet request"
 // @Success 200 {object} schemas.LinkMomoWalletResponse "Link momo wallet response"
 // @Failure 400 {object} helper.Response "Bad request"
 // @Failure 500 {object} helper.Response "Internal server error"
@@ -66,6 +67,30 @@ func (p *PaymentController) LinkMomoWallet(ctx *gin.Context) {
 			"Không thể chuyển đổi payload",
 		)
 		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	var req schemas.LinkMomoRequest
+
+	// Bind request to struct
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind request",
+			"Không thể bind request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Validate request
+	if err := p.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
 		return
 	}
 
@@ -93,7 +118,7 @@ func (p *PaymentController) LinkMomoWallet(ctx *gin.Context) {
 	}
 
 	// Link momo wallet to user account
-	momo, err := p.PaymentService.LinkMomoWallet(data.UserID)
+	momo, err := p.PaymentService.LinkMomoWallet(data.UserID, req.WalletPhoneNumber)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,

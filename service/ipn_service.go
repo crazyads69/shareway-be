@@ -18,6 +18,7 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 )
 
 type IPNService struct {
@@ -86,24 +87,31 @@ func (s *IPNService) VerifyIPN(ipn schemas.MoMoIPN) bool {
 	h.Write([]byte(rawSignature.Bytes()))
 	signature := hex.EncodeToString(h.Sum(nil))
 	return signature == ipn.Signature
-
 }
 
 func (s *IPNService) HandleLinkWalletCallback(ipn schemas.MoMoIPN) error {
+	log.Info().
+		Str("partnerClientID", ipn.PartnerClientID).
+		Str("callbackToken", ipn.CallbackToken).
+		Msg("Starting HandleLinkWalletCallback")
+
 	// Get user from partner client ID
 	user, err := s.repo.GetUserByPartnerClientID(ipn.PartnerClientID)
 	if err != nil {
-		return err
+		log.Error().Err(err).Str("partnerClientID", ipn.PartnerClientID).Msg("Failed to get user")
+		return fmt.Errorf("failed to get user: %w", err)
 	}
+	log.Info().Str("userID", user.ID.String()).Msg("Retrieved user")
 
 	// Store callback token
 	err = s.repo.StoreCallbackToken(ipn.CallbackToken, user.ID)
+	if err != nil {
+		log.Error().Err(err).Str("userID", user.ID.String()).Msg("Failed to store callback token")
+		return fmt.Errorf("failed to store callback token: %w", err)
+	}
+	log.Info().Str("userID", user.ID.String()).Msg("Stored callback token")
 
-	// create signature
-	/* accessKey=$accessKey&callbackToken=$callbackToken&orderId=
-	$orderId&partnerClientId=$partnerClientId&partnerCode=
-	$partnerCode&requestId=$requestId */
-	// RequestID for each request is unique but orderID for bind token is the previous call link wallet
+	// Create signature
 	requestID := uuid.New().String()
 	var rawSignature bytes.Buffer
 	rawSignature.WriteString("accessKey=")
@@ -121,8 +129,9 @@ func (s *IPNService) HandleLinkWalletCallback(ipn schemas.MoMoIPN) error {
 
 	// Sign request
 	h := hmac.New(sha256.New, []byte(s.cfg.MomoSecretKey))
-	h.Write([]byte(rawSignature.Bytes()))
+	h.Write(rawSignature.Bytes())
 	signature := hex.EncodeToString(h.Sum(nil))
+	log.Debug().Str("signature", signature).Msg("Created signature for tokenization bind request")
 
 	// Build RecurringToken request
 	payload := schemas.TokenizationBindRequest{
@@ -138,43 +147,54 @@ func (s *IPNService) HandleLinkWalletCallback(ipn schemas.MoMoIPN) error {
 	// Send request to MoMo API
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
-		return err
+		log.Error().Err(err).Msg("Failed to marshal payload")
+		return fmt.Errorf("failed to marshal payload: %w", err)
 	}
+	log.Debug().RawJSON("payload", jsonPayload).Msg("Prepared request payload")
 
-	// Send request to MoMo API
-	resp, err := http.Post(fmt.Sprintf("%s/%s", s.cfg.MomoPaymentURL, "tokenization/bind"), "application/json", bytes.NewBuffer(jsonPayload))
+	url := fmt.Sprintf("%s/%s", s.cfg.MomoPaymentURL, "tokenization/bind")
+	log.Info().Str("url", url).Msg("Sending request to MoMo API")
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonPayload))
 	if err != nil {
-		return err
+		log.Error().Err(err).Str("url", url).Msg("Failed to send request to MoMo API")
+		return fmt.Errorf("failed to send request to MoMo API: %w", err)
 	}
+	defer resp.Body.Close()
 
 	// Decode response
 	var response schemas.TokenizationBindResponse
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
-		return err
+		log.Error().Err(err).Msg("Failed to decode response")
+		return fmt.Errorf("failed to decode response: %w", err)
 	}
+	log.Debug().Interface("response", response).Msg("Received response from MoMo API")
 
 	// Check status code
 	if response.ResultCode != 0 {
+		log.Error().Int("resultCode", response.ResultCode).Str("message", response.Message).Msg("MoMo API error")
 		return fmt.Errorf("MoMo API error: %s", response.Message)
 	}
 
 	// Decrypt AES token
 	decodedToken, err := s.DecryptAESToken(response.AESToken)
 	if err != nil {
-		return err
+		log.Error().Err(err).Msg("Failed to decrypt AES token")
+		return fmt.Errorf("failed to decrypt AES token: %w", err)
 	}
+	log.Info().Str("userAlias", decodedToken.UserAlias).Msg("Successfully decrypted AES token")
 
 	// Update user with MoMo token
 	err = s.repo.UpdateUserMoMoToken(user.ID, decodedToken)
 	if err != nil {
-		return err
+		log.Error().Err(err).Str("userID", user.ID.String()).Msg("Failed to update user MoMo token")
+		return fmt.Errorf("failed to update user MoMo token: %w", err)
 	}
+	log.Info().Str("userID", user.ID.String()).Msg("Updated user with MoMo token")
 
-	// TODO: Send ws message and fcm for user
+	log.Info().Msg("Successfully completed HandleLinkWalletCallback")
 	return nil
 }
-
 func (s *IPNService) DecryptAESToken(encryptedToken string) (schemas.DecodedToken, error) {
 	key := []byte(s.cfg.MomoSecretKey)
 	ciphertext, _ := base64.StdEncoding.DecodeString(encryptedToken)

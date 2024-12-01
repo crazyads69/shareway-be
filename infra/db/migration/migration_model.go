@@ -32,7 +32,8 @@ type User struct {
 	MoMoRecurringToken string    `gorm:"uniqueIndex"`        // Recurring token to use for later transactions
 	MoMoStatus         string    `gorm:"default:'inactive'"` // active, inactive
 	MoMoLastLinkedAt   time.Time
-	IsMomoLinked       bool `gorm:"default:false"` // Check if user has linked MoMo wallet
+	IsMomoLinked       bool   `gorm:"default:false"` // Check if user has linked MoMo wallet
+	MomoWalletID       string `gorm:"uniqueIndex"`   // MoMo wallet ID (phone number that is registered with MoMo wallet)
 
 	// New field for storing money received in app
 	BalanceInApp float64 `gorm:"default:0"` // Store balance in cents/smallest currency unit
