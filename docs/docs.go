@@ -2872,12 +2872,21 @@ const docTemplate = `{
         "schemas.AcceptGiveRideRequestRequest": {
             "type": "object",
             "required": [
+                "paymentMethod",
                 "receiverID",
                 "rideOfferID",
                 "rideRequestID",
                 "vehicleID"
             ],
             "properties": {
+                "paymentMethod": {
+                    "description": "Payment method (cash or momo)",
+                    "type": "string",
+                    "enum": [
+                        "cash",
+                        "momo"
+                    ]
+                },
                 "receiverID": {
                     "description": "The ID of the receiver (the user who received the request) aka the hitcher",
                     "type": "string"
@@ -2982,12 +2991,21 @@ const docTemplate = `{
         "schemas.AcceptHitchRideRequestRequest": {
             "type": "object",
             "required": [
+                "paymentMethod",
                 "receiverID",
                 "rideOfferID",
                 "rideRequestID",
                 "vehicleID"
             ],
             "properties": {
+                "paymentMethod": {
+                    "description": "Payment method (cash or momo)",
+                    "type": "string",
+                    "enum": [
+                        "cash",
+                        "momo"
+                    ]
+                },
                 "receiverID": {
                     "description": "The ID of the receiver (the user who received the request) aka the driver",
                     "type": "string"

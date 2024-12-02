@@ -90,6 +90,8 @@ type AcceptGiveRideRequestRequest struct {
 	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
 	// The ID of the vehicle
 	VehicleID uuid.UUID `json:"vehicleID" binding:"required,uuid" validate:"required,uuid"`
+	// Payment method (cash or momo)
+	PaymentMethod string `json:"paymentMethod" binding:"required" validate:"required,oneof=cash momo"`
 }
 
 type TransactionDetail struct {
@@ -138,6 +140,8 @@ type AcceptHitchRideRequestRequest struct {
 	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
 	// The ID of the vehicle
 	VehicleID uuid.UUID `json:"vehicleID" binding:"required,uuid" validate:"required,uuid"`
+	// Payment method (cash or momo)
+	PaymentMethod string `json:"paymentMethod" binding:"required" validate:"required,oneof=cash momo"`
 }
 
 // Define AcceptHitchRideRequestResponse schema

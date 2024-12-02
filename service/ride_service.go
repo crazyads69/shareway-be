@@ -23,7 +23,7 @@ type IRideService interface {
 	GetRideRequestByID(rideRequestID uuid.UUID) (migration.RideRequest, error)
 	GetTransactionByRideID(rideID uuid.UUID) (migration.Transaction, error)
 	AcceptRideRequest(rideOfferID, rideRequestID, vehicleID uuid.UUID) (migration.Ride, error)
-	CreateRideTransaction(rideID uuid.UUID, Fare float64, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error)
+	CreateRideTransaction(rideID uuid.UUID, Fare float64, paymentMethod string, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error)
 	StartRide(req schemas.StartRideRequest, userID uuid.UUID) (migration.Ride, error)
 	EndRide(req schemas.EndRideRequest, userID uuid.UUID) (migration.Ride, error)
 	UpdateRideLocation(req schemas.UpdateRideLocationRequest, userID uuid.UUID) (migration.Ride, error)
@@ -60,8 +60,8 @@ func (s *RideService) AcceptRideRequest(rideOfferID, rideRequestID, vehicleID uu
 }
 
 // CreateRideTransaction creates a transaction for a ride
-func (s *RideService) CreateRideTransaction(rideID uuid.UUID, Fare float64, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error) {
-	return s.repo.CreateRideTransaction(rideID, Fare, payerID, receiverID)
+func (s *RideService) CreateRideTransaction(rideID uuid.UUID, Fare float64, paymentMethod string, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error) {
+	return s.repo.CreateRideTransaction(rideID, Fare, paymentMethod, payerID, receiverID)
 }
 
 // StartRide starts a ride
