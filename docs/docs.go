@@ -1821,6 +1821,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/payment/refund-ride": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Refund ride with momo wallet",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payment"
+                ],
+                "summary": "Refund ride with momo wallet",
+                "parameters": [
+                    {
+                        "description": "Refund ride request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.RefundMomoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Refund ride response",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/protected/test": {
             "get": {
                 "security": [
@@ -4231,6 +4294,22 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.RefundMomoRequest": {
+            "type": "object",
+            "required": [
+                "rideOfferID",
+                "rideRequestID"
+            ],
+            "properties": {
+                "rideOfferID": {
+                    "type": "string"
+                },
+                "rideRequestID": {
+                    "description": "The ID of the ride request (current user is the hitcher)\nThe ride request contains then transaction ID from momo so could use for refund when needed (ride canceled, cannot create ride, etc)",
                     "type": "string"
                 }
             }

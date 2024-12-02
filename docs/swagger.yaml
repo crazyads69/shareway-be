@@ -938,6 +938,19 @@ definitions:
     - refresh_token
     - user_id
     type: object
+  schemas.RefundMomoRequest:
+    properties:
+      rideOfferID:
+        type: string
+      rideRequestID:
+        description: |-
+          The ID of the ride request (current user is the hitcher)
+          The ride request contains then transaction ID from momo so could use for refund when needed (ride canceled, cannot create ride, etc)
+        type: string
+    required:
+    - rideOfferID
+    - rideRequestID
+    type: object
   schemas.RegisterDeviceTokenRequest:
     properties:
       device_token:
@@ -2685,6 +2698,43 @@ paths:
       security:
       - BearerAuth: []
       summary: Link momo wallet to user account
+      tags:
+      - payment
+  /payment/refund-ride:
+    post:
+      consumes:
+      - application/json
+      description: Refund ride with momo wallet
+      parameters:
+      - description: Refund ride request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.RefundMomoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Refund ride response
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Refund ride with momo wallet
       tags:
       - payment
   /protected/test:

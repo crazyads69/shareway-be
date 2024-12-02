@@ -98,3 +98,33 @@ type CheckoutRideRequest struct {
 
 // type CheckoutRideResponse struct {
 // }
+
+// Define RefundMomoRequest
+type RefundMomoRequest struct {
+	// The ID of the ride request (current user is the hitcher)
+	// The ride request contains then transaction ID from momo so could use for refund when needed (ride canceled, cannot create ride, etc)
+	RideRequestID uuid.UUID `json:"rideRequestID" binding:"required,uuid" validate:"required,uuid"`
+	RideOfferID   uuid.UUID `json:"rideOfferID" binding:"required,uuid" validate:"required,uuid"`
+}
+
+type MomoRefundRequest struct {
+	PartnerCode string `json:"partnerCode"`
+	OrderID     string `json:"orderId"`
+	RequestID   string `json:"requestId"`
+	Amount      int64  `json:"amount"`
+	TransID     int64  `json:"transId"`
+	Lang        string `json:"lang"`
+	Description string `json:"description"`
+	Signature   string `json:"signature"`
+}
+
+type MomoRefundResponse struct {
+	PartnerCode  string `json:"partnerCode"`
+	OrderID      string `json:"orderId"`
+	RequestID    string `json:"requestId"`
+	Amount       int64  `json:"amount"`
+	TransID      int64  `json:"transId"`
+	ResultCode   int    `json:"resultCode"`
+	Message      string `json:"message"`
+	ResponseTime int64  `json:"responseTime"`
+}

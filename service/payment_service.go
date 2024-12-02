@@ -33,6 +33,7 @@ type IPaymentService interface {
 	LinkMomoWallet(userID uuid.UUID, walletPhoneNumber string) (schemas.LinkWalletResponse, error)
 	CheckoutRide(userID uuid.UUID, req schemas.CheckoutRideRequest) error
 	encryptRSA(tokenData schemas.TokenData) (string, error)
+	RefundRide(userID uuid.UUID, req schemas.RefundMomoRequest) error
 }
 
 func NewPaymentService(repo repository.IPaymentRepository, hub *ws.Hub, cfg util.Config) IPaymentService {
@@ -329,4 +330,117 @@ func (p *PaymentService) encryptRSA(tokenData schemas.TokenData) (string, error)
 	hash := base64.StdEncoding.EncodeToString(ciphertext)
 
 	return hash, nil
+}
+
+func (p *PaymentService) RefundRide(userID uuid.UUID, req schemas.RefundMomoRequest) error {
+	log.Info().Msg("Starting RefundRide process")
+
+	// Generate a new requestId
+	requestID := uuid.New().String()
+
+	// Get the ride request details
+	rideRequest, err := p.repo.GetRideRequestByID(req.RideRequestID)
+	if err != nil {
+		log.Error().Err(err).Str("rideRequestID", req.RideRequestID.String()).Msg("Failed to get ride request details")
+		return fmt.Errorf("failed to get ride request details: %w", err)
+	}
+
+	// Get ride offer details
+	rideOffer, err := p.repo.GetRideOfferByID(req.RideOfferID)
+	if err != nil {
+		log.Error().Err(err).Str("rideOfferID", req.RideOfferID.String()).Msg("Failed to get ride offer details")
+		return fmt.Errorf("failed to get ride offer details: %w", err)
+	}
+
+	// Build request signature
+	var rawSignature bytes.Buffer
+	rawSignature.WriteString("accessKey=")
+	rawSignature.WriteString(p.cfg.MomoAccessKey)
+	rawSignature.WriteString("&amount=")
+	rawSignature.WriteString(fmt.Sprintf("%d", int(rideOffer.Fare+0.5)))
+	rawSignature.WriteString("&description=")
+	rawSignature.WriteString("Hoàn tiền chuyến đi")
+	rawSignature.WriteString("&orderId=")
+	rawSignature.WriteString(requestID)
+	rawSignature.WriteString("&partnerCode=")
+	rawSignature.WriteString(p.cfg.MomoPartnerCode)
+	rawSignature.WriteString("&requestId=")
+	rawSignature.WriteString(requestID)
+	rawSignature.WriteString("&transId=")
+	rawSignature.WriteString(fmt.Sprintf("%d", rideRequest.MomoTransID))
+
+	log.Debug().Str("rawSignature", rawSignature.String()).Msg("Built raw signature")
+
+	// Sign request
+	hmac := hmac.New(sha256.New, []byte(p.cfg.MomoSecretKey))
+	hmac.Write(rawSignature.Bytes())
+	signature := hex.EncodeToString(hmac.Sum(nil))
+
+	log.Debug().Str("signature", signature).Msg("Generated signature")
+
+	// Build request payload
+	payload := schemas.MomoRefundRequest{
+		PartnerCode: p.cfg.MomoPartnerCode,
+		OrderID:     requestID,
+		RequestID:   requestID,
+		Amount:      int64(rideOffer.Fare + 0.5),
+		TransID:     rideRequest.MomoTransID,
+		Lang:        "vi",
+		Description: "Hoàn tiền chuyến đi",
+		Signature:   signature,
+	}
+
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to marshal payload")
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	log.Debug().RawJSON("payload", jsonPayload).Msg("Prepared request payload")
+
+	// Send request to MoMo API
+	url := fmt.Sprintf("%s/%s", p.cfg.MomoPaymentURL, "refund")
+	log.Info().Str("url", url).Msg("Sending refund request to MoMo API")
+
+	client := &http.Client{
+		Timeout: time.Second * 30, // Set timeout to 30 seconds as per documentation
+	}
+
+	start := time.Now()
+	resp, err := client.Post(url, "application/json", bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to send refund request to MoMo API")
+		return fmt.Errorf("failed to send refund request to MoMo API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	duration := time.Since(start)
+	log.Info().Dur("duration", duration).Int("statusCode", resp.StatusCode).Msg("Received response from MoMo API")
+
+	// Read response from MoMo API
+	var response schemas.MomoRefundResponse
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to decode response from MoMo API")
+		return fmt.Errorf("failed to decode response from MoMo API: %w", err)
+	}
+
+	log.Debug().Interface("response", response).Msg("Decoded response from MoMo API")
+
+	// Check if response is successful
+	if response.ResultCode != 0 {
+		log.Error().Int("resultCode", response.ResultCode).Str("message", response.Message).Msg("Refund failed")
+		return fmt.Errorf("refund failed: %s", response.Message)
+	}
+
+	// Update the refund status in your database
+	// In fact only success ride match have transaction in db so no need to update refund status
+	// err = p.repo.UpdateRefundStatus(req.RideID, "refunded", response.TransID)
+	// if err != nil {
+	// 	log.Error().Err(err).Str("rideID", req.RideID.String()).Msg("Failed to update refund status")
+	// 	return fmt.Errorf("failed to update refund status: %w", err)
+	// }
+
+	log.Info().Msg("Successfully completed RefundRide process")
+	return nil
 }
