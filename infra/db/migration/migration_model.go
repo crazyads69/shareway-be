@@ -36,7 +36,7 @@ type User struct {
 	MomoWalletID       string `gorm:"uniqueIndex"`   // MoMo wallet ID (phone number that is registered with MoMo wallet)
 
 	// New field for storing money received in app
-	BalanceInApp int64 `gorm:"default:0"` // Store balance in cents/smallest currency unit
+	BalanceInApp int64 `gorm:"default:0"` // Store balance in vnđ currency unit
 
 	Vehicles          []Vehicle          // One-to-many relationship with Vehicle
 	RatingsReceived   []Rating           `gorm:"foreignKey:RateeID"` // One-to-many relationship with Rating (received)
@@ -115,7 +115,7 @@ type Transaction struct {
 	Receiver      User      `gorm:"foreignKey:ReceiverID"`
 	Amount        int64     // in vnđ so cannot have decimal and 1000 is the smallest currency unit
 	PaymentMethod string    `gorm:"default:'cash'"`    // cash, momo
-	Status        string    `gorm:"default:'pending'"` // pending, completed, failed, refunded
+	Status        string    `gorm:"default:'pending'"` // pending, completed, refunded
 	RideID        uuid.UUID `gorm:"type:uuid"`
 	Ride          Ride      `gorm:"foreignKey:RideID"`
 }

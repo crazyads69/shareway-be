@@ -32,8 +32,9 @@ type PaymentService struct {
 type IPaymentService interface {
 	LinkMomoWallet(userID uuid.UUID, walletPhoneNumber string) (schemas.LinkWalletResponse, error)
 	CheckoutRide(userID uuid.UUID, req schemas.CheckoutRideRequest) error
-	encryptRSA(tokenData schemas.TokenData) (string, error)
+	encryptRSA(data interface{}) (string, error)
 	RefundRide(userID uuid.UUID, req schemas.RefundMomoRequest) error
+	WithdrawMomoWallet(userID uuid.UUID) error
 }
 
 func NewPaymentService(repo repository.IPaymentRepository, hub *ws.Hub, cfg util.Config) IPaymentService {
@@ -291,7 +292,7 @@ func (p *PaymentService) CheckoutRide(userID uuid.UUID, req schemas.CheckoutRide
 	return nil
 }
 
-func (p *PaymentService) encryptRSA(tokenData schemas.TokenData) (string, error) {
+func (p *PaymentService) encryptRSA(data interface{}) (string, error) {
 	// Parse the PEM encoded public key
 	block, _ := pem.Decode([]byte(p.cfg.MomoPublicKey))
 	if block == nil {
@@ -311,7 +312,7 @@ func (p *PaymentService) encryptRSA(tokenData schemas.TokenData) (string, error)
 	}
 
 	// Convert tokenData to JSON
-	rawJsonData, err := json.Marshal(tokenData)
+	rawJsonData, err := json.Marshal(data)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal token data: %w", err)
 	}
@@ -442,5 +443,253 @@ func (p *PaymentService) RefundRide(userID uuid.UUID, req schemas.RefundMomoRequ
 	// }
 
 	log.Info().Msg("Successfully completed RefundRide process")
+	return nil
+}
+
+func (p *PaymentService) WithdrawMomoWallet(userID uuid.UUID) error {
+	log.Info().Msg("Starting WithdrawMomoWallet process")
+
+	// Get user detail
+	user, err := p.repo.GetUserByID(userID)
+	if err != nil {
+		log.Error().Err(err).Str("userID", userID.String()).Msg("Failed to get user details")
+		return fmt.Errorf("failed to get user details: %w", err)
+	}
+
+	// Step 1: Check Wallet Status
+	checkWalletRequestID := uuid.New().String()
+
+	// Prepare disbursement method data
+	disbursementMethodData := schemas.DisbursementMethodData{
+		WalletId: user.MomoWalletID,
+	}
+
+	// Encrypt disbursement method data
+	encryptedDisbursementMethod, err := p.encryptRSA(disbursementMethodData)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to encrypt disbursement method data")
+		return fmt.Errorf("failed to encrypt disbursement method data: %w", err)
+	}
+
+	// Build check wallet signature
+	var checkWalletRawSignature bytes.Buffer
+	checkWalletRawSignature.WriteString("accessKey=")
+	checkWalletRawSignature.WriteString(p.cfg.MomoAccessKey)
+	checkWalletRawSignature.WriteString("&disbursementMethod=")
+	checkWalletRawSignature.WriteString(encryptedDisbursementMethod)
+	checkWalletRawSignature.WriteString("&orderId=")
+	checkWalletRawSignature.WriteString(checkWalletRequestID)
+	checkWalletRawSignature.WriteString("&partnerCode=")
+	checkWalletRawSignature.WriteString(p.cfg.MomoPartnerCode)
+	checkWalletRawSignature.WriteString("&requestId=")
+	checkWalletRawSignature.WriteString(checkWalletRequestID)
+	checkWalletRawSignature.WriteString("&requestType=checkWallet")
+
+	// Sign check wallet request
+	checkWalletHmac := hmac.New(sha256.New, []byte(p.cfg.MomoSecretKey))
+	checkWalletHmac.Write(checkWalletRawSignature.Bytes())
+	checkWalletSignature := hex.EncodeToString(checkWalletHmac.Sum(nil))
+
+	// Build check wallet request payload
+	checkWalletPayload := schemas.CheckWalletRequest{
+		PartnerCode:        p.cfg.MomoPartnerCode,
+		OrderID:            checkWalletRequestID,
+		RequestID:          checkWalletRequestID,
+		RequestType:        "checkWallet",
+		DisbursementMethod: encryptedDisbursementMethod,
+		Lang:               "vi",
+		Signature:          checkWalletSignature,
+	}
+
+	checkWalletJsonPayload, err := json.Marshal(checkWalletPayload)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to marshal check wallet payload")
+		return fmt.Errorf("failed to marshal check wallet payload: %w", err)
+	}
+
+	// Send check wallet request to MoMo API
+	checkWalletURL := fmt.Sprintf("%s/%s", p.cfg.MomoPaymentURL, "disbursement/verify")
+	log.Info().Str("url", checkWalletURL).Msg("Sending check wallet request to MoMo API")
+
+	checkWalletResp, err := http.Post(checkWalletURL, "application/json", bytes.NewBuffer(checkWalletJsonPayload))
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to send check wallet request to MoMo API")
+		return fmt.Errorf("failed to send check wallet request to MoMo API: %w", err)
+	}
+	defer checkWalletResp.Body.Close()
+
+	var checkWalletResponse schemas.CheckWalletResponse
+	err = json.NewDecoder(checkWalletResp.Body).Decode(&checkWalletResponse)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to decode check wallet response from MoMo API")
+		return fmt.Errorf("failed to decode check wallet response from MoMo API: %w", err)
+	}
+
+	if checkWalletResponse.ResultCode != 0 {
+		log.Error().Int("resultCode", checkWalletResponse.ResultCode).Str("message", checkWalletResponse.Message).Msg("Check wallet failed")
+		return fmt.Errorf("check wallet failed: %s", checkWalletResponse.Message)
+	}
+
+	// Step 2: Check current balance of our wallet
+	checkBalanceRequestID := uuid.New().String()
+
+	// Build check balance signature
+	/* accessKey=$accessKey&orderId=$orderId&
+	partnerCode=$partnerCode&requestId=$requestId */
+
+	var checkBalanceRawSignature bytes.Buffer
+	checkBalanceRawSignature.WriteString("accessKey=")
+	checkBalanceRawSignature.WriteString(p.cfg.MomoAccessKey)
+	checkBalanceRawSignature.WriteString("&orderId=")
+	checkBalanceRawSignature.WriteString(checkBalanceRequestID)
+	checkBalanceRawSignature.WriteString("&partnerCode=")
+	checkBalanceRawSignature.WriteString(p.cfg.MomoPartnerCode)
+	checkBalanceRawSignature.WriteString("&requestId=")
+	checkBalanceRawSignature.WriteString(checkBalanceRequestID)
+
+	// Sign check balance request
+	checkBalanceHmac := hmac.New(sha256.New, []byte(p.cfg.MomoSecretKey))
+	checkBalanceHmac.Write(checkBalanceRawSignature.Bytes())
+	checkBalanceSignature := hex.EncodeToString(checkBalanceHmac.Sum(nil))
+
+	// Build check balance request payload
+	checkBalancePayload := schemas.CheckBalanceRequest{
+		PartnerCode: p.cfg.MomoPartnerCode,
+		OrderID:     checkBalanceRequestID,
+		RequestID:   checkBalanceRequestID,
+		Lang:        "vi",
+		Signature:   checkBalanceSignature,
+	}
+
+	checkBalanceJsonPayload, err := json.Marshal(checkBalancePayload)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to marshal check balance payload")
+		return fmt.Errorf("failed to marshal check balance payload: %w", err)
+	}
+
+	// Send check balance request to MoMo API
+	checkBalanceURL := fmt.Sprintf("%s/%s", p.cfg.MomoPaymentURL, "disbursement/balance")
+	log.Info().Str("url", checkBalanceURL).Msg("Sending check balance request to MoMo API")
+
+	checkBalanceResp, err := http.Post(checkBalanceURL, "application/json", bytes.NewBuffer(checkBalanceJsonPayload))
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to send check balance request to MoMo API")
+		return fmt.Errorf("failed to send check balance request to MoMo API: %w", err)
+	}
+
+	defer checkBalanceResp.Body.Close()
+
+	var checkBalanceResponse schemas.CheckBalanceResponse
+	err = json.NewDecoder(checkBalanceResp.Body).Decode(&checkBalanceResponse)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to decode check balance response from MoMo API")
+		return fmt.Errorf("failed to decode check balance response from MoMo API: %w", err)
+	}
+
+	if checkBalanceResponse.ResultCode != 0 {
+		log.Error().Int("resultCode", checkBalanceResponse.ResultCode).Str("message", checkBalanceResponse.Message).Msg("Check balance failed")
+		return fmt.Errorf("check balance failed: %s", checkBalanceResponse.Message)
+	}
+
+	// Check if the balance is enough to withdraw
+	if checkBalanceResponse.Amount < 1000 {
+		log.Error().Int64("amount", checkBalanceResponse.Amount).Msg("Balance is not enough to withdraw")
+		return fmt.Errorf("balance is not enough to withdraw")
+	}
+
+	// Step 3: Withdraw money from wallet
+	paymentRequestID := uuid.New().String()
+
+	// Add extra data to the request
+	extraData := schemas.ExtraData{
+		Type:   "withdraw",
+		UserID: userID,
+	}
+
+	// Encode extra data to JSON
+	extraDataJSON, err := json.Marshal(extraData)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to marshal extra data")
+		return fmt.Errorf("failed to marshal extra data: %w", err)
+	}
+
+	// Encode extra data to base64
+	extraDataBase64 := base64.StdEncoding.EncodeToString(extraDataJSON)
+
+	// Build payment signature
+	var paymentRawSignature bytes.Buffer
+	paymentRawSignature.WriteString("accessKey=")
+	paymentRawSignature.WriteString(p.cfg.MomoAccessKey)
+	paymentRawSignature.WriteString("&amount=")
+	paymentRawSignature.WriteString(fmt.Sprintf("%d", user.BalanceInApp))
+	paymentRawSignature.WriteString("&disbursementMethod=")
+	paymentRawSignature.WriteString(encryptedDisbursementMethod)
+	paymentRawSignature.WriteString("&extraData=")
+	paymentRawSignature.WriteString(extraDataBase64)
+	paymentRawSignature.WriteString("&orderId=")
+	paymentRawSignature.WriteString(paymentRequestID)
+	paymentRawSignature.WriteString("&orderInfo=")
+	paymentRawSignature.WriteString("Rút tiền về ví MoMo")
+	paymentRawSignature.WriteString("&partnerCode=")
+	paymentRawSignature.WriteString(p.cfg.MomoPartnerCode)
+	paymentRawSignature.WriteString("&requestId=")
+	paymentRawSignature.WriteString(paymentRequestID)
+	paymentRawSignature.WriteString("&requestType=disburseToWallet")
+
+	// Sign payment request
+	paymentHmac := hmac.New(sha256.New, []byte(p.cfg.MomoSecretKey))
+	paymentHmac.Write(paymentRawSignature.Bytes())
+	paymentSignature := hex.EncodeToString(paymentHmac.Sum(nil))
+
+	// Build payment request payload
+	paymentPayload := schemas.DisbursementRequest{
+		PartnerCode:        p.cfg.MomoPartnerCode,
+		OrderID:            paymentRequestID,
+		IpnURL:             p.cfg.MomoPaymentNotifyURL, // IPN URL to receive payment status
+		RequestID:          paymentRequestID,
+		Amount:             user.BalanceInApp,
+		RequestType:        "disburseToWallet",
+		DisbursementMethod: encryptedDisbursementMethod,
+		OrderInfo:          "Rút tiền về ví MoMo",
+		Lang:               "vi",
+		ExtraData:          extraDataBase64,
+		Signature:          paymentSignature,
+	}
+	paymentJsonPayload, err := json.Marshal(paymentPayload)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to marshal payment payload")
+		return fmt.Errorf("failed to marshal payment payload: %w", err)
+	}
+
+	// Send payment request to MoMo API
+	paymentURL := fmt.Sprintf("%s/%s", p.cfg.MomoPaymentURL, "disbursement/pay")
+	log.Info().Str("url", paymentURL).Msg("Sending payment request to MoMo API")
+
+	client := &http.Client{
+		Timeout: time.Second * 30, // Set timeout to 30 seconds as per documentation
+	}
+
+	paymentResp, err := client.Post(paymentURL, "application/json", bytes.NewBuffer(paymentJsonPayload))
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to send payment request to MoMo API")
+		return fmt.Errorf("failed to send payment request to MoMo API: %w", err)
+	}
+	defer paymentResp.Body.Close()
+
+	var paymentResponse schemas.DisbursementResponse
+	err = json.NewDecoder(paymentResp.Body).Decode(&paymentResponse)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to decode payment response from MoMo API")
+		return fmt.Errorf("failed to decode payment response from MoMo API: %w", err)
+	}
+
+	if paymentResponse.ResultCode != 0 {
+		log.Error().Int("resultCode", paymentResponse.ResultCode).Str("message", paymentResponse.Message).Msg("Payment failed")
+		return fmt.Errorf("payment failed: %s", paymentResponse.Message)
+	}
+
+	// TODO: Not update balance in app because it will be updated in IPN callback from MoMo
+
+	log.Info().Msg("Successfully completed WithdrawMomoWallet process")
 	return nil
 }

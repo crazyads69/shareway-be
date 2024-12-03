@@ -2741,6 +2741,32 @@ paths:
       summary: Refund ride with momo wallet
       tags:
       - payment
+  /payment/withdraw-momo-wallet:
+    post:
+      consumes:
+      - application/json
+      description: Withdraw money from our system to user's momo wallet
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Withdraw momo response
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Withdraw money from our system to user's momo wallet
+      tags:
+      - payment
   /protected/test:
     get:
       consumes:

@@ -448,6 +448,11 @@ func (r *RideRepository) EndRide(req schemas.EndRideRequest, userID uuid.UUID) (
 			return err
 		}
 
+		// Update the driver's current balance in app (add the fare)
+		if err := tx.Model(&migration.User{}).Where("id = ?", rideOffer.UserID).Update("balance_in_app", gorm.Expr("balance_in_app + ?", rideOffer.Fare)).Error; err != nil {
+			return err
+		}
+
 		// Update the ride status to ended
 		if err := tx.Model(&migration.Ride{}).Where("id = ?", req.RideID).Update("status", "completed").Error; err != nil {
 			return err

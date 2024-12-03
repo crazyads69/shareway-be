@@ -272,3 +272,47 @@ func (p *PaymentController) RefundRide(ctx *gin.Context) {
 	response := helper.SuccessResponse(nil, "Refund ride successfully", "Hoàn tiền chuyến đi thành công")
 	helper.GinResponse(ctx, 200, response)
 }
+
+// WithdrawMomoWallet godoc
+// @Summary Withdraw money from our system to user's momo wallet
+// @Description Withdraw money from our system to user's momo wallet
+// @Tags payment
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} helper.Response{data=object} "Withdraw momo response"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /payment/withdraw-momo-wallet [post]
+func (p *PaymentController) WithdrawMomoWallet(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Perform withdraw money from our system to user's momo wallet
+	err = p.PaymentService.WithdrawMomoWallet(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to withdraw money from our system to user's momo wallet",
+			"Không thể rút tiền từ hệ thống của chúng tôi vào ví momo của người dùng",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Return success response if call momo api successfully (need to wait for callback from momo and then be send websocket message to user)
+	response := helper.SuccessResponse(nil, "Withdraw money from our system to user's momo wallet successfully", "Rút tiền từ hệ thống của chúng tôi vào ví momo của người dùng thành công")
+	helper.GinResponse(ctx, 200, response)
+
+}

@@ -23,4 +23,6 @@ func SetupPaymentRouter(group *gin.RouterGroup, server *APIServer) {
 	group.POST("/checkout-ride", paymentController.CheckoutRide)
 	// Refund ride
 	group.POST("/refund-ride", paymentController.RefundRide)
+	// Widthdraw wallet
+	group.POST("/withdraw-momo-wallet", paymentController.WithdrawMomoWallet)
 }
