@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"shareway/helper"
@@ -194,7 +195,10 @@ func (s *MapService) GetAutoComplete(ctx context.Context, input string, limit in
 		} else {
 			for i := range response.Predictions {
 				if i < len(distanceMatrix.Rows[0].Elements) {
-					response.Predictions[i].Distance = float64(distanceMatrix.Rows[0].Elements[i].Distance.Value) / 1000 // Convert to km
+					// Convert to km and round to 2 decimal places
+					distanceKm := float64(distanceMatrix.Rows[0].Elements[i].Distance.Value) / 1000
+					roundedDistance := math.Round(distanceKm*100) / 100
+					response.Predictions[i].Distance = roundedDistance
 				}
 			}
 		}
@@ -463,7 +467,10 @@ func (s *MapService) GetGeoCode(ctx context.Context, point schemas.Point, curren
 	}
 
 	for i := range optimizedResults.Results {
-		optimizedResults.Results[i].Distance = float64(distanceMatrix.Rows[0].Elements[i].Distance.Value) / 1000 // Convert to km
+		// Convert to km and round to 2 decimal places
+		distanceKm := float64(distanceMatrix.Rows[0].Elements[i].Distance.Value) / 1000
+		roundedDistance := math.Round(distanceKm*100) / 100
+		optimizedResults.Results[i].Distance = roundedDistance
 	}
 
 	return optimizedResults, nil

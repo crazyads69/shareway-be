@@ -213,7 +213,7 @@ func (p *PaymentService) CheckoutRide(userID uuid.UUID, req schemas.CheckoutRide
 	rawSignature.WriteString("accessKey=")
 	rawSignature.WriteString(p.cfg.MomoAccessKey)
 	rawSignature.WriteString("&amount=")
-	rawSignature.WriteString(fmt.Sprintf("%d", int(rideOffer.Fare+0.5))) // momo requires amount in integer
+	rawSignature.WriteString(fmt.Sprintf("%d", rideOffer.Fare)) // momo requires amount in integer
 	rawSignature.WriteString("&extraData=")
 	rawSignature.WriteString(extraDataBase64)
 	rawSignature.WriteString("&orderId=")
@@ -239,7 +239,7 @@ func (p *PaymentService) CheckoutRide(userID uuid.UUID, req schemas.CheckoutRide
 		PartnerClientID: userID.String(),
 		PartnerCode:     p.cfg.MomoPartnerCode,
 		RequestID:       requestID,
-		Amount:          int64(rideOffer.Fare + 0.5),
+		Amount:          rideOffer.Fare,
 		OrderID:         requestID,
 		OrderInfo:       "Thanh toán chuyến đi",
 		RedirectURL:     "",
@@ -357,7 +357,7 @@ func (p *PaymentService) RefundRide(userID uuid.UUID, req schemas.RefundMomoRequ
 	rawSignature.WriteString("accessKey=")
 	rawSignature.WriteString(p.cfg.MomoAccessKey)
 	rawSignature.WriteString("&amount=")
-	rawSignature.WriteString(fmt.Sprintf("%d", int(rideOffer.Fare+0.5)))
+	rawSignature.WriteString(fmt.Sprintf("%d", rideOffer.Fare))
 	rawSignature.WriteString("&description=")
 	rawSignature.WriteString("Hoàn tiền chuyến đi")
 	rawSignature.WriteString("&orderId=")
@@ -383,7 +383,7 @@ func (p *PaymentService) RefundRide(userID uuid.UUID, req schemas.RefundMomoRequ
 		PartnerCode: p.cfg.MomoPartnerCode,
 		OrderID:     requestID,
 		RequestID:   requestID,
-		Amount:      int64(rideOffer.Fare + 0.5),
+		Amount:      rideOffer.Fare,
 		TransID:     rideRequest.MomoTransID,
 		Lang:        "vi",
 		Description: "Hoàn tiền chuyến đi",

@@ -39,7 +39,7 @@ type SendGiveRideRequestResponse struct {
 	StartTime              time.Time     `json:"start_time"`
 	EndTime                time.Time     `json:"end_time"`
 	Status                 string        `json:"status"`
-	Fare                   float64       `json:"fare"`
+	Fare                   int64         `json:"fare"`
 	ReceiverID             uuid.UUID     `json:"receiver_id"`
 	RideRequestID          uuid.UUID     `json:"ride_request_id"`
 	Waypoints              []Waypoint    `json:"waypoints"`
@@ -96,7 +96,7 @@ type AcceptGiveRideRequestRequest struct {
 
 type TransactionDetail struct {
 	ID            uuid.UUID `json:"transaction_id"`
-	Amount        float64   `json:"amount"`
+	Amount        int64     `json:"amount"`
 	Status        string    `json:"status"`
 	PaymentMethod string    `json:"payment_method"`
 }
@@ -111,7 +111,7 @@ type AcceptGiveRideRequestResponse struct {
 	EndTime                time.Time         `json:"end_time"`
 	StartAddress           string            `json:"start_address"`
 	EndAddress             string            `json:"end_address"`
-	Fare                   float64           `json:"fare"`
+	Fare                   int64             `json:"fare"`
 	EncodedPolyline        string            `json:"encoded_polyline"`
 	Distance               float64           `json:"distance"`
 	Duration               int               `json:"duration"`
@@ -155,7 +155,7 @@ type AcceptHitchRideRequestResponse struct {
 	EndTime                time.Time         `json:"end_time"`
 	StartAddress           string            `json:"start_address"`
 	EndAddress             string            `json:"end_address"`
-	Fare                   float64           `json:"fare"`
+	Fare                   int64             `json:"fare"`
 	EncodedPolyline        string            `json:"encoded_polyline"`
 	Distance               float64           `json:"distance"`
 	Duration               int               `json:"duration"`
@@ -229,7 +229,7 @@ type StartRideResponse struct {
 	EndTime                time.Time         `json:"end_time"`
 	StartAddress           string            `json:"start_address"`
 	EndAddress             string            `json:"end_address"`
-	Fare                   float64           `json:"fare"`
+	Fare                   int64             `json:"fare"`
 	EncodedPolyline        string            `json:"encoded_polyline"`
 	Distance               float64           `json:"distance"`
 	Duration               int               `json:"duration"`
@@ -267,7 +267,7 @@ type EndRideResponse struct {
 	EndTime                time.Time         `json:"end_time"`
 	StartAddress           string            `json:"start_address"`
 	EndAddress             string            `json:"end_address"`
-	Fare                   float64           `json:"fare"`
+	Fare                   int64             `json:"fare"`
 	EncodedPolyline        string            `json:"encoded_polyline"`
 	Distance               float64           `json:"distance"`
 	Duration               int               `json:"duration"`
@@ -305,7 +305,7 @@ type UpdateRideLocationResponse struct {
 	EndTime                time.Time         `json:"end_time"`
 	StartAddress           string            `json:"start_address"`
 	EndAddress             string            `json:"end_address"`
-	Fare                   float64           `json:"fare"`
+	Fare                   int64             `json:"fare"`
 	EncodedPolyline        string            `json:"encoded_polyline"`
 	Distance               float64           `json:"distance"`
 	Duration               int               `json:"duration"`

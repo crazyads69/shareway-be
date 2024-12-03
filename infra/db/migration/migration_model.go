@@ -113,7 +113,7 @@ type Transaction struct {
 	Payer         User      `gorm:"foreignKey:PayerID"`
 	ReceiverID    uuid.UUID `gorm:"type:uuid"`
 	Receiver      User      `gorm:"foreignKey:ReceiverID"`
-	Amount        float64
+	Amount        int64     // in vnđ so cannot have decimal and 1000 is the smallest currency unit
 	PaymentMethod string    `gorm:"default:'cash'"`    // cash, momo
 	Status        string    `gorm:"default:'pending'"` // pending, completed, failed, refunded
 	RideID        uuid.UUID `gorm:"type:uuid"`
@@ -159,7 +159,7 @@ type RideOffer struct {
 	Rides                  []Ride  `gorm:"foreignKey:RideOfferID"`
 	StartTime              time.Time
 	EndTime                time.Time  // Time to end the ride (end time = start time + duration)
-	Fare                   float64    // Total price of the ride offer (to show to the hitchhiker)
+	Fare                   int64      // Total price of the ride offer (to show to the hitchhiker)
 	Waypoints              []Waypoint `gorm:"foreignKey:RideOfferID"`
 }
 
@@ -213,7 +213,7 @@ type Ride struct {
 	Status          string      `gorm:"default:'scheduled'"` // scheduled, ongoing, completed, cancelled
 	StartTime       time.Time
 	EndTime         time.Time
-	Fare            float64
+	Fare            int64             // Total price of the ride (to show to the hitchhiker, vnđ so cannot use float)
 	StartAddress    string            `gorm:"type:text"`
 	EndAddress      string            `gorm:"type:text"`
 	EncodedPolyline polyline.Polyline `gorm:"type:text"`

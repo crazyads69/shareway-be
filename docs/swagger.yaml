@@ -61,7 +61,7 @@ definitions:
       end_time:
         type: string
       fare:
-        type: number
+        type: integer
       receiver_id:
         type: string
       ride_id:
@@ -145,7 +145,7 @@ definitions:
       end_time:
         type: string
       fare:
-        type: number
+        type: integer
       receiver_id:
         type: string
       ride_id:
@@ -352,7 +352,7 @@ definitions:
       end_time:
         type: string
       fare:
-        type: number
+        type: integer
       receiver_id:
         type: string
       ride_id:
@@ -522,7 +522,7 @@ definitions:
       end_time:
         type: string
       fare:
-        type: number
+        type: integer
       ride_offer_id:
         type: string
       route:
@@ -1039,7 +1039,7 @@ definitions:
       end_time:
         type: string
       fare:
-        type: number
+        type: integer
       ride_offer_id:
         type: string
       start_address:
@@ -1219,7 +1219,7 @@ definitions:
       end_time:
         type: string
       fare:
-        type: number
+        type: integer
       receiver_id:
         type: string
       ride_id:
@@ -1300,7 +1300,7 @@ definitions:
   schemas.TransactionDetail:
     properties:
       amount:
-        type: number
+        type: integer
       payment_method:
         type: string
       status:
@@ -1397,7 +1397,7 @@ definitions:
       end_time:
         type: string
       fare:
-        type: number
+        type: integer
       receiver_id:
         type: string
       ride_id:

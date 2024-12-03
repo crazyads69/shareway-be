@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"fmt"
+	"math"
 	"shareway/helper"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
@@ -56,7 +57,10 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 		totalDistance += leg.Distance.Value
 		totalDuration += leg.Duration.Value
 	}
-	totalDistance /= 1000 // Convert to kilometers
+
+	// Convert to kilometers and round to 2 decimal places
+	totalDistanceKm := float64(totalDistance) / 1000
+	totalDistance = int(math.Round(totalDistanceKm*100)) / 100
 
 	log.Debug().
 		Int("totalDistance", totalDistance).
@@ -114,8 +118,22 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 		}
 		log.Debug().Float64("fuelPrice", fuelPrice).Msg("Fetched fuel price")
 
+		// Calculate the initial fare as a float64 for precision
 		fare := (vehicle.FuelConsumed / 100) * fuelPrice * float64(totalDistance)
-		log.Debug().Float64("fare", fare).Msg("Calculated fare")
+		log.Debug().Float64("fare", fare).Msg("Calculated initial fare")
+
+		// Round the fare to the nearest 1000 VND
+		roundedFare := math.Round(fare/1000) * 1000
+		log.Debug().Float64("roundedFare", roundedFare).Msg("Rounded fare to nearest 1000 VND")
+
+		// Ensure the minimum fare is 1000 VND
+		if roundedFare < 1000 {
+			roundedFare = 1000
+		}
+
+		// Convert the rounded fare to int64
+		realFare := int64(roundedFare)
+		log.Debug().Int64("realFare", realFare).Msg("Final fare as int64")
 
 		decodePolyline := helper.DecodePolyline(firstRoute.Overview_polyline.Points)
 		startLocation := schemas.Point{
@@ -150,7 +168,7 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 			StartTime:              startTime,
 			EndTime:                endTime,
 			VehicleID:              vehicleID,
-			Fare:                   fare,
+			Fare:                   realFare,
 		}
 
 		if err := tx.Create(&rideOffer).Error; err != nil {
@@ -390,7 +408,10 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 		totalDistance += leg.Distance.Value
 		totalDuration += leg.Duration.Value
 	}
-	totalDistance /= 1000 // Convert to kilometers
+	// Convert to kilometers and round to 2 decimal places
+	totalDistanceKm := float64(totalDistance) / 1000
+	totalDistance = int(math.Round(totalDistanceKm*100)) / 100
+
 	endTime := startTime.Add(time.Duration(totalDuration) * time.Second)
 
 	log.Debug().

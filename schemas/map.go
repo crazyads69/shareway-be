@@ -147,7 +147,7 @@ type GiveRideResponse struct {
 	Duration    int                     `json:"duration"`
 	StartTime   time.Time               `json:"start_time"`
 	EndTime     time.Time               `json:"end_time"`
-	Fare        float64                 `json:"fare"`
+	Fare        int64                   `json:"fare"`
 	Vehicle     VehicleDetail           `json:"vehicle"`
 	Waypoints   []Waypoint              `json:"waypoints"`
 }
@@ -331,6 +331,6 @@ type RideOfferDetail struct {
 	StartTime              time.Time     `json:"start_time"`
 	EndTime                time.Time     `json:"end_time"`
 	Status                 string        `json:"status"`
-	Fare                   float64       `json:"fare"`
+	Fare                   int64         `json:"fare"`
 	Waypoints              []Waypoint    `json:"waypoints"`
 }

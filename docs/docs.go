@@ -2999,7 +2999,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fare": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "receiver_id": {
                     "type": "string"
@@ -3118,7 +3118,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fare": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "receiver_id": {
                     "type": "string"
@@ -3420,7 +3420,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fare": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "receiver_id": {
                     "type": "string"
@@ -3678,7 +3678,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fare": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "ride_offer_id": {
                     "type": "string"
@@ -4441,7 +4441,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fare": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "ride_offer_id": {
                     "type": "string"
@@ -4702,7 +4702,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fare": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "receiver_id": {
                     "type": "string"
@@ -4826,7 +4826,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "amount": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "payment_method": {
                     "type": "string"
@@ -4968,7 +4968,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fare": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "receiver_id": {
                     "type": "string"
