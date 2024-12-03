@@ -1460,6 +1460,8 @@ definitions:
     properties:
       avatar_url:
         type: string
+      balance_in_app:
+        type: integer
       full_name:
         type: string
       gender:
@@ -1475,6 +1477,8 @@ definitions:
     properties:
       avatar_url:
         type: string
+      balance_in_app:
+        type: integer
       created_at:
         type: string
       email:

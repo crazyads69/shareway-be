@@ -271,6 +271,7 @@ type UserInfo struct {
 	AvatarURL    string    `json:"avatar_url"`
 	Gender       string    `json:"gender"`
 	IsMomoLinked bool      `json:"is_momo_linked"`
+	BalanceInApp int64     `json:"balance_in_app"`
 }
 
 // Define RideRequestDetail struct

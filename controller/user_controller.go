@@ -79,6 +79,7 @@ func (ctrl *UserController) GetUserProfile(ctx *gin.Context) {
 			IsMomoLinked: user.IsMomoLinked,
 			IsActivated:  user.IsActivated,
 			Role:         user.Role,
+			BalanceInApp: user.BalanceInApp,
 		},
 	}
 
@@ -248,6 +249,7 @@ func (ctrl *UserController) UpdateUserProfile(ctx *gin.Context) {
 			IsVerified:   user.IsVerified,
 			IsActivated:  user.IsActivated,
 			Role:         user.Role,
+			BalanceInApp: user.BalanceInApp,
 		},
 	}
 
@@ -346,6 +348,7 @@ func (ctrl *UserController) UpdateAvatar(ctx *gin.Context) {
 			IsActivated:  user.IsActivated,
 			Role:         user.Role,
 			Gender:       user.Gender,
+			BalanceInApp: user.BalanceInApp,
 		}}
 
 	response := helper.SuccessResponse(res, "Successfully updated avatar", "Cập nhật ảnh đại diện thành công")

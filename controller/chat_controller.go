@@ -454,6 +454,7 @@ func (cc *ChatController) GetAllChatRooms(ctx *gin.Context) {
 			Gender:       receiver.Gender,
 			AvatarURL:    receiver.AvatarURL,
 			IsMomoLinked: receiver.IsMomoLinked,
+			BalanceInApp: receiver.BalanceInApp,
 		}
 	}
 

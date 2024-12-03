@@ -17,6 +17,7 @@ type UserResponse struct {
 	IsVerified   bool      `json:"is_verified"`
 	IsActivated  bool      `json:"is_activated"`
 	IsMomoLinked bool      `json:"is_momo_linked"`
+	BalanceInApp int64     `json:"balance_in_app"`
 	Role         string    `json:"role"`
 	Gender       string    `json:"gender"`
 }

@@ -5062,6 +5062,9 @@ const docTemplate = `{
                 "avatar_url": {
                     "type": "string"
                 },
+                "balance_in_app": {
+                    "type": "integer"
+                },
                 "full_name": {
                     "type": "string"
                 },
@@ -5087,6 +5090,9 @@ const docTemplate = `{
             "properties": {
                 "avatar_url": {
                     "type": "string"
+                },
+                "balance_in_app": {
+                    "type": "integer"
                 },
                 "created_at": {
                     "type": "string"
