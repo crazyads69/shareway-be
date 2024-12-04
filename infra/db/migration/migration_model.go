@@ -60,7 +60,6 @@ type Admin struct {
 	FullName string
 	Role     string         `gorm:"default:'admin'"`
 	Tokens   []SanctumToken `gorm:"foreignKey:AdminID"` // Add reverse relation
-
 }
 
 // SanctumToken represents a Sanctum token for user authentication (for admin)

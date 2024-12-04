@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"shareway/infra/bucket"
 	"shareway/infra/db/migration"
 	"shareway/infra/ws"
@@ -36,6 +37,10 @@ type IAdminService interface {
 	VerifyPassword(password, hashedPassword string) bool
 	CreateToken(admin migration.Admin) (string, error)
 	GetAdminProfile(adminID uuid.UUID) (migration.Admin, error)
+	GetDashboardGeneralData() (schemas.DashboardGeneralDataResponse, error)
+	GetUserDashboardData(filter string, customStartDate time.Time, customEndDate time.Time) (schemas.UserDashboardDataResponse, error)
+	GetRideDashboardData(filter string, customStartDate time.Time, customEndDate time.Time) (schemas.RideDashboardDataResponse, error)
+	GetTransactionDashboardData(filter string, customStartDate time.Time, customEndDate time.Time) (schemas.TransactionDashboardDataResponse, error)
 }
 
 // CheckAdminExists checks if an admin exists with the given email and password
@@ -56,4 +61,93 @@ func (s *AdminService) CreateToken(admin migration.Admin) (string, error) {
 // GetAdminProfile gets the profile of the admin
 func (s *AdminService) GetAdminProfile(adminID uuid.UUID) (migration.Admin, error) {
 	return s.repo.GetAdminProfile(adminID)
+}
+
+// GetDashboardGeneralData gets the general data for the dashboard
+func (s *AdminService) GetDashboardGeneralData() (schemas.DashboardGeneralDataResponse, error) {
+	return s.repo.GetDashboardGeneralData()
+}
+
+// GetUserDashboardData gets the data for the user dashboard
+func (s *AdminService) GetUserDashboardData(filter string, customStartDate time.Time, customEndDate time.Time) (schemas.UserDashboardDataResponse, error) {
+	var startDate, endDate time.Time
+	now := time.Now()
+
+	switch filter {
+	case "all_time":
+		// You might want to set a reasonable start date here, or use the earliest record in your database
+		startDate = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+		endDate = now
+	case "last_week":
+		startDate = now.AddDate(0, 0, -7)
+		endDate = now
+	case "last_month":
+		startDate = now.AddDate(0, -1, 0)
+		endDate = now
+	case "last_year":
+		startDate = now.AddDate(-1, 0, 0)
+		endDate = now
+	case "custom":
+		startDate = customStartDate
+		endDate = customEndDate
+	default:
+		return schemas.UserDashboardDataResponse{}, fmt.Errorf("invalid filter")
+	}
+	return s.repo.GetUserDashboardData(startDate, endDate)
+}
+
+// GetRideDashboardData gets the data for the ride dashboard
+func (s *AdminService) GetRideDashboardData(filter string, customStartDate time.Time, customEndDate time.Time) (schemas.RideDashboardDataResponse, error) {
+	var startDate, endDate time.Time
+	now := time.Now()
+
+	switch filter {
+	case "all_time":
+		// You might want to set a reasonable start date here, or use the earliest record in your database
+		startDate = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+		endDate = now
+	case "last_week":
+		startDate = now.AddDate(0, 0, -7)
+		endDate = now
+	case "last_month":
+		startDate = now.AddDate(0, -1, 0)
+		endDate = now
+	case "last_year":
+		startDate = now.AddDate(-1, 0, 0)
+		endDate = now
+	case "custom":
+		startDate = customStartDate
+		endDate = customEndDate
+	default:
+		return schemas.RideDashboardDataResponse{}, fmt.Errorf("invalid filter")
+	}
+	return s.repo.GetRideDashboardData(startDate, endDate)
+}
+
+// GetTransactionDashboardData gets the data for the transaction dashboard
+func (s *AdminService) GetTransactionDashboardData(filter string, customStartDate time.Time, customEndDate time.Time) (schemas.TransactionDashboardDataResponse, error) {
+	var startDate, endDate time.Time
+	now := time.Now()
+
+	switch filter {
+	case "all_time":
+		// You might want to set a reasonable start date here, or use the earliest record in your database
+		startDate = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+		endDate = now
+	case "last_week":
+		startDate = now.AddDate(0, 0, -7)
+		endDate = now
+	case "last_month":
+		startDate = now.AddDate(0, -1, 0)
+		endDate = now
+	case "last_year":
+		startDate = now.AddDate(-1, 0, 0)
+		endDate = now
+	case "custom":
+		startDate = customStartDate
+		endDate = customEndDate
+	default:
+		return schemas.TransactionDashboardDataResponse{}, fmt.Errorf("invalid filter")
+	}
+	return s.repo.GetTransactionDashboardData(startDate, endDate)
 }

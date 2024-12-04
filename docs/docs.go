@@ -79,6 +79,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/get-dashboard-general-data": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the general data of the dashboard",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the general data of the dashboard",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.DashboardGeneralDataResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/get-profile": {
             "get": {
                 "security": [
@@ -102,6 +136,189 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/schemas.GetAdminProfileResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/get-ride-dashboard-data": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the data of the dashboard for the ride",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the data of the dashboard for the ride",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter for the data (all_time, last_week, last_month, last_year, custom)",
+                        "name": "filter",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date for custom filter (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date for custom filter (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.RideDashboardDataResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/get-transaction-dashboard-data": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the data of the dashboard for the transaction",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the data of the dashboard for the transaction",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter for the data (all_time, last_week, last_month, last_year, custom)",
+                        "name": "filter",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date for custom filter (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date for custom filter (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.TransactionDashboardDataResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/get-user-dashboard-data": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the data of the dashboard for the user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the data of the dashboard for the user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter for the data (all_time, last_week, last_month, last_year, custom)",
+                        "name": "filter",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date for custom filter (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date for custom filter (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.UserDashboardDataResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
                         }
                     },
                     "500": {
@@ -3400,6 +3617,29 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.DashboardGeneralDataResponse": {
+            "type": "object",
+            "properties": {
+                "ride_change": {
+                    "type": "number"
+                },
+                "total_rides": {
+                    "type": "integer"
+                },
+                "total_transactions": {
+                    "type": "integer"
+                },
+                "total_users": {
+                    "type": "integer"
+                },
+                "transaction_change": {
+                    "type": "number"
+                },
+                "user_change": {
+                    "type": "number"
+                }
+            }
+        },
         "schemas.DeleteUserRequest": {
             "type": "object",
             "required": [
@@ -4456,6 +4696,17 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.RideDashboardDataResponse": {
+            "type": "object",
+            "properties": {
+                "ride_stats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.StatPoint"
+                    }
+                }
+            }
+        },
         "schemas.RideOfferDetail": {
             "type": "object",
             "properties": {
@@ -4800,6 +5051,21 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.StatPoint": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "total": {
+                    "description": "For transaction total amount",
+                    "type": "integer"
+                }
+            }
+        },
         "schemas.StructuredFormatting": {
             "type": "object",
             "properties": {
@@ -4865,6 +5131,17 @@ const docTemplate = `{
                 },
                 "value": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.TransactionDashboardDataResponse": {
+            "type": "object",
+            "properties": {
+                "transaction_stats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.StatPoint"
+                    }
                 }
             }
         },
@@ -5099,6 +5376,17 @@ const docTemplate = `{
             "properties": {
                 "user": {
                     "$ref": "#/definitions/schemas.UserResponse"
+                }
+            }
+        },
+        "schemas.UserDashboardDataResponse": {
+            "type": "object",
+            "properties": {
+                "user_stats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.StatPoint"
+                    }
                 }
             }
         },
