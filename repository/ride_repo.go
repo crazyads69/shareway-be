@@ -26,6 +26,7 @@ type IRideRepository interface {
 	UpdateRideLocation(req schemas.UpdateRideLocationRequest, userID uuid.UUID) (migration.Ride, error)
 	CancelRide(req schemas.CancelRideRequest, userID uuid.UUID) (migration.Ride, error)
 	GetAllPendingRide(userID uuid.UUID) ([]migration.RideOffer, []migration.RideRequest, error)
+	GetRideByID(rideID uuid.UUID) (migration.Ride, error)
 }
 
 type RideRepository struct {
@@ -591,8 +592,8 @@ func (r *RideRepository) CancelRide(req schemas.CancelRideRequest, userID uuid.U
 			return err
 		}
 
-		// Update the transaction status to cancelled
-		if err := tx.Model(&migration.Transaction{}).Where("ride_id = ?", req.RideID).Update("status", "cancelled").Error; err != nil {
+		// Update the transaction status to refunded
+		if err := tx.Model(&migration.Transaction{}).Where("ride_id = ?", req.RideID).Update("status", "refunded").Error; err != nil {
 			return err
 		}
 
@@ -630,6 +631,20 @@ func (r *RideRepository) GetAllPendingRide(userID uuid.UUID) ([]migration.RideOf
 	}
 
 	return rideOffers, rideRequests, nil
+}
+
+func (r *RideRepository) GetRideByID(rideID uuid.UUID) (migration.Ride, error) {
+	var ride migration.Ride
+	err := r.db.Model(&migration.Ride{}).
+		Where("id = ?", rideID).
+		First(&ride).
+		Error
+
+	if err != nil {
+		return migration.Ride{}, err
+	}
+
+	return ride, nil
 }
 
 // Make sure the RideRepository implements the IRideRepository interface

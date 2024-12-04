@@ -14,6 +14,7 @@ func SetupRideRouter(group *gin.RouterGroup, server *APIServer) {
 		server.Service.MapService,
 		server.Service.UserService,
 		server.Service.VehicleService,
+		server.Service.PaymentService,
 		server.AsyncClient,
 	)
 	group.POST("/give-ride-request", rideController.SendGiveRideRequest)

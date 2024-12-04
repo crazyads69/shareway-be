@@ -21,11 +21,12 @@ type RideController struct {
 	MapsService    service.IMapService
 	UserService    service.IUsersService
 	VehicleService service.IVehicleService
+	PaymentService service.IPaymentService
 	asyncClient    *task.AsyncClient
 }
 
 func NewRideController(validate *validator.Validate, hub *ws.Hub, rideService service.IRideService,
-	mapService service.IMapService, userService service.IUsersService, vehicleService service.IVehicleService,
+	mapService service.IMapService, userService service.IUsersService, vehicleService service.IVehicleService, paymentService service.IPaymentService,
 	asyncClient *task.AsyncClient) *RideController {
 	return &RideController{
 		validate:       validate,
@@ -34,6 +35,7 @@ func NewRideController(validate *validator.Validate, hub *ws.Hub, rideService se
 		MapsService:    mapService,
 		UserService:    userService,
 		VehicleService: vehicleService,
+		PaymentService: paymentService,
 		asyncClient:    asyncClient,
 	}
 }
@@ -2143,6 +2145,91 @@ func (ctrl *RideController) CancelRide(ctx *gin.Context) {
 		return
 	}
 
+	// Check if payment method is momo to refund the hitcher
+	transaction, err := ctrl.RideService.GetTransactionByRideID(req.RideID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get transaction details",
+			"Không thể lấy thông tin giao dịch",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get the device token of the hitcher to send notification
+	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get receiver details",
+			"Không thể lấy thông tin người nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get the ride details
+	rideDetail, err := ctrl.RideService.GetRideByID(req.RideID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get ride details",
+			"Không thể lấy thông tin chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Check if the payment method is momo to refund the hitcher
+	if transaction.PaymentMethod == "momo" {
+		err := ctrl.PaymentService.RefundRide(
+			req.ReceiverID, schemas.RefundMomoRequest{
+				RideRequestID: rideDetail.RideRequestID,
+				RideOfferID:   rideDetail.RideOfferID,
+			},
+		)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to refund the hitcher",
+				"Không thể hoàn tiền cho người nhận",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Send notification and WebSocket message to the hitcher
+		notification := schemas.Notification{
+			Title: "Chuyến đi của bạn đã bị hủy",
+			Body:  "Chuyến đi của bạn đã bị hủy, bạn đã được hoàn tiền",
+			Token: receiver.DeviceToken,
+			Data:  nil,
+		}
+
+		wsMessage := schemas.WebSocketMessage{
+			UserID:  req.ReceiverID.String(),
+			Type:    "refund-success",
+			Payload: nil,
+		}
+
+		// Send the WebSocket message using the async client
+		go func() {
+			err := ctrl.asyncClient.EnqueueWebsocketMessage(wsMessage)
+			if err != nil {
+				log.Printf("Failed to enqueue websocket message: %v", err)
+			}
+		}()
+
+		// Send the notification message using the async client
+		go func() {
+			err = ctrl.asyncClient.EnqueueFCMNotification(notification)
+			if err != nil {
+				log.Printf("Failed to enqueue FCM notification: %v", err)
+			}
+		}()
+	}
+
 	// Cancel the ride by the driver
 	ride, err := ctrl.RideService.CancelRide(req, data.UserID)
 	if err != nil {
@@ -2186,18 +2273,6 @@ func (ctrl *RideController) CancelRide(ctx *gin.Context) {
 	// 	return
 	// }
 
-	// Get the device token of the hitcher to send notification
-	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
-	if err != nil {
-		response := helper.ErrorResponseWithMessage(
-			err,
-			"Failed to get receiver details",
-			"Không thể lấy thông tin người nhận",
-		)
-		helper.GinResponse(ctx, 500, response)
-		return
-	}
-
 	// Prepare the WebSocket message
 	wsMessage := schemas.WebSocketMessage{
 		UserID:  req.ReceiverID.String(),
@@ -2207,6 +2282,15 @@ func (ctrl *RideController) CancelRide(ctx *gin.Context) {
 
 	// Convert ride to map[string]string
 	resMap, err := helper.ConvertToStringMap(res)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert struct to map",
+			"Không thể chuyển đổi struct sang map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
 
 	// Prepare the notification payload
 	notificationPayload := schemas.NotificationPayload{

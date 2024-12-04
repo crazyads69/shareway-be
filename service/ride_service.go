@@ -29,6 +29,7 @@ type IRideService interface {
 	UpdateRideLocation(req schemas.UpdateRideLocationRequest, userID uuid.UUID) (migration.Ride, error)
 	CancelRide(req schemas.CancelRideRequest, userID uuid.UUID) (migration.Ride, error)
 	GetAllPendingRide(userID uuid.UUID) ([]migration.RideOffer, []migration.RideRequest, error)
+	GetRideByID(rideID uuid.UUID) (migration.Ride, error)
 }
 
 func NewRideService(repo repository.IRideRepository, hub *ws.Hub, cfg util.Config) IRideService {
@@ -95,6 +96,10 @@ func (s *RideService) GetChatRoomByUserIDs(userID1, userID2 uuid.UUID) (migratio
 
 func (s *RideService) GetAllPendingRide(userID uuid.UUID) ([]migration.RideOffer, []migration.RideRequest, error) {
 	return s.repo.GetAllPendingRide(userID)
+}
+
+func (s *RideService) GetRideByID(rideID uuid.UUID) (migration.Ride, error) {
+	return s.repo.GetRideByID(rideID)
 }
 
 // Make sure the RideService implements the IRideService interface
