@@ -27,6 +27,8 @@ type IRideRepository interface {
 	CancelRide(req schemas.CancelRideRequest, userID uuid.UUID) (migration.Ride, error)
 	GetAllPendingRide(userID uuid.UUID) ([]migration.RideOffer, []migration.RideRequest, error)
 	GetRideByID(rideID uuid.UUID) (migration.Ride, error)
+	RatingRideHitcher(req schemas.RatingRideHitcherRequest, userID uuid.UUID) error
+	RatingRideDriver(req schemas.RatingRideDriverRequest, userID uuid.UUID) error
 }
 
 type RideRepository struct {
@@ -645,6 +647,115 @@ func (r *RideRepository) GetRideByID(rideID uuid.UUID) (migration.Ride, error) {
 	}
 
 	return ride, nil
+}
+
+// RatingRideHitcher rates a ride hitcher
+func (r *RideRepository) RatingRideHitcher(req schemas.RatingRideHitcherRequest, userID uuid.UUID) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Get the ride by ID
+		var ride migration.Ride
+		if err := tx.First(&ride, req.RideID).Error; err != nil {
+			return err
+		}
+
+		// Check if the ride is completed
+		if ride.Status != "completed" {
+			return errors.New("can only rate completed rides")
+		}
+
+		// Check if the ride is already rated by this user
+		var existingRating migration.Rating
+		err := tx.Where("rater_id = ? AND ride_id = ?", userID, req.RideID).First(&existingRating).Error
+		if err == nil {
+			return errors.New("you have already rated this ride")
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		// Create a new rating
+		rating := migration.Rating{
+			RideID:  req.RideID,
+			RaterID: userID,
+			RateeID: req.ReceiverID,
+			Rating:  req.Rating,
+			Comment: req.Review,
+		}
+		if err := tx.Create(&rating).Error; err != nil {
+			return err
+		}
+
+		// Update the receiver's rating average and total rating count
+		var ratee migration.User
+		if err := tx.First(&ratee, req.ReceiverID).Error; err != nil {
+			return err
+		}
+
+		newTotalRatings := ratee.TotalRatings + 1
+		newAverageRating := (ratee.AverageRating*float64(ratee.TotalRatings) + req.Rating) / float64(newTotalRatings)
+
+		if err := tx.Model(&ratee).Updates(map[string]interface{}{
+			"average_rating": newAverageRating,
+			"total_ratings":  newTotalRatings,
+		}).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (r *RideRepository) RatingRideDriver(req schemas.RatingRideDriverRequest, userID uuid.UUID) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Get the ride by ID
+		var ride migration.Ride
+		if err := tx.First(&ride, req.RideID).Error; err != nil {
+			return err
+		}
+
+		// Check if the ride is completed
+		if ride.Status != "completed" {
+			return errors.New("can only rate completed rides")
+		}
+
+		// Check if the ride is already rated by this user
+		var existingRating migration.Rating
+		err := tx.Where("rater_id = ? AND ride_id = ?", userID, req.RideID).First(&existingRating).Error
+		if err == nil {
+			return errors.New("you have already rated this ride")
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		// Create a new rating
+		rating := migration.Rating{
+			RideID:  req.RideID,
+			RaterID: userID,
+			RateeID: req.ReceiverID,
+			Rating:  req.Rating,
+			Comment: req.Review,
+		}
+		if err := tx.Create(&rating).Error; err != nil {
+			return err
+		}
+
+		// Update the receiver's rating average and total rating count
+		var ratee migration.User
+		if err := tx.First(&ratee, req.ReceiverID).Error; err != nil {
+			return err
+		}
+
+		newTotalRatings := ratee.TotalRatings + 1
+		newAverageRating := (ratee.AverageRating*float64(ratee.TotalRatings) + req.Rating) / float64(newTotalRatings)
+
+		if err := tx.Model(&ratee).Updates(map[string]interface{}{
+			"average_rating": newAverageRating,
+			"total_ratings":  newTotalRatings,
+		}).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 // Make sure the RideRepository implements the IRideRepository interface

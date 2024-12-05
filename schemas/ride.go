@@ -352,3 +352,27 @@ type GetAllPendingRideResponse struct {
 	// The pending ride offer of the user
 	PendingRideOffer []RideOfferDetail `json:"pending_ride_offer"`
 }
+
+// Define RatingRideHitcherRequest schema
+type RatingRideHitcherRequest struct {
+	// The ID of the ride to rate
+	RideID uuid.UUID `json:"rideID" binding:"required,uuid" validate:"required,uuid"`
+	// The rating of the driver
+	Rating float64 `json:"rating" binding:"required" validate:"required,numeric,min=1,max=5"`
+	// The review of the driver
+	Review string `json:"review,omitempty" binding:"omitempty" validate:"omitempty"`
+	// The receiver id (the hitcher) who received the rating
+	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
+}
+
+// Define RatingRideDriverResponse schema
+type RatingRideDriverRequest struct {
+	// The ID of the ride
+	RideID uuid.UUID `json:"ride_id" binding:"required,uuid" validate:"required,uuid"`
+	// The rating of the driver
+	Rating float64 `json:"rating" binding:"required" validate:"required,numeric,min=1,max=5"`
+	// The review of the driver
+	Review string `json:"review,omitempty" binding:"omitempty" validate:"omitempty"`
+	// The receiver id (the driver) who received the rating
+	ReceiverID uuid.UUID `json:"receiver_id" binding:"required,uuid" validate:"required,uuid"`
+}

@@ -2683,3 +2683,149 @@ func (ctrl *RideController) GetAllPendingRide(ctx *gin.Context) {
 	helper.GinResponse(ctx, 200, response)
 
 }
+
+// RatingRideHitcherRequest is the request to rate the hitcher after the ride by the driver
+// RatingRideHitcherRequest godoc
+// @Summary Rate the hitcher after the ride by the driver
+// @Description Rate the hitcher after the ride by the driver
+// @Tags ride
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body schemas.RatingRideHitcherRequest true "Rating ride hitcher request"
+// @Success 200 {object} helper.Response "Successfully rated the hitcher"
+// @Failure 400 {object} helper.Response "Invalid request"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /ride/rating-ride-hitcher [post]
+func (ctrl *RideController) RatingRideHitcher(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	var req schemas.RatingRideHitcherRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind JSON",
+			"Không thể bind JSON",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	if err := ctrl.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Rate the hitcher after the ride by the driver
+	err = ctrl.RideService.RatingRideHitcher(req, data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to rate the hitcher",
+			"Không thể đánh giá người đi nhờ",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Return success response
+	response := helper.SuccessResponse(
+		nil,
+		"Successfully rated the hitcher",
+		"Đã đánh giá người đi nhờ thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
+}
+
+// RatingRideDriverRequest is the request to rate the driver after the ride by the hitcher
+// RatingRideDriverRequest godoc
+// @Summary Rate the driver after the ride by the hitcher
+// @Description Rate the driver after the ride by the hitcher
+// @Tags ride
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body schemas.RatingRideDriverRequest true "Rating ride driver request"
+// @Success 200 {object} helper.Response "Successfully rated the driver"
+// @Failure 400 {object} helper.Response "Invalid request"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /ride/rating-ride-driver [post]
+func (ctrl *RideController) RatingRideDriver(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	var req schemas.RatingRideDriverRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind JSON",
+			"Không thể bind JSON",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	if err := ctrl.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Rate the driver after the ride by the hitcher
+	err = ctrl.RideService.RatingRideDriver(req, data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to rate the driver",
+			"Không thể đánh giá tài xế",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Return success response
+	response := helper.SuccessResponse(
+		nil,
+		"Successfully rated the driver",
+		"Đã đánh giá tài xế thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
+}

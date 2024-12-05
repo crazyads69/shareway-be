@@ -131,6 +131,30 @@ func (r *AdminRepository) GetDashboardGeneralData() (schemas.DashboardGeneralDat
 		dashboardGeneralData.TransactionChange = 100 // 100% increase if there were no transactions last month
 	}
 
+	// Get total number of vehicles
+	if err = r.db.Model(&migration.Vehicle{}).Count(&dashboardGeneralData.TotalVehicles).Error; err != nil {
+		return dashboardGeneralData, err
+	}
+
+	// Get number of vehicles this month
+	var vehiclesThisMonth int64
+	if err = r.db.Model(&migration.Vehicle{}).Where("created_at >= ?", startOfThisMonth).Count(&vehiclesThisMonth).Error; err != nil {
+		return dashboardGeneralData, err
+	}
+
+	// Get number of vehicles last month
+	var vehiclesLastMonth int64
+	if err = r.db.Model(&migration.Vehicle{}).Where("created_at >= ? AND created_at < ?", startOfLastMonth, startOfThisMonth).Count(&vehiclesLastMonth).Error; err != nil {
+		return dashboardGeneralData, err
+	}
+
+	// Calculate vehicle change percentage
+	if vehiclesLastMonth > 0 {
+		dashboardGeneralData.VehicleChange = math.Round(float64(vehiclesThisMonth-vehiclesLastMonth)/float64(vehiclesLastMonth)*10000) / 100
+	} else if vehiclesThisMonth > 0 {
+		dashboardGeneralData.VehicleChange = 100 // 100% increase if there were no vehicles last month
+	}
+
 	return dashboardGeneralData, nil
 }
 

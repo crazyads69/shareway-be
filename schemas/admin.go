@@ -9,6 +9,8 @@ type DashboardGeneralDataResponse struct {
 	RideChange        float64 `json:"ride_change"`
 	TotalTransactions int64   `json:"total_transactions"`
 	TransactionChange float64 `json:"transaction_change"`
+	TotalVehicles     int64   `json:"total_vehicles"`
+	VehicleChange     float64 `json:"vehicle_change"`
 }
 
 type UserDashboardDataResponse struct {

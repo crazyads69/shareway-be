@@ -2664,6 +2664,108 @@
                 }
             }
         },
+        "/ride/rating-ride-driver": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Rate the driver after the ride by the hitcher",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Rate the driver after the ride by the hitcher",
+                "parameters": [
+                    {
+                        "description": "Rating ride driver request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.RatingRideDriverRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully rated the driver",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ride/rating-ride-hitcher": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Rate the hitcher after the ride by the driver",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Rate the hitcher after the ride by the driver",
+                "parameters": [
+                    {
+                        "description": "Rating ride hitcher request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.RatingRideHitcherRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully rated the hitcher",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/ride/start-ride": {
             "post": {
                 "security": [
@@ -3621,10 +3723,16 @@
                 "total_users": {
                     "type": "integer"
                 },
+                "total_vehicles": {
+                    "type": "integer"
+                },
                 "transaction_change": {
                     "type": "number"
                 },
                 "user_change": {
+                    "type": "number"
+                },
+                "vehicle_change": {
                     "type": "number"
                 }
             }
@@ -4551,6 +4659,62 @@
                     "items": {
                         "$ref": "#/definitions/schemas.Term"
                     }
+                }
+            }
+        },
+        "schemas.RatingRideDriverRequest": {
+            "type": "object",
+            "required": [
+                "rating",
+                "receiver_id",
+                "ride_id"
+            ],
+            "properties": {
+                "rating": {
+                    "description": "The rating of the driver",
+                    "type": "number",
+                    "maximum": 5,
+                    "minimum": 1
+                },
+                "receiver_id": {
+                    "description": "The receiver id (the driver) who received the rating",
+                    "type": "string"
+                },
+                "review": {
+                    "description": "The review of the driver",
+                    "type": "string"
+                },
+                "ride_id": {
+                    "description": "The ID of the ride",
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.RatingRideHitcherRequest": {
+            "type": "object",
+            "required": [
+                "rating",
+                "receiverID",
+                "rideID"
+            ],
+            "properties": {
+                "rating": {
+                    "description": "The rating of the driver",
+                    "type": "number",
+                    "maximum": 5,
+                    "minimum": 1
+                },
+                "receiverID": {
+                    "description": "The receiver id (the hitcher) who received the rating",
+                    "type": "string"
+                },
+                "review": {
+                    "description": "The review of the driver",
+                    "type": "string"
+                },
+                "rideID": {
+                    "description": "The ID of the ride to rate",
+                    "type": "string"
                 }
             }
         },

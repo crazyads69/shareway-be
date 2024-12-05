@@ -38,6 +38,10 @@ type User struct {
 	// New field for storing money received in app
 	BalanceInApp int64 `gorm:"default:0"` // Store balance in vnđ currency unit
 
+	// Ratings and reviews
+	AverageRating float64 `gorm:"default:0"` // Average rating of the user
+	TotalRatings  int64   `gorm:"default:0"` // Total number of ratings received for calculating average rating
+
 	Vehicles          []Vehicle          // One-to-many relationship with Vehicle
 	RatingsReceived   []Rating           `gorm:"foreignKey:RateeID"` // One-to-many relationship with Rating (received)
 	RatingsGiven      []Rating           `gorm:"foreignKey:RaterID"` // One-to-many relationship with Rating (given)

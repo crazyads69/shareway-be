@@ -319,9 +319,13 @@ definitions:
         type: integer
       total_users:
         type: integer
+      total_vehicles:
+        type: integer
       transaction_change:
         type: number
       user_change:
+        type: number
+      vehicle_change:
         type: number
     type: object
   schemas.DeleteUserRequest:
@@ -939,6 +943,48 @@ definitions:
         items:
           $ref: '#/definitions/schemas.Term'
         type: array
+    type: object
+  schemas.RatingRideDriverRequest:
+    properties:
+      rating:
+        description: The rating of the driver
+        maximum: 5
+        minimum: 1
+        type: number
+      receiver_id:
+        description: The receiver id (the driver) who received the rating
+        type: string
+      review:
+        description: The review of the driver
+        type: string
+      ride_id:
+        description: The ID of the ride
+        type: string
+    required:
+    - rating
+    - receiver_id
+    - ride_id
+    type: object
+  schemas.RatingRideHitcherRequest:
+    properties:
+      rating:
+        description: The rating of the driver
+        maximum: 5
+        minimum: 1
+        type: number
+      receiverID:
+        description: The receiver id (the hitcher) who received the rating
+        type: string
+      review:
+        description: The review of the driver
+        type: string
+      rideID:
+        description: The ID of the ride to rate
+        type: string
+    required:
+    - rating
+    - receiverID
+    - rideID
     type: object
   schemas.RefreshTokenResponse:
     properties:
@@ -3274,6 +3320,70 @@ paths:
       security:
       - BearerAuth: []
       summary: Send a ride request from the hitcher to the driver
+      tags:
+      - ride
+  /ride/rating-ride-driver:
+    post:
+      consumes:
+      - application/json
+      description: Rate the driver after the ride by the hitcher
+      parameters:
+      - description: Rating ride driver request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.RatingRideDriverRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully rated the driver
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Rate the driver after the ride by the hitcher
+      tags:
+      - ride
+  /ride/rating-ride-hitcher:
+    post:
+      consumes:
+      - application/json
+      description: Rate the hitcher after the ride by the driver
+      parameters:
+      - description: Rating ride hitcher request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.RatingRideHitcherRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully rated the hitcher
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Rate the hitcher after the ride by the driver
       tags:
       - ride
   /ride/start-ride:

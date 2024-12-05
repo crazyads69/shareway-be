@@ -30,6 +30,8 @@ type IRideService interface {
 	CancelRide(req schemas.CancelRideRequest, userID uuid.UUID) (migration.Ride, error)
 	GetAllPendingRide(userID uuid.UUID) ([]migration.RideOffer, []migration.RideRequest, error)
 	GetRideByID(rideID uuid.UUID) (migration.Ride, error)
+	RatingRideHitcher(req schemas.RatingRideHitcherRequest, userID uuid.UUID) error
+	RatingRideDriver(req schemas.RatingRideDriverRequest, userID uuid.UUID) error
 }
 
 func NewRideService(repo repository.IRideRepository, hub *ws.Hub, cfg util.Config) IRideService {
@@ -100,6 +102,14 @@ func (s *RideService) GetAllPendingRide(userID uuid.UUID) ([]migration.RideOffer
 
 func (s *RideService) GetRideByID(rideID uuid.UUID) (migration.Ride, error) {
 	return s.repo.GetRideByID(rideID)
+}
+
+func (s *RideService) RatingRideHitcher(req schemas.RatingRideHitcherRequest, userID uuid.UUID) error {
+	return s.repo.RatingRideHitcher(req, userID)
+}
+
+func (s *RideService) RatingRideDriver(req schemas.RatingRideDriverRequest, userID uuid.UUID) error {
+	return s.repo.RatingRideDriver(req, userID)
 }
 
 // Make sure the RideService implements the IRideService interface
