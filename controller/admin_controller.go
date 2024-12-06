@@ -448,3 +448,107 @@ func (ac *AdminController) GetTransactionDashboardData(ctx *gin.Context) {
 	response := helper.SuccessResponse(res, "Transaction dashboard data retrieved successfully", "Lấy thông tin dashboard của transaction thành công")
 	helper.GinResponse(ctx, 200, response)
 }
+
+// GetVehicleDashboardData returns the data of the dashboard for the vehicle to visualize charts
+// @Summary Get the data of the dashboard for the vehicle
+// @Description Get the data of the dashboard for the vehicle
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param filter query string true "Filter for the data (all_time, last_week, last_month, last_year, custom)"
+// @Param start_date query string false "Start date for custom filter (YYYY-MM-DD)"
+// @Param end_date query string false "End date for custom filter (YYYY-MM-DD)"
+// @Success 200 {object} schemas.VehicleDashboardDataResponse "Vehicle dashboard data"
+// @Failure 400 {object} helper.Response "Bad request"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /admin/get-vehicle-dashboard-data [get]
+func (ac *AdminController) GetVehicleDashboardData(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert the payload to a map of string and interface
+	// Convert payload to map
+	data, err := helper.ConvertToAdminPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	log.Info().Msgf("Admin ID: %s", data.AdminID)
+
+	var req schemas.FilterDashboardDataRequest
+
+	// Bind request to struct
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind request",
+			"Không thể bind request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Validate request
+	if err := ac.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	var customStartDate, customEndDate time.Time
+
+	if req.Filter == "custom" {
+		// Parse the start date and end date from the query to UTC time
+		customStartDate, err = time.Parse(time.RFC3339, req.StartDate.Format(time.RFC3339))
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to parse start date",
+				"Không thể chuyển đổi ngày bắt đầu",
+			)
+			helper.GinResponse(ctx, 400, response)
+			return
+		}
+		customEndDate, err = time.Parse(time.RFC3339, req.EndDate.Format(time.RFC3339))
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to parse end date",
+				"Không thể chuyển đổi ngày kết thúc",
+			)
+			helper.GinResponse(ctx, 400, response)
+			return
+		}
+	}
+
+	// Get the data for the vehicle dashboard
+	vehicleData, err := ac.AdminService.GetVehicleDashboardData(req.Filter, customStartDate, customEndDate)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get vehicle dashboard data",
+			"Không thể lấy thông tin dashboard của vehicle",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Return the data for the vehicle dashboard
+	res := vehicleData
+
+	response := helper.SuccessResponse(res, "Vehicle dashboard data retrieved successfully", "Lấy thông tin dashboard của vehicle thành công")
+	helper.GinResponse(ctx, 200, response)
+}

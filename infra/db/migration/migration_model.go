@@ -39,7 +39,7 @@ type User struct {
 	BalanceInApp int64 `gorm:"default:0"` // Store balance in vnđ currency unit
 
 	// Ratings and reviews
-	AverageRating float64 `gorm:"default:0"` // Average rating of the user
+	AverageRating float64 `gorm:"default:5"` // Average rating of the user (default 5 because new user has no rating)
 	TotalRatings  int64   `gorm:"default:0"` // Total number of ratings received for calculating average rating
 
 	Vehicles          []Vehicle          // One-to-many relationship with Vehicle

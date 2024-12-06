@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"math"
 	"shareway/helper"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
@@ -691,7 +692,7 @@ func (r *RideRepository) RatingRideHitcher(req schemas.RatingRideHitcherRequest,
 		}
 
 		newTotalRatings := ratee.TotalRatings + 1
-		newAverageRating := (ratee.AverageRating*float64(ratee.TotalRatings) + req.Rating) / float64(newTotalRatings)
+		newAverageRating := math.Round((ratee.AverageRating*float64(ratee.TotalRatings)+req.Rating)/float64(newTotalRatings)*10) / 10
 
 		if err := tx.Model(&ratee).Updates(map[string]interface{}{
 			"average_rating": newAverageRating,
@@ -745,7 +746,7 @@ func (r *RideRepository) RatingRideDriver(req schemas.RatingRideDriverRequest, u
 		}
 
 		newTotalRatings := ratee.TotalRatings + 1
-		newAverageRating := (ratee.AverageRating*float64(ratee.TotalRatings) + req.Rating) / float64(newTotalRatings)
+		newAverageRating := math.Round((ratee.AverageRating*float64(ratee.TotalRatings)+req.Rating)/float64(newTotalRatings)*10) / 10
 
 		if err := tx.Model(&ratee).Updates(map[string]interface{}{
 			"average_rating": newAverageRating,

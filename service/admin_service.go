@@ -41,6 +41,7 @@ type IAdminService interface {
 	GetUserDashboardData(filter string, customStartDate time.Time, customEndDate time.Time) (schemas.UserDashboardDataResponse, error)
 	GetRideDashboardData(filter string, customStartDate time.Time, customEndDate time.Time) (schemas.RideDashboardDataResponse, error)
 	GetTransactionDashboardData(filter string, customStartDate time.Time, customEndDate time.Time) (schemas.TransactionDashboardDataResponse, error)
+	GetVehicleDashboardData(filter string, customStartDate time.Time, customEndDate time.Time) (schemas.VehicleDashboardDataResponse, error)
 }
 
 // CheckAdminExists checks if an admin exists with the given email and password
@@ -151,3 +152,34 @@ func (s *AdminService) GetTransactionDashboardData(filter string, customStartDat
 	}
 	return s.repo.GetTransactionDashboardData(startDate, endDate)
 }
+
+// GetVehicleDashboardData gets the data for the vehicle dashboard
+func (s *AdminService) GetVehicleDashboardData(filter string, customStartDate time.Time, customEndDate time.Time) (schemas.VehicleDashboardDataResponse, error) {
+	var startDate, endDate time.Time
+	now := time.Now()
+
+	switch filter {
+	case "all_time":
+		// You might want to set a reasonable start date here, or use the earliest record in your database
+		startDate = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+		endDate = now
+	case "last_week":
+		startDate = now.AddDate(0, 0, -7)
+		endDate = now
+	case "last_month":
+		startDate = now.AddDate(0, -1, 0)
+		endDate = now
+	case "last_year":
+		startDate = now.AddDate(-1, 0, 0)
+		endDate = now
+	case "custom":
+		startDate = customStartDate
+		endDate = customEndDate
+	default:
+		return schemas.VehicleDashboardDataResponse{}, fmt.Errorf("invalid filter")
+	}
+	return s.repo.GetVehicleDashboardData(startDate, endDate)
+}
+
+// Ensure that the AdminService implements the IAdminService interface
+var _ IAdminService = (*AdminService)(nil)

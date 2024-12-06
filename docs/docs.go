@@ -330,6 +330,67 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/get-vehicle-dashboard-data": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the data of the dashboard for the vehicle",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the data of the dashboard for the vehicle",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter for the data (all_time, last_week, last_month, last_year, custom)",
+                        "name": "filter",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date for custom filter (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date for custom filter (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Vehicle dashboard data",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.VehicleDashboardDataResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/delete-user": {
             "post": {
                 "description": "Delete the user from the provided phone number in the database (only available in dev environment)",
@@ -5560,6 +5621,9 @@ const docTemplate = `{
                 "avatar_url": {
                     "type": "string"
                 },
+                "average_rating": {
+                    "type": "number"
+                },
                 "balance_in_app": {
                     "type": "integer"
                 },
@@ -5588,6 +5652,9 @@ const docTemplate = `{
             "properties": {
                 "avatar_url": {
                     "type": "string"
+                },
+                "average_rating": {
+                    "type": "number"
                 },
                 "balance_in_app": {
                     "type": "integer"
@@ -5641,6 +5708,17 @@ const docTemplate = `{
                 },
                 "vehicle_id": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.VehicleDashboardDataResponse": {
+            "type": "object",
+            "properties": {
+                "vehicle_stats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.StatPoint"
+                    }
                 }
             }
         },

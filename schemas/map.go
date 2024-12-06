@@ -265,13 +265,14 @@ type SuggestRideRequestResponse struct {
 
 // Define UserInfo struct
 type UserInfo struct {
-	ID           uuid.UUID `json:"user_id"`
-	PhoneNumber  string    `json:"phone_number"`
-	FullName     string    `json:"full_name"`
-	AvatarURL    string    `json:"avatar_url"`
-	Gender       string    `json:"gender"`
-	IsMomoLinked bool      `json:"is_momo_linked"`
-	BalanceInApp int64     `json:"balance_in_app"`
+	ID            uuid.UUID `json:"user_id"`
+	PhoneNumber   string    `json:"phone_number"`
+	FullName      string    `json:"full_name"`
+	AvatarURL     string    `json:"avatar_url"`
+	AverageRating float64   `json:"average_rating"`
+	Gender        string    `json:"gender"`
+	IsMomoLinked  bool      `json:"is_momo_linked"`
+	BalanceInApp  int64     `json:"balance_in_app"`
 }
 
 // Define RideRequestDetail struct

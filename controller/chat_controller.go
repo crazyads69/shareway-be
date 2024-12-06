@@ -448,13 +448,14 @@ func (cc *ChatController) GetAllChatRooms(ctx *gin.Context) {
 		}
 
 		userInfos[i] = schemas.UserInfo{
-			ID:           receiver.ID,
-			FullName:     receiver.FullName,
-			PhoneNumber:  receiver.PhoneNumber,
-			Gender:       receiver.Gender,
-			AvatarURL:    receiver.AvatarURL,
-			IsMomoLinked: receiver.IsMomoLinked,
-			BalanceInApp: receiver.BalanceInApp,
+			ID:            receiver.ID,
+			FullName:      receiver.FullName,
+			PhoneNumber:   receiver.PhoneNumber,
+			Gender:        receiver.Gender,
+			AvatarURL:     receiver.AvatarURL,
+			IsMomoLinked:  receiver.IsMomoLinked,
+			BalanceInApp:  receiver.BalanceInApp,
+			AverageRating: receiver.AverageRating,
 		}
 	}
 

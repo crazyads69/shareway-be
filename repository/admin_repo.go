@@ -30,6 +30,7 @@ type IAdminRepository interface {
 	GetUserDashboardData(startDate time.Time, endDate time.Time) (schemas.UserDashboardDataResponse, error)
 	GetRideDashboardData(startDate time.Time, endDate time.Time) (schemas.RideDashboardDataResponse, error)
 	GetTransactionDashboardData(startDate time.Time, endDate time.Time) (schemas.TransactionDashboardDataResponse, error)
+	GetVehicleDashboardData(startDate time.Time, endDate time.Time) (schemas.VehicleDashboardDataResponse, error)
 }
 
 // CheckAdminExists checks if the admin exists in the database
@@ -205,3 +206,22 @@ func (r *AdminRepository) GetTransactionDashboardData(startDate time.Time, endDa
 
 	return transactionDashboardData, nil
 }
+
+// GetVehicleDashboardData gets the data for the vehicle dashboard
+func (r *AdminRepository) GetVehicleDashboardData(startDate time.Time, endDate time.Time) (schemas.VehicleDashboardDataResponse, error) {
+	var vehicleDashboardData schemas.VehicleDashboardDataResponse
+	// Get vehicle from the database and group by created_at
+	err := r.db.Model(&migration.Vehicle{}).
+		Select("DATE(created_at) as date, COUNT(*) as count").
+		Where("created_at >= ? AND created_at < ?", startDate, endDate).
+		Group("DATE(created_at)").
+		Scan(&vehicleDashboardData.VehicleStats).Error
+	if err != nil {
+		return vehicleDashboardData, err
+	}
+
+	return vehicleDashboardData, nil
+}
+
+// Ensure that the AdminRepository implements the IAdminRepository interface
+var _ IAdminRepository = (*AdminRepository)(nil)

@@ -25,6 +25,10 @@ type TransactionDashboardDataResponse struct {
 	TransactionStats []StatPoint `json:"transaction_stats"`
 }
 
+type VehicleDashboardDataResponse struct {
+	VehicleStats []StatPoint `json:"vehicle_stats"`
+}
+
 type StatPoint struct {
 	Date  time.Time `json:"date"`
 	Count int       `json:"count"`
