@@ -681,15 +681,69 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 	// Send the accepted ride offer to the driver (match the ride successfully)
 	// ctrl.hub.SendToUser(req.ReceiverID.String(), "accept-give-ride-request", res)
 
+	// Get accepter user details from user_id
+	accepter, err := ctrl.UserService.GetUserByID(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get accepter details",
+			"Không thể lấy thông tin người chấp nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	wsRes := schemas.AcceptGiveRideRequestResponse{
+		ID:          ride.ID,
+		RideOfferID: ride.RideOfferID,
+		Transaction: schemas.TransactionDetail{
+			ID:            transaction.ID,
+			Amount:        transaction.Amount,
+			Status:        transaction.Status,
+			PaymentMethod: transaction.PaymentMethod,
+		},
+		DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+		DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+		RiderCurrentLatitude:   rideRequest.RiderCurrentLatitude,
+		RiderCurrentLongitude:  rideRequest.RiderCurrentLongitude,
+		Status:                 ride.Status,
+		StartTime:              ride.StartTime,
+		EndTime:                ride.EndTime,
+		StartAddress:           ride.StartAddress,
+		EndAddress:             ride.EndAddress,
+		Fare:                   ride.Fare,
+		EncodedPolyline:        string(ride.EncodedPolyline),
+		Distance:               ride.Distance,
+		Duration:               ride.Duration,
+		StartLatitude:          ride.StartLatitude,
+		StartLongitude:         ride.StartLongitude,
+		EndLatitude:            ride.EndLatitude,
+		EndLongitude:           ride.EndLongitude,
+		Vehicle:                vehicle,
+		ReceiverID:             req.ReceiverID,
+		UserInfo: schemas.UserInfo{
+			ID:            accepter.ID,
+			PhoneNumber:   accepter.PhoneNumber,
+			FullName:      accepter.FullName,
+			AvatarURL:     accepter.AvatarURL,
+			Gender:        accepter.Gender,
+			IsMomoLinked:  accepter.IsMomoLinked,
+			BalanceInApp:  accepter.BalanceInApp,
+			AverageRating: accepter.AverageRating,
+		},
+		RideRequestID: req.RideRequestID,
+		Waypoints:     waypointDetails,
+	}
+
 	// Prepare the WebSocket message
 	wsMessage := schemas.WebSocketMessage{
 		UserID:  req.ReceiverID.String(),
 		Type:    "accept-give-ride-request",
-		Payload: res,
+		Payload: wsRes,
 	}
 
 	// Convert res to map[string]string
-	resMap, err := helper.ConvertToStringMap(res)
+	resMap, err := helper.ConvertToStringMap(wsRes)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -941,15 +995,69 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 	// Send the accepted ride request to the hitcher (match the ride successfully)
 	// ctrl.hub.SendToUser(req.ReceiverID.String(), "accept-hitch-ride-request", res)
 
+	// Get accepter user details from user_id
+	accepter, err := ctrl.UserService.GetUserByID(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get accepter details",
+			"Không thể lấy thông tin người chấp nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	wsRes := schemas.AcceptHitchRideRequestResponse{
+		ID:            ride.ID,
+		RideRequestID: ride.RideRequestID,
+		Transaction: schemas.TransactionDetail{
+			ID:            transaction.ID,
+			Amount:        transaction.Amount,
+			Status:        transaction.Status,
+			PaymentMethod: transaction.PaymentMethod,
+		},
+		Status:                 ride.Status,
+		StartTime:              ride.StartTime,
+		RideOfferID:            ride.RideOfferID,
+		DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+		DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+		RiderCurrentLatitude:   rideRequest.RiderCurrentLatitude,
+		RiderCurrentLongitude:  rideRequest.RiderCurrentLongitude,
+		EndTime:                ride.EndTime,
+		StartAddress:           ride.StartAddress,
+		EndAddress:             ride.EndAddress,
+		Fare:                   ride.Fare,
+		EncodedPolyline:        string(ride.EncodedPolyline),
+		Distance:               ride.Distance,
+		Duration:               ride.Duration,
+		StartLatitude:          ride.StartLatitude,
+		StartLongitude:         ride.StartLongitude,
+		EndLatitude:            ride.EndLatitude,
+		EndLongitude:           ride.EndLongitude,
+		ReceiverID:             req.ReceiverID,
+		UserInfo: schemas.UserInfo{
+			ID:            accepter.ID,
+			PhoneNumber:   accepter.PhoneNumber,
+			FullName:      accepter.FullName,
+			AvatarURL:     accepter.AvatarURL,
+			Gender:        accepter.Gender,
+			IsMomoLinked:  accepter.IsMomoLinked,
+			BalanceInApp:  accepter.BalanceInApp,
+			AverageRating: accepter.AverageRating,
+		},
+		Vehicle:   vehicle,
+		Waypoints: waypointDetails,
+	}
+
 	// Prepare the WebSocket message
 	wsMessage := schemas.WebSocketMessage{
 		UserID:  req.ReceiverID.String(),
 		Type:    "accept-hitch-ride-request",
-		Payload: res,
+		Payload: wsRes,
 	}
 
 	// Convert res to map[string]string
-	resMap, err := helper.ConvertToStringMap(res)
+	resMap, err := helper.ConvertToStringMap(wsRes)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
