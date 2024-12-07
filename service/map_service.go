@@ -281,11 +281,19 @@ func (s *MapService) CreateGiveRide(ctx context.Context, input schemas.GiveRideR
 	// If start_time is not provided, the ride is immediate
 	var startTime time.Time
 	if input.StartTime != "" {
-		// Parse the start time to UTC time
-		startTime, err = time.Parse("2006-01-02T15:04:05.999999", input.StartTime)
+		// Parse the start time as GMT+7
+		location, err := time.LoadLocation("Asia/Bangkok") // GMT+7
+		if err != nil {
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to load location: %w", err)
+		}
+
+		// Parse the time in the GMT+7 location
+		startTime, err = time.ParseInLocation("2006-01-02T15:04:05.999999", input.StartTime, location)
 		if err != nil {
 			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to parse start time: %w", err)
 		}
+
+		// Convert to UTC
 		startTime = startTime.UTC()
 	} else {
 		startTime = time.Now().UTC()
@@ -371,13 +379,23 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 
 	// Check start_time from input and set the ride request status accordingly
 	// If start_time is not provided, the ride is immediate
+	// Check start_time from input and set the ride request status accordingly
+	// If start_time is not provided, the ride is immediate
 	var startTime time.Time
 	if input.StartTime != "" {
-		// Parse the start time to UTC time
-		startTime, err = time.Parse("2006-01-02T15:04:05.999999", input.StartTime)
+		// Parse the start time as GMT+7
+		location, err := time.LoadLocation("Asia/Bangkok") // GMT+7
+		if err != nil {
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to load location: %w", err)
+		}
+
+		// Parse the time in the GMT+7 location
+		startTime, err = time.ParseInLocation("2006-01-02T15:04:05.999999", input.StartTime, location)
 		if err != nil {
 			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to parse start time: %w", err)
 		}
+
+		// Convert to UTC
 		startTime = startTime.UTC()
 	} else {
 		startTime = time.Now().UTC()

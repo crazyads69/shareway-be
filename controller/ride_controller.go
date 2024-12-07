@@ -602,7 +602,7 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 	}
 
 	// Create a transaction to store fare details
-	transaction, err := ctrl.RideService.CreateRideTransaction(ride.ID, ride.Fare, req.PaymentMethod, req.ReceiverID, data.UserID)
+	transaction, err := ctrl.RideService.CreateRideTransaction(ride.ID, ride.Fare, "cash", req.ReceiverID, data.UserID)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -862,7 +862,7 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 	}
 
 	// Create a transaction to store fare details
-	transaction, err := ctrl.RideService.CreateRideTransaction(ride.ID, ride.Fare, req.PaymentMethod, data.UserID, req.ReceiverID)
+	transaction, err := ctrl.RideService.CreateRideTransaction(ride.ID, ride.Fare, "cash", data.UserID, req.ReceiverID)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,

@@ -13,12 +13,6 @@ definitions:
     type: object
   schemas.AcceptGiveRideRequestRequest:
     properties:
-      paymentMethod:
-        description: Payment method (cash or momo)
-        enum:
-        - cash
-        - momo
-        type: string
       receiverID:
         description: The ID of the receiver (the user who received the request) aka
           the hitcher
@@ -34,7 +28,6 @@ definitions:
         description: The ID of the vehicle
         type: string
     required:
-    - paymentMethod
     - receiverID
     - rideOfferID
     - rideRequestID
@@ -97,12 +90,6 @@ definitions:
     type: object
   schemas.AcceptHitchRideRequestRequest:
     properties:
-      paymentMethod:
-        description: Payment method (cash or momo)
-        enum:
-        - cash
-        - momo
-        type: string
       receiverID:
         description: The ID of the receiver (the user who received the request) aka
           the driver
@@ -118,7 +105,6 @@ definitions:
         description: The ID of the vehicle
         type: string
     required:
-    - paymentMethod
     - receiverID
     - rideOfferID
     - rideRequestID

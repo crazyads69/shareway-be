@@ -74,6 +74,18 @@ func (cc *ChatController) SendMessage(ctx *gin.Context) {
 		return
 	}
 
+	// Get details of the sender user
+	sender, err := cc.UserService.GetUserByID(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get sender details",
+			"Không thể lấy thông tin người gửi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	var req schemas.SendMessageRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response := helper.ErrorResponseWithMessage(
@@ -168,7 +180,7 @@ func (cc *ChatController) SendMessage(ctx *gin.Context) {
 
 	notification := schemas.Notification{
 		Title: "Tin nhắn mới",
-		Body:  fmt.Sprintf("Bạn có tin nhắn mới từ %s", receiver.FullName),
+		Body:  fmt.Sprintf("Bạn có tin nhắn mới từ %s", sender.FullName),
 		Data:  notificationPayloadMap,
 		Token: receiver.DeviceToken,
 	}
@@ -223,6 +235,18 @@ func (cc *ChatController) SendImage(ctx *gin.Context) {
 			fmt.Errorf("failed to convert payload"),
 			"Failed to convert payload",
 			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get details of the sender user
+	sender, err := cc.UserService.GetUserByID(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get sender details",
+			"Không thể lấy thông tin người gửi",
 		)
 		helper.GinResponse(ctx, 500, response)
 		return
@@ -356,7 +380,7 @@ func (cc *ChatController) SendImage(ctx *gin.Context) {
 
 	notification := schemas.Notification{
 		Title: "Tin nhắn mới",
-		Body:  fmt.Sprintf("Bạn có tin nhắn mới từ %s", receiver.FullName),
+		Body:  fmt.Sprintf("Bạn có tin nhắn mới từ %s", sender.FullName),
 		Data:  notificationPayloadMap,
 		Token: receiver.DeviceToken,
 	}
@@ -601,6 +625,18 @@ func (cc *ChatController) InitiateCall(ctx *gin.Context) {
 		return
 	}
 
+	// Get details of the caller
+	caller, err := cc.UserService.GetUserByID(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get caller details",
+			"Không thể lấy thông tin người gọi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	// Bind query params
 	var req schemas.InitiateCallRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -735,7 +771,7 @@ func (cc *ChatController) InitiateCall(ctx *gin.Context) {
 
 	notification := schemas.Notification{
 		Title: "Cuộc gọi mới",
-		Body:  fmt.Sprintf("Bạn có cuộc gọi mới từ %s", receiver.FullName),
+		Body:  fmt.Sprintf("Bạn có cuộc gọi mới từ %s", caller.FullName),
 		Data:  notificationPayloadMap,
 		Token: receiver.DeviceToken,
 	}
@@ -789,6 +825,18 @@ func (cc *ChatController) UpdateCallStatus(ctx *gin.Context) {
 			fmt.Errorf("failed to convert payload"),
 			"Failed to convert payload",
 			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get details of the caller
+	caller, err := cc.UserService.GetUserByID(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get caller details",
+			"Không thể lấy thông tin người gọi",
 		)
 		helper.GinResponse(ctx, 500, response)
 		return
@@ -886,7 +934,7 @@ func (cc *ChatController) UpdateCallStatus(ctx *gin.Context) {
 
 	notification := schemas.Notification{
 		Title: "Trạng thái cuộc gọi",
-		Body:  fmt.Sprintf("Trạng thái cuộc gọi từ %s", receiver.FullName),
+		Body:  fmt.Sprintf("Trạng thái cuộc gọi từ %s", caller.FullName),
 		Data:  notificationPayloadMap,
 		Token: receiver.DeviceToken,
 	}

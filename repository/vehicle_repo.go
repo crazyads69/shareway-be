@@ -5,7 +5,6 @@ import (
 	"errors"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -35,16 +34,46 @@ var (
 )
 
 // GetVehicles retrieves all vehicles from the database and converts them to schema format
+// func (r *VehicleRepository) GetVehicles(ctx context.Context, limit int, page int, input string) ([]schemas.Vehicle, error) {
+// 	var vehicles []migration.VehicleType
+// 	input = strings.ToLower(input)
+// 	query := r.db.Model(&migration.VehicleType{}).
+// 		Select("id", "name", "fuel_consumed").
+// 		Limit(limit).
+// 		Offset(page * limit)
+
+// 	if input != "" {
+// 		query = query.Where("LOWER(name) LIKE ?", "%"+input+"%")
+// 	}
+
+// 	err := query.Find(&vehicles).Error
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	schemaVehicles := make([]schemas.Vehicle, len(vehicles))
+// 	for i, vehicle := range vehicles {
+// 		schemaVehicles[i] = schemas.Vehicle{
+// 			VehicleID:    vehicle.ID,
+// 			Name:         vehicle.Name,
+// 			FuelConsumed: vehicle.FuelConsumed,
+// 		}
+// 	}
+
+// 	return schemaVehicles, nil
+// }
+
+// GetVehicles retrieves all vehicles from the database and converts them to schema format
 func (r *VehicleRepository) GetVehicles(ctx context.Context, limit int, page int, input string) ([]schemas.Vehicle, error) {
 	var vehicles []migration.VehicleType
-	input = strings.ToLower(input)
 	query := r.db.Model(&migration.VehicleType{}).
 		Select("id", "name", "fuel_consumed").
 		Limit(limit).
 		Offset(page * limit)
 
 	if input != "" {
-		query = query.Where("LOWER(name) LIKE ?", "%"+input+"%")
+		// Use ILIKE for case-insensitive search in PostgreSQL
+		query = query.Where("name ILIKE ?", "%"+input+"%")
 	}
 
 	err := query.Find(&vehicles).Error
