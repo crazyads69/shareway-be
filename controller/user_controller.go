@@ -31,7 +31,7 @@ func NewUserController(userService service.IUsersService, validate *validator.Va
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} schemas.GetUserProfileResponse
+// @Success 200 {object} helper.Response{data=schemas.GetUserProfileResponse} "Successfully authenticated"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /user/get-profile [get]
 func (ctrl *UserController) GetUserProfile(ctx *gin.Context) {

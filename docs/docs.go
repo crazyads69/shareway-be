@@ -99,9 +99,21 @@ const docTemplate = `{
                 "summary": "Get the general data of the dashboard",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Dashboard general data",
                         "schema": {
-                            "$ref": "#/definitions/schemas.DashboardGeneralDataResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.DashboardGeneralDataResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
@@ -133,9 +145,21 @@ const docTemplate = `{
                 "summary": "Get the profile of the admin",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Admin profile",
                         "schema": {
-                            "$ref": "#/definitions/schemas.GetAdminProfileResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GetAdminProfileResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
@@ -188,9 +212,21 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Ride dashboard data",
                         "schema": {
-                            "$ref": "#/definitions/schemas.RideDashboardDataResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.RideDashboardDataResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -249,9 +285,21 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Transaction dashboard data",
                         "schema": {
-                            "$ref": "#/definitions/schemas.TransactionDashboardDataResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.TransactionDashboardDataResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -310,9 +358,21 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "User dashboard data",
                         "schema": {
-                            "$ref": "#/definitions/schemas.UserDashboardDataResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.UserDashboardDataResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -373,7 +433,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Vehicle dashboard data",
                         "schema": {
-                            "$ref": "#/definitions/schemas.VehicleDashboardDataResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.VehicleDashboardDataResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -2142,9 +2214,21 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Link momo wallet response",
+                        "description": "Link wallet response",
                         "schema": {
-                            "$ref": "#/definitions/schemas.LinkMomoWalletResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
@@ -2683,9 +2767,67 @@ const docTemplate = `{
                 "summary": "Get all pending ride",
                 "responses": {
                     "200": {
-                        "description": "Successfully got all pending ride",
+                        "description": "Successfully get all pending ride",
                         "schema": {
-                            "$ref": "#/definitions/schemas.GetAllPendingRideResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GetAllPendingRideResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ride/get-ride-history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get ride history of the user (both as driver and hitcher) included cancelled rides and completed rides",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Get ride history of the user",
+                "responses": {
+                    "200": {
+                        "description": "Successfully got ride history",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GetRideHistoryResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
@@ -3047,9 +3189,21 @@ const docTemplate = `{
                 "summary": "Get user profile",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Successfully authenticated",
                         "schema": {
-                            "$ref": "#/definitions/schemas.GetUserProfileResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GetUserProfileResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
@@ -4107,6 +4261,18 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.GetRideHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "ride_history": {
+                    "description": "The cancel ride request of the user",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.RideHistoryDetail"
+                    }
+                }
+            }
+        },
         "schemas.GetUserProfileResponse": {
             "type": "object",
             "required": [
@@ -4505,15 +4671,6 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 10,
                     "minLength": 10
-                }
-            }
-        },
-        "schemas.LinkMomoWalletResponse": {
-            "type": "object",
-            "properties": {
-                "deeplink": {
-                    "description": "send this to fe flutter app for open momo and perform linked",
-                    "type": "string"
                 }
             }
         },
@@ -4973,6 +5130,89 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/schemas.StatPoint"
+                    }
+                }
+            }
+        },
+        "schemas.RideHistoryDetail": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "driver": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "encoded_polyline": {
+                    "type": "string"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_latitude": {
+                    "type": "number"
+                },
+                "end_longitude": {
+                    "type": "number"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "fare": {
+                    "type": "integer"
+                },
+                "hitcher": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "ride_id": {
+                    "type": "string"
+                },
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "ride_request_id": {
+                    "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_latitude": {
+                    "type": "number"
+                },
+                "start_longitude": {
+                    "type": "number"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction": {
+                    "$ref": "#/definitions/schemas.TransactionDetail"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
                     }
                 }
             }

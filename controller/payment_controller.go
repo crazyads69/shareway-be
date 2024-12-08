@@ -48,7 +48,7 @@ func NewPaymentController(validate *validator.Validate, hub *ws.Hub, rideService
 // @Produce json
 // @Security BearerAuth
 // @Param body body schemas.LinkMomoRequest true "Link momo wallet request"
-// @Success 200 {object} schemas.LinkMomoWalletResponse "Link momo wallet response"
+// @Success 200 {object} helper.Response{data=object} "Link wallet response"
 // @Failure 400 {object} helper.Response "Bad request"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /payment/link-momo-wallet [post]

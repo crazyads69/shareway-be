@@ -37,7 +37,7 @@ func NewAdminController(cfg util.Config, validate *validator.Validate, adminServ
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} schemas.GetAdminProfileResponse
+// @Success 200 {object} helper.Response{data=schemas.GetAdminProfileResponse} "Admin profile"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /admin/get-profile [get]
 func (ac *AdminController) GetAdminProfile(ctx *gin.Context) {
@@ -94,7 +94,7 @@ func (ac *AdminController) GetAdminProfile(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} schemas.DashboardGeneralDataResponse
+// @Success 200 {object} helper.Response{data=schemas.DashboardGeneralDataResponse} "Dashboard general data"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /admin/get-dashboard-general-data [get]
 func (ac *AdminController) GetDashboardGeneralData(ctx *gin.Context) {
@@ -147,7 +147,7 @@ func (ac *AdminController) GetDashboardGeneralData(ctx *gin.Context) {
 // @Param filter query string true "Filter for the data (all_time, last_week, last_month, last_year, custom)"
 // @Param start_date query string false "Start date for custom filter (YYYY-MM-DD)"
 // @Param end_date query string false "End date for custom filter (YYYY-MM-DD)"
-// @Success 200 {object} schemas.UserDashboardDataResponse
+// @Success 200 {object} helper.Response{data=schemas.UserDashboardDataResponse} "User dashboard data"
 // @Failure 400 {object} helper.Response "Bad request"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /admin/get-user-dashboard-data [get]
@@ -251,7 +251,7 @@ func (ac *AdminController) GetUserDashboardData(ctx *gin.Context) {
 // @Param filter query string true "Filter for the data (all_time, last_week, last_month, last_year, custom)"
 // @Param start_date query string false "Start date for custom filter (YYYY-MM-DD)"
 // @Param end_date query string false "End date for custom filter (YYYY-MM-DD)"
-// @Success 200 {object} schemas.RideDashboardDataResponse
+// @Success 200 {object} helper.Response{data=schemas.RideDashboardDataResponse} "Ride dashboard data"
 // @Failure 400 {object} helper.Response "Bad request"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /admin/get-ride-dashboard-data [get]
@@ -355,7 +355,7 @@ func (ac *AdminController) GetRideDashboardData(ctx *gin.Context) {
 // @Param filter query string true "Filter for the data (all_time, last_week, last_month, last_year, custom)"
 // @Param start_date query string false "Start date for custom filter (YYYY-MM-DD)"
 // @Param end_date query string false "End date for custom filter (YYYY-MM-DD)"
-// @Success 200 {object} schemas.TransactionDashboardDataResponse
+// @Success 200 {object} helper.Response{data=schemas.TransactionDashboardDataResponse} "Transaction dashboard data"
 // @Failure 400 {object} helper.Response "Bad request"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /admin/get-transaction-dashboard-data [get]
@@ -459,7 +459,7 @@ func (ac *AdminController) GetTransactionDashboardData(ctx *gin.Context) {
 // @Param filter query string true "Filter for the data (all_time, last_week, last_month, last_year, custom)"
 // @Param start_date query string false "Start date for custom filter (YYYY-MM-DD)"
 // @Param end_date query string false "End date for custom filter (YYYY-MM-DD)"
-// @Success 200 {object} schemas.VehicleDashboardDataResponse "Vehicle dashboard data"
+// @Success 200 {object} helper.Response{data=schemas.VehicleDashboardDataResponse} "Vehicle dashboard data"
 // @Failure 400 {object} helper.Response "Bad request"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /admin/get-vehicle-dashboard-data [get]

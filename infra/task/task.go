@@ -41,7 +41,7 @@ func (ac *AsyncClient) EnqueueWebsocketMessage(wsMessage schemas.WebSocketMessag
 
 	// Enqueue the task
 	_, err = ac.AsynqClient.Enqueue(task,
-		asynq.MaxRetry(3),
+		asynq.MaxRetry(0),
 	)
 	return err
 }
@@ -60,7 +60,7 @@ func (ac *AsyncClient) EnqueueFCMNotification(notification schemas.Notification)
 
 	// Enqueue the task
 	_, err = ac.AsynqClient.Enqueue(task,
-		asynq.MaxRetry(5),
+		asynq.MaxRetry(0),
 	)
 	return err
 }

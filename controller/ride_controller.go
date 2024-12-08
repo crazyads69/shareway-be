@@ -2677,7 +2677,7 @@ func (ctrl *RideController) CancelRide(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} schemas.GetAllPendingRideResponse "Successfully got all pending ride"
+// @Success 200 {object} helper.Response{data=schemas.GetAllPendingRideResponse} "Successfully get all pending ride"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /ride/get-all-pending-ride [get]
 func (ctrl *RideController) GetAllPendingRide(ctx *gin.Context) {
@@ -2985,6 +2985,212 @@ func (ctrl *RideController) RatingRideDriver(ctx *gin.Context) {
 		nil,
 		"Successfully rated the driver",
 		"Đã đánh giá tài xế thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
+}
+
+// GetRideHistory gets the ride history of the user (both as driver and hitcher) included cancelled rides and completed rides
+// GetRideHistory godoc
+// @Summary Get ride history of the user
+// @Description Get ride history of the user (both as driver and hitcher) included cancelled rides and completed rides
+// @Tags ride
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} helper.Response{data=schemas.GetRideHistoryResponse} "Successfully got ride history"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /ride/get-ride-history [get]
+func (ctrl *RideController) GetRideHistory(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get ride history of the user
+	rideHistory, err := ctrl.RideService.GetRideHistory(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get ride history",
+			"Không thể lấy lịch sử chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	rideHistoryDetails := make([]schemas.RideHistoryDetail, 0, len(rideHistory))
+	for _, ride := range rideHistory {
+		// Get the driver id from ride_offer_id
+		rideOffer, err := ctrl.RideService.GetRideOfferByID(ride.RideOfferID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get driver id",
+				"Không thể lấy id tài xế",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the driver details from the driver id
+		driver, err := ctrl.UserService.GetUserByID(rideOffer.UserID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get driver details",
+				"Không thể lấy thông tin tài xế",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the hitcher id from ride_request_id
+		rideRequest, err := ctrl.RideService.GetRideRequestByID(ride.RideRequestID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get hitcher id",
+				"Không thể lấy id người đi nhờ",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the hitcher details from the hitcher id
+		hitcher, err := ctrl.UserService.GetUserByID(rideRequest.UserID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get hitcher details",
+				"Không thể lấy thông tin người đi nhờ",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the vehicle details from the vehicle id
+		vehicle, err := ctrl.VehicleService.GetVehicleFromID(rideOffer.VehicleID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get vehicle details",
+				"Không thể lấy thông tin phương tiện",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the transaction details from the ride id
+		transaction, err := ctrl.RideService.GetTransactionByRideID(ride.ID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get transaction details",
+				"Không thể lấy thông tin giao dịch",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the waypoints of the ride
+		waypoints, err := ctrl.MapsService.GetAllWaypoints(rideOffer.ID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get waypoints",
+				"Không thể lấy thông tin waypoints",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		var waypointDetails []schemas.Waypoint
+		if waypoints != nil {
+			waypointDetails = make([]schemas.Waypoint, 0, len(waypoints))
+			for _, waypoint := range waypoints {
+				waypointDetails = append(waypointDetails, schemas.Waypoint{
+					Latitude:  waypoint.Latitude,
+					Longitude: waypoint.Longitude,
+					Address:   waypoint.Address,
+					ID:        waypoint.ID,
+					Order:     waypoint.WaypointOrder,
+				})
+			}
+		}
+
+		rideHistoryDetails = append(rideHistoryDetails, schemas.RideHistoryDetail{
+			Driver: schemas.UserInfo{
+				ID:            driver.ID,
+				FullName:      driver.FullName,
+				PhoneNumber:   driver.PhoneNumber,
+				AvatarURL:     driver.AvatarURL,
+				Gender:        driver.Gender,
+				IsMomoLinked:  driver.IsMomoLinked,
+				BalanceInApp:  driver.BalanceInApp,
+				AverageRating: driver.AverageRating,
+			},
+			Hitcher: schemas.UserInfo{
+				ID:            hitcher.ID,
+				FullName:      hitcher.FullName,
+				PhoneNumber:   hitcher.PhoneNumber,
+				AvatarURL:     hitcher.AvatarURL,
+				Gender:        hitcher.Gender,
+				IsMomoLinked:  hitcher.IsMomoLinked,
+				BalanceInApp:  hitcher.BalanceInApp,
+				AverageRating: hitcher.AverageRating,
+			},
+			ID:            ride.ID,
+			RideOfferID:   ride.RideOfferID,
+			RideRequestID: ride.RideRequestID,
+			Transaction: schemas.TransactionDetail{
+				ID:            transaction.ID,
+				Amount:        transaction.Amount,
+				Status:        transaction.Status,
+				PaymentMethod: transaction.PaymentMethod,
+			},
+			Status:                 ride.Status,
+			StartTime:              ride.StartTime,
+			DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+			DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+			RiderCurrentLatitude:   rideRequest.RiderCurrentLatitude,
+			RiderCurrentLongitude:  rideRequest.RiderCurrentLongitude,
+			EndTime:                ride.EndTime,
+			StartAddress:           ride.StartAddress,
+			EndAddress:             ride.EndAddress,
+			Fare:                   ride.Fare,
+			EncodedPolyline:        string(ride.EncodedPolyline),
+			Distance:               ride.Distance,
+			Duration:               ride.Duration,
+			StartLatitude:          ride.StartLatitude,
+			StartLongitude:         ride.StartLongitude,
+			EndLatitude:            ride.EndLatitude,
+			EndLongitude:           ride.EndLongitude,
+			Vehicle:                vehicle,
+			Waypoints:              waypointDetails,
+		})
+	}
+
+	res := schemas.GetRideHistoryResponse{
+		RideHistory: rideHistoryDetails,
+	}
+
+	// Return success response
+	response := helper.SuccessResponse(
+		res,
+		"Successfully got ride history",
+		"Đã lấy lịch sử chuyến đi thành công",
 	)
 	helper.GinResponse(ctx, 200, response)
 }
