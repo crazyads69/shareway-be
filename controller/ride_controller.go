@@ -1817,7 +1817,61 @@ func (ctrl *RideController) EndRide(ctx *gin.Context) {
 		return
 	}
 
+	// Get receiver device token to send notification
+	receiver, err := ctrl.UserService.GetUserByID(rideRequest.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get receiver details",
+			"Không thể lấy thông tin người nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	res := schemas.EndRideResponse{
+		ID:            ride.ID,
+		RideOfferID:   ride.RideOfferID,
+		RideRequestID: ride.RideRequestID,
+		Transaction: schemas.TransactionDetail{
+			ID:            transaction.ID,
+			Amount:        transaction.Amount,
+			Status:        transaction.Status,
+			PaymentMethod: transaction.PaymentMethod,
+		},
+		User: schemas.UserInfo{
+			ID:            receiver.ID,
+			FullName:      receiver.FullName,
+			PhoneNumber:   receiver.PhoneNumber,
+			AvatarURL:     receiver.AvatarURL,
+			Gender:        receiver.Gender,
+			IsMomoLinked:  receiver.IsMomoLinked,
+			BalanceInApp:  receiver.BalanceInApp,
+			AverageRating: receiver.AverageRating,
+		},
+		Status:                 ride.Status,
+		StartTime:              ride.StartTime,
+		DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+		DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+		RiderCurrentLatitude:   rideRequest.RiderCurrentLatitude,
+		RiderCurrentLongitude:  rideRequest.RiderCurrentLongitude,
+		EndTime:                ride.EndTime,
+		StartAddress:           ride.StartAddress,
+		EndAddress:             ride.EndAddress,
+		Fare:                   ride.Fare,
+		EncodedPolyline:        string(ride.EncodedPolyline),
+		Distance:               ride.Distance,
+		Duration:               ride.Duration,
+		StartLatitude:          ride.StartLatitude,
+		StartLongitude:         ride.StartLongitude,
+		EndLatitude:            ride.EndLatitude,
+		EndLongitude:           ride.EndLongitude,
+		Vehicle:                vehicle,
+		ReceiverID:             rideRequest.UserID, // ReceiverID is the hitcher's user_id
+		Waypoints:              waypointDetails,
+	}
+
+	wsRes := schemas.EndRideResponse{
 		ID:            ride.ID,
 		RideOfferID:   ride.RideOfferID,
 		RideRequestID: ride.RideRequestID,
@@ -1859,27 +1913,15 @@ func (ctrl *RideController) EndRide(ctx *gin.Context) {
 		Waypoints:              waypointDetails,
 	}
 
-	// Get receiver device token to send notification
-	receiver, err := ctrl.UserService.GetUserByID(rideRequest.UserID)
-	if err != nil {
-		response := helper.ErrorResponseWithMessage(
-			err,
-			"Failed to get receiver details",
-			"Không thể lấy thông tin người nhận",
-		)
-		helper.GinResponse(ctx, 500, response)
-		return
-	}
-
 	// Prepare the WebSocket message
 	wsMessage := schemas.WebSocketMessage{
 		UserID:  rideRequest.UserID.String(),
 		Type:    "end-ride",
-		Payload: res,
+		Payload: wsRes,
 	}
 
 	// Convert res to map[string]string
-	resMap, err := helper.ConvertToStringMap(res)
+	resMap, err := helper.ConvertToStringMap(wsRes)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
