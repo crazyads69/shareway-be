@@ -1236,6 +1236,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/chat/search-users": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Search for users by full name (case-insensitive) that have matched with user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Search for users by full name (case-insensitive) that have matched with user",
+                "parameters": [
+                    {
+                        "description": "Search users request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.SearchUsersRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Users fetched successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.SearchUsersResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/chat/send-image": {
             "post": {
                 "security": [
@@ -5029,6 +5092,30 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/schemas.UserInfo"
+                }
+            }
+        },
+        "schemas.SearchUsersRequest": {
+            "type": "object",
+            "required": [
+                "search_input"
+            ],
+            "properties": {
+                "search_input": {
+                    "description": "Search input can be username or phonenuber",
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.SearchUsersResponse": {
+            "type": "object",
+            "properties": {
+                "chatRooms": {
+                    "description": "Return chat rooms with the searched user",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ChatRoomResponse"
+                    }
                 }
             }
         },

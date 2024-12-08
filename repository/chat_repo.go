@@ -31,6 +31,7 @@ type IChatRepository interface {
 	GetChatMessages(req schemas.GetChatMessagesRequest, userID uuid.UUID) ([]migration.Chat, error)
 	UpdateCallStatus(req schemas.UpdateCallStatusRequest, userID uuid.UUID) (migration.Chat, error)
 	InitiateCall(req schemas.InitiateCallRequest, userID uuid.UUID) (migration.Chat, error)
+	SearchUsers(req schemas.SearchUsersRequest, userID uuid.UUID) ([]migration.Room, error)
 }
 
 // GetChatRoomByUserIDs fetches a chat room by the user IDs
@@ -257,6 +258,75 @@ func (r *ChatRepository) InitiateCall(req schemas.InitiateCallRequest, userID uu
 
 	// This is initiated call so no need to update the chat room lastest message
 	return newChat, nil
+}
+
+// SearchUsers searches for users by their usernames
+// func (r *ChatRepository) SearchUsers(req schemas.SearchUsersRequest, userID uuid.UUID) ([]migration.Room, error) {
+// 	var rooms []migration.Room
+
+// 	// Fetch all chat rooms for the user
+// 	err := r.db.Model(&migration.Room{}).
+// 		Where("user1_id = ?", userID).
+// 		Or("user2_id = ?", userID).
+// 		Find(&rooms).Error
+
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	// Check for chatrooms that have the searched user in the chat room (case-insensitive) user 1 or user 2
+// 	var searchRooms []migration.Room
+
+// 	for _, room := range rooms {
+// 		// Fetch the user 1 and user 2 information
+// 		var user1 migration.User
+// 		var user2 migration.User
+
+// 		err := r.db.First(&user1, room.User1ID).Error
+// 		if err != nil {
+// 			return nil, err
+// 		}
+
+// 		err = r.db.First(&user2, room.User2ID).Error
+// 		if err != nil {
+// 			return nil, err
+// 		}
+
+// 		// Check if the search input matches the user 1 username
+// 		if strings.Contains(strings.ToLower(user1.FullName), strings.ToLower(req.SearchInput)) {
+// 			searchRooms = append(searchRooms, room)
+// 		}
+
+// 		// Check if the search input matches the user 2 username
+// 		if strings.Contains(strings.ToLower(user2.FullName), strings.ToLower(req.SearchInput)) {
+// 			searchRooms = append(searchRooms, room)
+// 		}
+// 	}
+
+// 	return searchRooms, nil
+
+// }
+
+func (r *ChatRepository) SearchUsers(req schemas.SearchUsersRequest, userID uuid.UUID) ([]migration.Room, error) {
+	var rooms []migration.Room
+
+	// Use a single query to fetch rooms and user information
+	err := r.db.Table("rooms").
+		Select("rooms.*, u1.full_name as user1_name, u2.full_name as user2_name").
+		Joins("LEFT JOIN users u1 ON rooms.user1_id = u1.id").
+		Joins("LEFT JOIN users u2 ON rooms.user2_id = u2.id").
+		Where("(rooms.user1_id = ? OR rooms.user2_id = ?) AND (LOWER(u1.full_name) LIKE ? OR LOWER(u2.full_name) LIKE ?)",
+			userID, userID,
+			"%"+strings.ToLower(req.SearchInput)+"%",
+			"%"+strings.ToLower(req.SearchInput)+"%").
+		Order("rooms.last_message_at DESC").
+		Find(&rooms).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return rooms, nil
 }
 
 var _ IChatRepository = (*ChatRepository)(nil)

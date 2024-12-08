@@ -355,13 +355,13 @@ Send when driver update the ride location
 }
 ```
 
-### 10. cancel-ride
+### 10. cancel-ride-by-driver
 
 Send when the driver or hitcher want to cancel the ride
 
 ```json
 {
-  "type": "cancel-ride",
+  "type": "cancel-ride-by-driver",
   "data": {
     "ride_id": "UUID",
     "ride_offer_id": "UUID",

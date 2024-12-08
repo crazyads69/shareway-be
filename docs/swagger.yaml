@@ -1150,6 +1150,22 @@ definitions:
       user:
         $ref: '#/definitions/schemas.UserInfo'
     type: object
+  schemas.SearchUsersRequest:
+    properties:
+      search_input:
+        description: Search input can be username or phonenuber
+        type: string
+    required:
+    - search_input
+    type: object
+  schemas.SearchUsersResponse:
+    properties:
+      chatRooms:
+        description: Return chat rooms with the searched user
+        items:
+          $ref: '#/definitions/schemas.ChatRoomResponse'
+        type: array
+    type: object
   schemas.SendGiveRideRequestRequest:
     properties:
       receiverID:
@@ -2447,6 +2463,45 @@ paths:
       security:
       - BearerAuth: []
       summary: Initiate a call with a user (from user to user 1:1) using Agora RTC
+      tags:
+      - chat
+  /chat/search-users:
+    post:
+      consumes:
+      - application/json
+      description: Search for users by full name (case-insensitive) that have matched
+        with user
+      parameters:
+      - description: Search users request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.SearchUsersRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Users fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.SearchUsersResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Search for users by full name (case-insensitive) that have matched
+        with user
       tags:
       - chat
   /chat/send-image:
