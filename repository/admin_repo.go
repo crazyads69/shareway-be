@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"math"
+	"shareway/helper"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
 	"time"
@@ -65,96 +65,68 @@ func (r *AdminRepository) GetDashboardGeneralData() (schemas.DashboardGeneralDat
 		return dashboardGeneralData, err
 	}
 
-	// Get number of users this month
-	var usersThisMonth int64
+	// Get number of users this month and last month
+	var usersThisMonth, usersLastMonth int64
 	if err = r.db.Model(&migration.User{}).Where("created_at >= ?", startOfThisMonth).Count(&usersThisMonth).Error; err != nil {
 		return dashboardGeneralData, err
 	}
-
-	// Get number of users last month
-	var usersLastMonth int64
 	if err = r.db.Model(&migration.User{}).Where("created_at >= ? AND created_at < ?", startOfLastMonth, startOfThisMonth).Count(&usersLastMonth).Error; err != nil {
 		return dashboardGeneralData, err
 	}
 
 	// Calculate user change percentage
-	if usersLastMonth > 0 {
-		dashboardGeneralData.UserChange = math.Round(float64(usersThisMonth-usersLastMonth)/float64(usersLastMonth)*10000) / 100
-	} else if usersThisMonth > 0 {
-		dashboardGeneralData.UserChange = 100 // 100% increase if there were no users last month
-	}
+	dashboardGeneralData.UserChange = helper.CalculatePercentageChange(usersThisMonth, usersLastMonth)
 
 	// Get total number of completed rides
 	if err = r.db.Model(&migration.Ride{}).Where("status = ?", "completed").Count(&dashboardGeneralData.TotalRides).Error; err != nil {
 		return dashboardGeneralData, err
 	}
 
-	// Get number of completed rides this month
-	var ridesThisMonth int64
+	// Get number of completed rides this month and last month
+	var ridesThisMonth, ridesLastMonth int64
 	if err = r.db.Model(&migration.Ride{}).Where("status = ? AND created_at >= ?", "completed", startOfThisMonth).Count(&ridesThisMonth).Error; err != nil {
 		return dashboardGeneralData, err
 	}
-
-	// Get number of completed rides last month
-	var ridesLastMonth int64
 	if err = r.db.Model(&migration.Ride{}).Where("status = ? AND created_at >= ? AND created_at < ?", "completed", startOfLastMonth, startOfThisMonth).Count(&ridesLastMonth).Error; err != nil {
 		return dashboardGeneralData, err
 	}
 
 	// Calculate ride change percentage
-	if ridesLastMonth > 0 {
-		dashboardGeneralData.RideChange = math.Round(float64(ridesThisMonth-ridesLastMonth)/float64(ridesLastMonth)*10000) / 100
-	} else if ridesThisMonth > 0 {
-		dashboardGeneralData.RideChange = 100 // 100% increase if there were no rides last month
-	}
+	dashboardGeneralData.RideChange = helper.CalculatePercentageChange(ridesThisMonth, ridesLastMonth)
 
 	// Get total transactions amount
 	if err = r.db.Model(&migration.Transaction{}).Where("status = ?", "completed").Select("COALESCE(SUM(amount), 0)").Scan(&dashboardGeneralData.TotalTransactions).Error; err != nil {
 		return dashboardGeneralData, err
 	}
 
-	// Get transactions amount this month
-	var transactionsThisMonth int64
+	// Get transactions amount this month and last month
+	var transactionsThisMonth, transactionsLastMonth int64
 	if err = r.db.Model(&migration.Transaction{}).Where("status = ? AND created_at >= ?", "completed", startOfThisMonth).Select("COALESCE(SUM(amount), 0)").Scan(&transactionsThisMonth).Error; err != nil {
 		return dashboardGeneralData, err
 	}
-
-	// Get transactions amount last month
-	var transactionsLastMonth int64
 	if err = r.db.Model(&migration.Transaction{}).Where("status = ? AND created_at >= ? AND created_at < ?", "completed", startOfLastMonth, startOfThisMonth).Select("COALESCE(SUM(amount), 0)").Scan(&transactionsLastMonth).Error; err != nil {
 		return dashboardGeneralData, err
 	}
 
 	// Calculate transaction change percentage
-	if transactionsLastMonth > 0 {
-		dashboardGeneralData.TransactionChange = math.Round(float64(transactionsThisMonth-transactionsLastMonth)/float64(transactionsLastMonth)*10000) / 100
-	} else if transactionsThisMonth > 0 {
-		dashboardGeneralData.TransactionChange = 100 // 100% increase if there were no transactions last month
-	}
+	dashboardGeneralData.TransactionChange = helper.CalculatePercentageChange(transactionsThisMonth, transactionsLastMonth)
 
 	// Get total number of vehicles
 	if err = r.db.Model(&migration.Vehicle{}).Count(&dashboardGeneralData.TotalVehicles).Error; err != nil {
 		return dashboardGeneralData, err
 	}
 
-	// Get number of vehicles this month
-	var vehiclesThisMonth int64
+	// Get number of vehicles this month and last month
+	var vehiclesThisMonth, vehiclesLastMonth int64
 	if err = r.db.Model(&migration.Vehicle{}).Where("created_at >= ?", startOfThisMonth).Count(&vehiclesThisMonth).Error; err != nil {
 		return dashboardGeneralData, err
 	}
-
-	// Get number of vehicles last month
-	var vehiclesLastMonth int64
 	if err = r.db.Model(&migration.Vehicle{}).Where("created_at >= ? AND created_at < ?", startOfLastMonth, startOfThisMonth).Count(&vehiclesLastMonth).Error; err != nil {
 		return dashboardGeneralData, err
 	}
 
 	// Calculate vehicle change percentage
-	if vehiclesLastMonth > 0 {
-		dashboardGeneralData.VehicleChange = math.Round(float64(vehiclesThisMonth-vehiclesLastMonth)/float64(vehiclesLastMonth)*10000) / 100
-	} else if vehiclesThisMonth > 0 {
-		dashboardGeneralData.VehicleChange = 100 // 100% increase if there were no vehicles last month
-	}
+	dashboardGeneralData.VehicleChange = helper.CalculatePercentageChange(vehiclesThisMonth, vehiclesLastMonth)
 
 	return dashboardGeneralData, nil
 }
