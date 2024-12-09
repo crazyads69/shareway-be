@@ -175,7 +175,7 @@ func (ac *AdminController) GetUserDashboardData(ctx *gin.Context) {
 	var req schemas.FilterDashboardDataRequest
 
 	// Bind request to struct
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	if err := ctx.ShouldBind(&req); err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
 			"Failed to bind request",
@@ -279,7 +279,7 @@ func (ac *AdminController) GetRideDashboardData(ctx *gin.Context) {
 	var req schemas.FilterDashboardDataRequest
 
 	// Bind request to struct
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	if err := ctx.ShouldBind(&req); err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
 			"Failed to bind request",
@@ -383,7 +383,7 @@ func (ac *AdminController) GetTransactionDashboardData(ctx *gin.Context) {
 	var req schemas.FilterDashboardDataRequest
 
 	// Bind request to struct
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	if err := ctx.ShouldBind(&req); err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
 			"Failed to bind request",
@@ -487,7 +487,7 @@ func (ac *AdminController) GetVehicleDashboardData(ctx *gin.Context) {
 	var req schemas.FilterDashboardDataRequest
 
 	// Bind request to struct
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	if err := ctx.ShouldBind(&req); err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
 			"Failed to bind request",
