@@ -138,6 +138,7 @@ func (r *AdminRepository) GetUserDashboardData(startDate time.Time, endDate time
 	err := r.db.Model(&migration.User{}).
 		Select("DATE(created_at) as date, COUNT(*) as count").
 		Where("created_at >= ? AND created_at < ?", startDate, endDate).
+		Order("created_at ASC").
 		Group("DATE(created_at)").
 		Scan(&userDashboardData.UserStats).Error
 	if err != nil {
@@ -154,6 +155,7 @@ func (r *AdminRepository) GetRideDashboardData(startDate time.Time, endDate time
 	err := r.db.Model(&migration.Ride{}).
 		Select("DATE(created_at) as date, COUNT(*) as count").
 		Where("created_at >= ? AND created_at < ?", startDate, endDate).
+		Order("created_at ASC").
 		Group("DATE(created_at)").
 		Scan(&rideDashboardData.RideStats).Error
 	if err != nil {
@@ -170,6 +172,7 @@ func (r *AdminRepository) GetTransactionDashboardData(startDate time.Time, endDa
 	err := r.db.Model(&migration.Transaction{}).
 		Select("DATE(created_at) as date, COUNT(*) as count, COALESCE(SUM(amount), 0) as total").
 		Where("created_at >= ? AND created_at < ?", startDate, endDate).
+		Order("created_at ASC").
 		Group("DATE(created_at)").
 		Scan(&transactionDashboardData.TransactionStats).Error
 	if err != nil {
@@ -186,6 +189,8 @@ func (r *AdminRepository) GetVehicleDashboardData(startDate time.Time, endDate t
 	err := r.db.Model(&migration.Vehicle{}).
 		Select("DATE(created_at) as date, COUNT(*) as count").
 		Where("created_at >= ? AND created_at < ?", startDate, endDate).
+		// Order by created_at in ascending order to get the data in chronological order
+		Order("created_at ASC").
 		Group("DATE(created_at)").
 		Scan(&vehicleDashboardData.VehicleStats).Error
 	if err != nil {

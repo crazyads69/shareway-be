@@ -30,4 +30,5 @@ func SetupRideRouter(group *gin.RouterGroup, server *APIServer) {
 	group.GET("/get-all-pending-ride", rideController.GetAllPendingRide)
 	group.POST("/rating-ride-hitcher", rideController.RatingRideHitcher)
 	group.POST("/rating-ride-driver", rideController.RatingRideDriver)
+	group.GET("/get-ride-history", rideController.GetRideHistory)
 }

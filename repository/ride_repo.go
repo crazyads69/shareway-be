@@ -619,6 +619,7 @@ func (r *RideRepository) GetAllPendingRide(userID uuid.UUID) ([]migration.RideOf
 	// Get all ride offers that not have status cancelled or completed and not matched (status = created)
 	err := r.db.Model(&migration.RideOffer{}).
 		Where("user_id = ? AND status = 'created'", userID).
+		Order("created_at DESC").
 		Find(&rideOffers).
 		Error
 	if err != nil {
@@ -628,6 +629,7 @@ func (r *RideRepository) GetAllPendingRide(userID uuid.UUID) ([]migration.RideOf
 	// Get all ride requests that not have status cancelled or completed and not matched (status = created)
 	err = r.db.Model(&migration.RideRequest{}).
 		Where("user_id = ? AND status = 'created'", userID).
+		Order("created_at DESC").
 		Find(&rideRequests).
 		Error
 	if err != nil {
