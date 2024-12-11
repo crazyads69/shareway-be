@@ -42,6 +42,7 @@ type IAdminService interface {
 	GetRideDashboardData(filter string, customStartDate time.Time, customEndDate time.Time) (schemas.RideDashboardDataResponse, error)
 	GetTransactionDashboardData(filter string, customStartDate time.Time, customEndDate time.Time) (schemas.TransactionDashboardDataResponse, error)
 	GetVehicleDashboardData(filter string, customStartDate time.Time, customEndDate time.Time) (schemas.VehicleDashboardDataResponse, error)
+	GetUserList(req schemas.UserListRequest) ([]migration.User, int64, int64, error)
 }
 
 // CheckAdminExists checks if an admin exists with the given email and password
@@ -179,6 +180,11 @@ func (s *AdminService) GetVehicleDashboardData(filter string, customStartDate ti
 		return schemas.VehicleDashboardDataResponse{}, fmt.Errorf("invalid filter")
 	}
 	return s.repo.GetVehicleDashboardData(startDate, endDate)
+}
+
+// GetUserList gets the list of users
+func (s *AdminService) GetUserList(req schemas.UserListRequest) ([]migration.User, int64, int64, error) {
+	return s.repo.GetUserList(req)
 }
 
 // Ensure that the AdminService implements the IAdminService interface

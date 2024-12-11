@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"math"
 	"shareway/helper"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
@@ -31,6 +32,7 @@ type IAdminRepository interface {
 	GetRideDashboardData(startDate time.Time, endDate time.Time) (schemas.RideDashboardDataResponse, error)
 	GetTransactionDashboardData(startDate time.Time, endDate time.Time) (schemas.TransactionDashboardDataResponse, error)
 	GetVehicleDashboardData(startDate time.Time, endDate time.Time) (schemas.VehicleDashboardDataResponse, error)
+	GetUserList(req schemas.UserListRequest) ([]migration.User, int64, int64, error)
 }
 
 // CheckAdminExists checks if the admin exists in the database
@@ -197,6 +199,45 @@ func (r *AdminRepository) GetVehicleDashboardData(startDate time.Time, endDate t
 	}
 
 	return vehicleDashboardData, nil
+}
+
+// GetUserList gets the list of users
+func (r *AdminRepository) GetUserList(req schemas.UserListRequest) ([]migration.User, int64, int64, error) {
+	var user []migration.User
+	var totalUsers int64
+
+	query := r.db.Model(&migration.User{})
+
+	if req.SearchFullName != "" {
+		query = query.Where("LOWER(full_name) LIKE LOWER(?)", "%"+req.SearchFullName+"%")
+	}
+
+	if !req.StartDate.IsZero() {
+		query = query.Where("created_at >= ?", req.StartDate)
+	}
+	if !req.EndDate.IsZero() {
+		query = query.Where("created_at <= ?", req.EndDate)
+	}
+	if req.IsActivated != nil {
+		query = query.Where("is_activated = ?", *req.IsActivated)
+	}
+	if req.IsVerified != nil {
+		query = query.Where("is_verified = ?", *req.IsVerified)
+	}
+
+	if err := query.Count(&totalUsers).Error; err != nil {
+		return user, 0, 0, err
+	}
+
+	// Apply pagination
+	offset := (req.Page - 1) * req.Limit
+	if err := query.Offset(offset).Limit(req.Limit).Order("created_at DESC").Find(&user).Error; err != nil {
+		return user, 0, 0, err
+	}
+
+	totalPages := int64(math.Ceil(float64(totalUsers) / float64(req.Limit)))
+	return user, totalUsers, totalPages, nil
+
 }
 
 // Ensure that the AdminRepository implements the IAdminRepository interface

@@ -31,6 +31,7 @@ type IRideRepository interface {
 	RatingRideHitcher(req schemas.RatingRideHitcherRequest, userID uuid.UUID) error
 	RatingRideDriver(req schemas.RatingRideDriverRequest, userID uuid.UUID) error
 	GetRideHistory(userID uuid.UUID) ([]migration.Ride, error)
+	GetTotalRidesForUser(userID uuid.UUID) (int64, error)
 }
 
 type RideRepository struct {
@@ -777,6 +778,20 @@ func (r *RideRepository) GetRideHistory(userID uuid.UUID) ([]migration.Ride, err
 	}
 
 	return rides, nil
+}
+
+func (r *RideRepository) GetTotalRidesForUser(userID uuid.UUID) (int64, error) {
+	var totalRides int64
+	err := r.db.Model(&migration.Ride{}).
+		Where("(ride_offer_id IN (SELECT id FROM ride_offers WHERE user_id = ?) OR ride_request_id IN (SELECT id FROM ride_requests WHERE user_id = ?)) AND status IN ('completed', 'cancelled')", userID, userID).
+		Count(&totalRides).
+		Error
+
+	if err != nil {
+		return 0, err
+	}
+
+	return totalRides, nil
 }
 
 // Make sure the RideRepository implements the IRideRepository interface

@@ -28,6 +28,7 @@ type IAuthRepository interface {
 	DeleteUser(phoneNumber string) error
 	UpdateUserProfile(userID uuid.UUID, fullName string, email string, gender string) error
 	UpdateAvatar(userID uuid.UUID, avatarURL string) error
+	GetTotalTransactionsForUser(userID uuid.UUID) (int64, error)
 }
 
 // AuthRepository implements IAuthRepository
@@ -504,6 +505,16 @@ func (r *AuthRepository) UpdateAvatar(userID uuid.UUID, avatarURL string) error 
 	}
 
 	return tx.Commit().Error
+}
+
+// GetTotalTransactionsForUser fetches the total number of transactions for the given user ID
+func (r *AuthRepository) GetTotalTransactionsForUser(userID uuid.UUID) (int64, error) {
+	var totalTransactions int64
+	err := r.db.Model(&migration.Transaction{}).
+		Where("payer_id = ? OR receiver_id = ?", userID, userID).
+		Count(&totalTransactions).
+		Error
+	return totalTransactions, err
 }
 
 // Ensure AuthRepository implements IAuthRepository

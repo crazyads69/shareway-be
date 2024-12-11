@@ -18,6 +18,8 @@ type IVehicleRepository interface {
 	CaVetExists(caVet string) (bool, error)
 	GetVehicleFromID(vehicleID uuid.UUID) (schemas.VehicleDetail, error)
 	GetAllVehiclesFromUserID(userID uuid.UUID) ([]schemas.VehicleDetail, error)
+	GetTotalVehiclesForUser(userID uuid.UUID) (int64, error)
+	GetVehiclesForUser(userID uuid.UUID) ([]schemas.VehicleDetail, error)
 }
 
 type VehicleRepository struct {
@@ -160,6 +162,37 @@ func (r *VehicleRepository) GetVehicleFromID(vehicleID uuid.UUID) (schemas.Vehic
 
 // GetAllVehiclesFromUserID retrieves all vehicles for a user using the user ID
 func (r *VehicleRepository) GetAllVehiclesFromUserID(userID uuid.UUID) ([]schemas.VehicleDetail, error) {
+	var vehicles []migration.Vehicle
+	err := r.db.Select("id", "name", "fuel_consumed", "license_plate").
+		Where("user_id = ?", userID).
+		Find(&vehicles).Error
+	if err != nil {
+		return nil, err
+	}
+
+	schemaVehicles := make([]schemas.VehicleDetail, len(vehicles))
+	for i, vehicle := range vehicles {
+		schemaVehicles[i] = schemas.VehicleDetail{
+			VehicleID:    vehicle.ID,
+			Name:         vehicle.Name,
+			FuelConsumed: vehicle.FuelConsumed,
+			LicensePlate: vehicle.LicensePlate,
+		}
+	}
+	return schemaVehicles, nil
+}
+
+// GetTotalVehiclesForUser retrieves the total number of vehicles for a user
+func (r *VehicleRepository) GetTotalVehiclesForUser(userID uuid.UUID) (int64, error) {
+	var total int64
+	err := r.db.Model(&migration.Vehicle{}).
+		Where("user_id = ?", userID).
+		Count(&total).Error
+	return total, err
+}
+
+// GetVehiclesForUser retrieves all vehicles for a user using the user ID
+func (r *VehicleRepository) GetVehiclesForUser(userID uuid.UUID) ([]schemas.VehicleDetail, error) {
 	var vehicles []migration.Vehicle
 	err := r.db.Select("id", "name", "fuel_consumed", "license_plate").
 		Where("user_id = ?", userID).
