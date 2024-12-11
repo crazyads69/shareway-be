@@ -422,6 +422,15 @@ func (r *RideRepository) EndRide(req schemas.EndRideRequest, userID uuid.UUID) (
 			return err
 		}
 
+		// Get the transaction by ride ID
+		var transaction migration.Transaction
+		err = tx.Model(&migration.Transaction{}).
+			Where("ride_id = ?", req.RideID).
+			First(&transaction).Error
+		if err != nil {
+			return err
+		}
+
 		// TODO: COMMENTED OUT FOR NOW FOR BETTER TESTING
 		// // Check if the ride is already ended
 		// if ride.Status == "completed" {
@@ -454,9 +463,12 @@ func (r *RideRepository) EndRide(req schemas.EndRideRequest, userID uuid.UUID) (
 			return err
 		}
 
-		// Update the driver's current balance in app (add the fare)
-		if err := tx.Model(&migration.User{}).Where("id = ?", rideOffer.UserID).Update("balance_in_app", gorm.Expr("balance_in_app + ?", rideOffer.Fare)).Error; err != nil {
-			return err
+		// Only update the balance in app if the payment method is momo else do nothing
+		if transaction.PaymentMethod == "momo" {
+			// Update the driver's current balance in app (add the fare)
+			if err := tx.Model(&migration.User{}).Where("id = ?", rideOffer.UserID).Update("balance_in_app", gorm.Expr("balance_in_app + ?", rideOffer.Fare)).Error; err != nil {
+				return err
+			}
 		}
 
 		// Update the ride status to ended
