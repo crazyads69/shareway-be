@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
-	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -282,11 +281,7 @@ func (r *AdminRepository) GetRideList(req schemas.RideListRequest) ([]migration.
 	}
 
 	if len(req.RideStatus) > 0 {
-		// Split the ride status into individual strings
-		log.Info().Msgf("Ride status: %v", req.RideStatus)
-		// Split the first element of the ride status
 		rideStatus := strings.Split(req.RideStatus[0], ",")
-		log.Info().Msgf("Ride status after split: %v", rideStatus)
 		query = query.Where("rides.status IN (?)", rideStatus)
 	}
 
@@ -296,7 +291,8 @@ func (r *AdminRepository) GetRideList(req schemas.RideListRequest) ([]migration.
 
 	// Apply pagination
 	offset := (req.Page - 1) * req.Limit
-	if err := query.Offset(offset).Limit(req.Limit).Order("rides.created_at DESC").Find(&rides).Error; err != nil {
+	// Sort by start time in descending order by default
+	if err := query.Offset(offset).Limit(req.Limit).Order("rides.start_time DESC").Find(&rides).Error; err != nil {
 		return rides, 0, 0, err
 	}
 

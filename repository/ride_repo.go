@@ -782,7 +782,8 @@ func (r *RideRepository) GetRideHistory(userID uuid.UUID) ([]migration.Ride, err
 		Preload("RideOffer").
 		Preload("RideRequest").
 		Preload("Vehicle").
-		Order("created_at DESC").
+		Order("end_time DESC").
+		// Order("created_at DESC").
 		Find(&rides).Error
 
 	if err != nil {
