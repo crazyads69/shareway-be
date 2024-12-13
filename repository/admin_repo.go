@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -280,6 +281,8 @@ func (r *AdminRepository) GetRideList(req schemas.RideListRequest) ([]migration.
 	}
 
 	if len(req.RideStatus) > 0 {
+		// Split the ride status into individual strings
+		log.Info().Msgf("Ride status: %v", req.RideStatus)
 		query = query.Where("rides.status IN (?)", req.RideStatus)
 	}
 
