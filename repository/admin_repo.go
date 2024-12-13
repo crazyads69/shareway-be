@@ -5,6 +5,7 @@ import (
 	"shareway/helper"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -283,7 +284,10 @@ func (r *AdminRepository) GetRideList(req schemas.RideListRequest) ([]migration.
 	if len(req.RideStatus) > 0 {
 		// Split the ride status into individual strings
 		log.Info().Msgf("Ride status: %v", req.RideStatus)
-		query = query.Where("rides.status IN (?)", req.RideStatus)
+		// Split the first element of the ride status
+		rideStatus := strings.Split(req.RideStatus[0], ",")
+		log.Info().Msgf("Ride status after split: %v", rideStatus)
+		query = query.Where("rides.status IN (?)", rideStatus)
 	}
 
 	if err := query.Count(&totalRides).Error; err != nil {
