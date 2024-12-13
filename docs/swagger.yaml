@@ -1074,6 +1074,61 @@ definitions:
           $ref: '#/definitions/schemas.StatPoint'
         type: array
     type: object
+  schemas.RideDetail:
+    properties:
+      distance:
+        type: number
+      driver:
+        $ref: '#/definitions/schemas.UserInfo'
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
+      duration:
+        type: integer
+      encoded_polyline:
+        type: string
+      end_address:
+        type: string
+      end_latitude:
+        type: number
+      end_longitude:
+        type: number
+      end_time:
+        type: string
+      fare:
+        type: integer
+      hitcher:
+        $ref: '#/definitions/schemas.UserInfo'
+      ride_id:
+        type: string
+      ride_offer_id:
+        type: string
+      ride_request_id:
+        type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
+      start_address:
+        type: string
+      start_latitude:
+        type: number
+      start_longitude:
+        type: number
+      start_time:
+        type: string
+      status:
+        type: string
+      transaction:
+        $ref: '#/definitions/schemas.TransactionDetail'
+      vehicle:
+        $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
+    type: object
   schemas.RideHistoryDetail:
     properties:
       distance:
@@ -1128,6 +1183,21 @@ definitions:
         items:
           $ref: '#/definitions/schemas.Waypoint'
         type: array
+    type: object
+  schemas.RideListResponse:
+    properties:
+      current_page:
+        type: integer
+      limit:
+        type: integer
+      rides:
+        items:
+          $ref: '#/definitions/schemas.RideDetail'
+        type: array
+      total_pages:
+        type: integer
+      total_rides:
+        type: integer
     type: object
   schemas.RideOfferDetail:
     properties:
@@ -1957,6 +2027,74 @@ paths:
       security:
       - BearerAuth: []
       summary: Get the data of the dashboard for the ride
+      tags:
+      - admin
+  /admin/get-ride-list:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of rides with pagination and filters
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: Limit number for pagination (max 100)
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: Start date for custom filter (YYYY-MM-DD)
+        in: query
+        name: start_date_time
+        type: string
+      - description: End date for custom filter (YYYY-MM-DD)
+        in: query
+        name: end_date_time
+        type: string
+      - description: Optional filter for full name
+        in: query
+        name: search_full_name
+        type: string
+      - description: Optional filter for route
+        in: query
+        name: search_route
+        type: string
+      - description: Optional filter for vehicle
+        in: query
+        name: search_vehicle
+        type: string
+      - collectionFormat: csv
+        description: Optional filter for ride status
+        in: query
+        items:
+          type: string
+        name: ride_status
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Ride list
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.RideListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the list of rides with pagination and filters
       tags:
       - admin
   /admin/get-transaction-dashboard-data:

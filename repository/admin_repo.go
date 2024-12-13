@@ -33,6 +33,7 @@ type IAdminRepository interface {
 	GetTransactionDashboardData(startDate time.Time, endDate time.Time) (schemas.TransactionDashboardDataResponse, error)
 	GetVehicleDashboardData(startDate time.Time, endDate time.Time) (schemas.VehicleDashboardDataResponse, error)
 	GetUserList(req schemas.UserListRequest) ([]migration.User, int64, int64, error)
+	GetRideList(req schemas.RideListRequest) ([]migration.Ride, int64, int64, error)
 }
 
 // CheckAdminExists checks if the admin exists in the database
@@ -238,6 +239,62 @@ func (r *AdminRepository) GetUserList(req schemas.UserListRequest) ([]migration.
 	totalPages := int64(math.Ceil(float64(totalUsers) / float64(req.Limit)))
 	return user, totalUsers, totalPages, nil
 
+}
+
+// GetRideList gets the list of rides
+func (r *AdminRepository) GetRideList(req schemas.RideListRequest) ([]migration.Ride, int64, int64, error) {
+	var rides []migration.Ride
+	var totalRides int64
+
+	query := r.db.Model(&migration.Ride{}).
+		Preload("RideOffer.User").
+		Preload("RideRequest.User").
+		Preload("Vehicle").
+		Preload("RideOffer.Waypoints")
+
+	if !req.StartDate.IsZero() {
+		query = query.Where("rides.created_at >= ?", req.StartDate)
+	}
+	if !req.EndDate.IsZero() {
+		query = query.Where("rides.created_at <= ?", req.EndDate)
+	}
+
+	if req.SearchFullName != "" {
+		query = query.Joins("LEFT JOIN ride_offers ON rides.ride_offer_id = ride_offers.id").
+			Joins("LEFT JOIN ride_requests ON rides.ride_request_id = ride_requests.id").
+			Joins("LEFT JOIN users offer_user ON ride_offers.user_id = offer_user.id").
+			Joins("LEFT JOIN users request_user ON ride_requests.user_id = request_user.id").
+			Where("LOWER(offer_user.full_name) LIKE LOWER(?) OR LOWER(request_user.full_name) LIKE LOWER(?)",
+				"%"+req.SearchFullName+"%", "%"+req.SearchFullName+"%")
+	}
+
+	if req.SearchRoute != "" {
+		query = query.Where("LOWER(rides.start_address) LIKE LOWER(?) OR LOWER(rides.end_address) LIKE LOWER(?)",
+			"%"+req.SearchRoute+"%", "%"+req.SearchRoute+"%")
+	}
+
+	if req.SearchVehicle != "" {
+		query = query.Joins("LEFT JOIN vehicles ON rides.vehicle_id = vehicles.id").
+			Where("LOWER(vehicles.name) LIKE LOWER(?) OR LOWER(vehicles.license_plate) LIKE LOWER(?)",
+				"%"+req.SearchVehicle+"%", "%"+req.SearchVehicle+"%")
+	}
+
+	if len(req.RideStatus) > 0 {
+		query = query.Where("rides.status IN (?)", req.RideStatus)
+	}
+
+	if err := query.Count(&totalRides).Error; err != nil {
+		return rides, 0, 0, err
+	}
+
+	// Apply pagination
+	offset := (req.Page - 1) * req.Limit
+	if err := query.Offset(offset).Limit(req.Limit).Order("rides.created_at DESC").Find(&rides).Error; err != nil {
+		return rides, 0, 0, err
+	}
+
+	totalPages := int64(math.Ceil(float64(totalRides) / float64(req.Limit)))
+	return rides, totalRides, totalPages, nil
 }
 
 // Ensure that the AdminRepository implements the IAdminRepository interface

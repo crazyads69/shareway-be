@@ -763,3 +763,411 @@ func (ac *AdminController) GetUserList(ctx *gin.Context) {
 		helper.GinResponse(ctx, 200, response)
 	}
 }
+
+// GetRideList returns the list of rides with pagination and filters
+// @Summary Get the list of rides with pagination and filters
+// @Description Get the list of rides with pagination and filters
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int true "Page number for pagination"
+// @Param limit query int true "Limit number for pagination (max 100)"
+// @Param start_date_time query string false "Start date for custom filter (YYYY-MM-DD)"
+// @Param end_date_time query string false "End date for custom filter (YYYY-MM-DD)"
+// @Param search_full_name query string false "Optional filter for full name"
+// @Param search_route query string false "Optional filter for route"
+// @Param search_vehicle query string false "Optional filter for vehicle"
+// @Param ride_status query []string false "Optional filter for ride status"
+// @Success 200 {object} helper.Response{data=schemas.RideListResponse} "Ride list"
+// @Failure 400 {object} helper.Response "Bad request"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /admin/get-ride-list [get]
+func (ac *AdminController) GetRideList(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert the payload to a map of string and interface
+	// Convert payload to map
+	data, err := helper.ConvertToAdminPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	log.Info().Msgf("Admin ID: %s", data.AdminID)
+
+	var req schemas.RideListRequest
+
+	// Bind request to struct
+	if err := ctx.ShouldBind(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind request",
+			"Không thể bind request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Validate request
+	if err := ac.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	if req.StartDate.IsZero() {
+		// Set to the oldest time possible
+		req.StartDate = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
+	} else {
+		// Set to the start of the day
+		req.StartDate = time.Date(req.StartDate.Year(), req.StartDate.Month(), req.StartDate.Day(), 0, 0, 0, 0, time.UTC)
+	}
+
+	if req.EndDate.IsZero() {
+		req.EndDate = time.Now()
+	} else {
+		// Set to the end of the day
+		req.EndDate = time.Date(req.EndDate.Year(), req.EndDate.Month(), req.EndDate.Day(), 23, 59, 59, 0, time.UTC)
+	}
+
+	if req.StartDate.After(req.EndDate) {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("start date must be before end date"),
+			"Start date must be before end date",
+			"Ngày bắt đầu phải trước ngày kết thúc",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// // Get the list of rides
+	// rides, totalRides, totalPages, err := ac.AdminService.GetRideList(req)
+	// if err != nil {
+	// 	response := helper.ErrorResponseWithMessage(
+	// 		err,
+	// 		"Failed to get ride list",
+	// 		"Không thể lấy danh sách chuyến đi",
+	// 	)
+	// 	helper.GinResponse(ctx, 500, response)
+	// 	return
+	// }
+
+	// rideDetails := make([]schemas.RideDetail, len(rides))
+	// if len(rides) == 0 {
+	// 	response := helper.SuccessResponse(schemas.RideListResponse{
+	// 		Rides:       rideDetails,
+	// 		TotalRides:  0,
+	// 		TotalPages:  0,
+	// 		Limit:       req.Limit,
+	// 		CurrentPage: req.Page,
+	// 	}, "Ride list retrieved successfully", "Lấy danh sách chuyến đi thành công")
+	// 	helper.GinResponse(ctx, 200, response)
+	// 	return
+	// } else {
+	// 	// Get the ride details
+	// 	for i, ride := range rides {
+	// 		// Get the rideoffer details
+	// 		rideOffer, err := ac.RideService.GetRideOfferByID(ride.RideOfferID)
+	// 		if err != nil {
+	// 			response := helper.ErrorResponseWithMessage(
+	// 				err,
+	// 				"Failed to get ride offer details",
+	// 				"Không thể lấy thông tin ride offer",
+	// 			)
+	// 			helper.GinResponse(ctx, 500, response)
+	// 			return
+	// 		}
+
+	// 		// Get the driver details
+	// 		driver, err := ac.UserService.GetUserByID(rideOffer.UserID)
+	// 		if err != nil {
+	// 			response := helper.ErrorResponseWithMessage(
+	// 				err,
+	// 				"Failed to get driver details",
+	// 				"Không thể lấy thông tin tài xế",
+	// 			)
+	// 			helper.GinResponse(ctx, 500, response)
+	// 			return
+	// 		}
+
+	// 		// Get the riderequest details
+	// 		rideRequest, err := ac.RideService.GetRideRequestByID(ride.RideRequestID)
+	// 		if err != nil {
+	// 			response := helper.ErrorResponseWithMessage(
+	// 				err,
+	// 				"Failed to get ride request details",
+	// 				"Không thể lấy thông tin ride request",
+	// 			)
+	// 			helper.GinResponse(ctx, 500, response)
+	// 			return
+	// 		}
+
+	// 		// Get the hitcher details
+	// 		hitcher, err := ac.UserService.GetUserByID(rideRequest.UserID)
+	// 		if err != nil {
+	// 			response := helper.ErrorResponseWithMessage(
+	// 				err,
+	// 				"Failed to get hitcher details",
+	// 				"Không thể lấy thông tin người đi cùng",
+	// 			)
+	// 			helper.GinResponse(ctx, 500, response)
+	// 			return
+	// 		}
+
+	// 		// Get the vehicle details
+	// 		vehicle, err := ac.VehicleService.GetVehicleFromID(ride.VehicleID)
+	// 		if err != nil {
+	// 			response := helper.ErrorResponseWithMessage(
+	// 				err,
+	// 				"Failed to get vehicle details",
+	// 				"Không thể lấy thông tin xe",
+	// 			)
+	// 			helper.GinResponse(ctx, 500, response)
+	// 			return
+	// 		}
+
+	// 		// Get the ride transaction details
+	// 		transaction, err := ac.RideService.GetTransactionByRideID(ride.ID)
+	// 		if err != nil {
+	// 			response := helper.ErrorResponseWithMessage(
+	// 				err,
+	// 				"Failed to get ride transaction details",
+	// 				"Không thể lấy thông tin giao dịch của chuyến đi",
+	// 			)
+	// 			helper.GinResponse(ctx, 500, response)
+	// 			return
+	// 		}
+
+	// 		// Get the waypoints for the ride
+	// 		waypoints, err := ac.MapService.GetAllWaypoints(rideOffer.ID)
+	// 		if err != nil {
+	// 			response := helper.ErrorResponseWithMessage(
+	// 				err,
+	// 				"Failed to get waypoints for ride",
+	// 				"Không thể lấy thông tin waypoints của chuyến đi",
+	// 			)
+	// 			helper.GinResponse(ctx, 500, response)
+	// 			return
+	// 		}
+
+	// 		// Convert the waypoints to the correct format
+	// 		var waypointDetails []schemas.Waypoint
+	// 		if waypoints != nil {
+	// 			waypointDetails = make([]schemas.Waypoint, 0, len(waypoints))
+	// 			for _, waypoint := range waypoints {
+	// 				waypointDetails = append(waypointDetails, schemas.Waypoint{
+	// 					Latitude:  waypoint.Latitude,
+	// 					Longitude: waypoint.Longitude,
+	// 					Address:   waypoint.Address,
+	// 					ID:        waypoint.ID,
+	// 					Order:     waypoint.WaypointOrder,
+	// 				})
+	// 			}
+	// 		}
+
+	// 		// Append the ride details
+	// 		rideDetails[i] = schemas.RideDetail{
+	// 			ID:          ride.ID,
+	// 			RideOfferID: ride.RideOfferID,
+	// 			Driver: schemas.UserInfo{
+	// 				ID:            driver.ID,
+	// 				PhoneNumber:   driver.PhoneNumber,
+	// 				FullName:      driver.FullName,
+	// 				AvatarURL:     driver.AvatarURL,
+	// 				AverageRating: driver.AverageRating,
+	// 				Gender:        driver.Gender,
+	// 				IsMomoLinked:  driver.IsMomoLinked,
+	// 				BalanceInApp:  driver.BalanceInApp,
+	// 			},
+	// 			Hitcher: schemas.UserInfo{
+	// 				ID:            hitcher.ID,
+	// 				PhoneNumber:   hitcher.PhoneNumber,
+	// 				FullName:      hitcher.FullName,
+	// 				AvatarURL:     hitcher.AvatarURL,
+	// 				AverageRating: hitcher.AverageRating,
+	// 				Gender:        hitcher.Gender,
+	// 				IsMomoLinked:  hitcher.IsMomoLinked,
+	// 				BalanceInApp:  hitcher.BalanceInApp,
+	// 			},
+	// 			RideRequestID:   ride.RideRequestID,
+	// 			Status:          ride.Status,
+	// 			StartTime:       ride.StartTime,
+	// 			EndTime:         ride.EndTime,
+	// 			StartAddress:    ride.StartAddress,
+	// 			EndAddress:      ride.EndAddress,
+	// 			Fare:            ride.Fare,
+	// 			EncodedPolyline: string(ride.EncodedPolyline),
+	// 			Distance:        ride.Distance,
+	// 			Duration:        ride.Duration,
+	// 			Transaction: schemas.TransactionDetail{
+	// 				ID:            transaction.ID,
+	// 				Amount:        transaction.Amount,
+	// 				Status:        transaction.Status,
+	// 				PaymentMethod: transaction.PaymentMethod,
+	// 			},
+	// 			StartLatitude:          ride.StartLatitude,
+	// 			StartLongitude:         ride.StartLongitude,
+	// 			EndLatitude:            ride.EndLatitude,
+	// 			EndLongitude:           ride.EndLongitude,
+	// 			Vehicle:                vehicle,
+	// 			DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+	// 			DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+	// 			RiderCurrentLatitude:   rideRequest.RiderCurrentLatitude,
+	// 			RiderCurrentLongitude:  rideRequest.RiderCurrentLongitude,
+	// 			Waypoints:              waypointDetails,
+	// 		}
+
+	// 		res := schemas.RideListResponse{
+	// 			Rides:       rideDetails,
+	// 			TotalRides:  totalRides,
+	// 			TotalPages:  totalPages,
+	// 			Limit:       req.Limit,
+	// 			CurrentPage: req.Page,
+	// 		}
+
+	// 		response := helper.SuccessResponse(res, "Ride list retrieved successfully", "Lấy danh sách chuyến đi thành công")
+	// 		helper.GinResponse(ctx, 200, response)
+	// 	}
+
+	rides, totalRides, totalPages, err := ac.AdminService.GetRideList(req)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get ride list",
+			"Không thể lấy danh sách chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	rideDetails := make([]schemas.RideDetail, 0, len(rides))
+	for _, ride := range rides {
+		rideOffer, err := ac.RideService.GetRideOfferByID(ride.RideOfferID)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to get ride offer details")
+			continue
+		}
+
+		driver, err := ac.UserService.GetUserByID(rideOffer.UserID)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to get driver details")
+			continue
+		}
+
+		rideRequest, err := ac.RideService.GetRideRequestByID(ride.RideRequestID)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to get ride request details")
+			continue
+		}
+
+		hitcher, err := ac.UserService.GetUserByID(rideRequest.UserID)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to get hitcher details")
+			continue
+		}
+
+		vehicle, err := ac.VehicleService.GetVehicleFromID(ride.VehicleID)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to get vehicle details")
+			continue
+		}
+
+		transaction, err := ac.RideService.GetTransactionByRideID(ride.ID)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to get ride transaction details")
+			continue
+		}
+
+		waypoints, err := ac.MapService.GetAllWaypoints(rideOffer.ID)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to get waypoints for ride")
+			continue
+		}
+
+		waypointDetails := make([]schemas.Waypoint, 0, len(waypoints))
+		for _, waypoint := range waypoints {
+			waypointDetails = append(waypointDetails, schemas.Waypoint{
+				Latitude:  waypoint.Latitude,
+				Longitude: waypoint.Longitude,
+				Address:   waypoint.Address,
+				ID:        waypoint.ID,
+				Order:     waypoint.WaypointOrder,
+			})
+		}
+
+		rideDetails = append(rideDetails, schemas.RideDetail{
+			ID:          ride.ID,
+			RideOfferID: ride.RideOfferID,
+			Driver: schemas.UserInfo{
+				ID:            driver.ID,
+				PhoneNumber:   driver.PhoneNumber,
+				FullName:      driver.FullName,
+				AvatarURL:     driver.AvatarURL,
+				AverageRating: driver.AverageRating,
+				Gender:        driver.Gender,
+				IsMomoLinked:  driver.IsMomoLinked,
+				BalanceInApp:  driver.BalanceInApp,
+			},
+			Hitcher: schemas.UserInfo{
+				ID:            hitcher.ID,
+				PhoneNumber:   hitcher.PhoneNumber,
+				FullName:      hitcher.FullName,
+				AvatarURL:     hitcher.AvatarURL,
+				AverageRating: hitcher.AverageRating,
+				Gender:        hitcher.Gender,
+				IsMomoLinked:  hitcher.IsMomoLinked,
+				BalanceInApp:  hitcher.BalanceInApp,
+			},
+			RideRequestID:   ride.RideRequestID,
+			Status:          ride.Status,
+			StartTime:       ride.StartTime,
+			EndTime:         ride.EndTime,
+			StartAddress:    ride.StartAddress,
+			EndAddress:      ride.EndAddress,
+			Fare:            ride.Fare,
+			EncodedPolyline: string(ride.EncodedPolyline),
+			Distance:        ride.Distance,
+			Duration:        ride.Duration,
+			Transaction: schemas.TransactionDetail{
+				ID:            transaction.ID,
+				Amount:        transaction.Amount,
+				Status:        transaction.Status,
+				PaymentMethod: transaction.PaymentMethod,
+			},
+			StartLatitude:          ride.StartLatitude,
+			StartLongitude:         ride.StartLongitude,
+			EndLatitude:            ride.EndLatitude,
+			EndLongitude:           ride.EndLongitude,
+			Vehicle:                vehicle,
+			DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+			DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+			RiderCurrentLatitude:   rideRequest.RiderCurrentLatitude,
+			RiderCurrentLongitude:  rideRequest.RiderCurrentLongitude,
+			Waypoints:              waypointDetails,
+		})
+	}
+
+	res := schemas.RideListResponse{
+		Rides:       rideDetails,
+		TotalRides:  totalRides,
+		TotalPages:  totalPages,
+		Limit:       req.Limit,
+		CurrentPage: req.Page,
+	}
+
+	response := helper.SuccessResponse(res, "Ride list retrieved successfully", "Lấy danh sách chuyến đi thành công")
+	helper.GinResponse(ctx, 200, response)
+}

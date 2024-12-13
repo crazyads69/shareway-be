@@ -244,6 +244,114 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/get-ride-list": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the list of rides with pagination and filters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the list of rides with pagination and filters",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number for pagination",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit number for pagination (max 100)",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date for custom filter (YYYY-MM-DD)",
+                        "name": "start_date_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date for custom filter (YYYY-MM-DD)",
+                        "name": "end_date_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for full name",
+                        "name": "search_full_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for route",
+                        "name": "search_route",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for vehicle",
+                        "name": "search_vehicle",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Optional filter for ride status",
+                        "name": "ride_status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ride list",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.RideListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/get-transaction-dashboard-data": {
             "get": {
                 "security": [
@@ -5232,6 +5340,89 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.RideDetail": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "driver": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "encoded_polyline": {
+                    "type": "string"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_latitude": {
+                    "type": "number"
+                },
+                "end_longitude": {
+                    "type": "number"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "fare": {
+                    "type": "integer"
+                },
+                "hitcher": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "ride_id": {
+                    "type": "string"
+                },
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "ride_request_id": {
+                    "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_latitude": {
+                    "type": "number"
+                },
+                "start_longitude": {
+                    "type": "number"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction": {
+                    "$ref": "#/definitions/schemas.TransactionDetail"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
+                }
+            }
+        },
         "schemas.RideHistoryDetail": {
             "type": "object",
             "properties": {
@@ -5312,6 +5503,29 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/schemas.Waypoint"
                     }
+                }
+            }
+        },
+        "schemas.RideListResponse": {
+            "type": "object",
+            "properties": {
+                "current_page": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "rides": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.RideDetail"
+                    }
+                },
+                "total_pages": {
+                    "type": "integer"
+                },
+                "total_rides": {
+                    "type": "integer"
                 }
             }
         },

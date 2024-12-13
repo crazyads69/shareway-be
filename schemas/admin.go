@@ -87,3 +87,50 @@ type UserListResponse struct {
 	// The detail user response
 	Users []UserDetail `json:"users"`
 }
+
+type RideListRequest struct {
+	Page           int       `form:"page" binding:"required,min=1"`            // Page number for pagination
+	Limit          int       `form:"limit" binding:"required,min=1,max=100"`   // Limit number for pagination (max 100)
+	StartDate      time.Time `form:"start_date_time" time_format:"2006-01-02"` // Use time.Time for date parsing
+	EndDate        time.Time `form:"end_date_time" time_format:"2006-01-02"`   // Use time.Time for date parsing
+	SearchFullName string    `form:"search_full_name"`                         // Optional filter for full name
+	SearchRoute    string    `form:"search_route"`                             // Optional filter for route
+	SearchVehicle  string    `form:"search_vehicle"`                           // Optional filter for vehicle
+	RideStatus     []string  `form:"ride_status"`                              // Optional filter for ride status
+}
+
+type RideDetail struct {
+	ID                     uuid.UUID         `json:"ride_id"`
+	RideOfferID            uuid.UUID         `json:"ride_offer_id"`
+	Driver                 UserInfo          `json:"driver"`
+	Hitcher                UserInfo          `json:"hitcher"`
+	RideRequestID          uuid.UUID         `json:"ride_request_id"`
+	Status                 string            `json:"status"`
+	StartTime              time.Time         `json:"start_time"`
+	EndTime                time.Time         `json:"end_time"`
+	StartAddress           string            `json:"start_address"`
+	EndAddress             string            `json:"end_address"`
+	Fare                   int64             `json:"fare"`
+	EncodedPolyline        string            `json:"encoded_polyline"`
+	Distance               float64           `json:"distance"`
+	Duration               int               `json:"duration"`
+	Transaction            TransactionDetail `json:"transaction"`
+	StartLatitude          float64           `json:"start_latitude"`
+	StartLongitude         float64           `json:"start_longitude"`
+	EndLatitude            float64           `json:"end_latitude"`
+	EndLongitude           float64           `json:"end_longitude"`
+	Vehicle                VehicleDetail     `json:"vehicle"`
+	DriverCurrentLatitude  float64           `json:"driver_current_latitude"`
+	DriverCurrentLongitude float64           `json:"driver_current_longitude"`
+	RiderCurrentLatitude   float64           `json:"rider_current_latitude"`
+	RiderCurrentLongitude  float64           `json:"rider_current_longitude"`
+	Waypoints              []Waypoint        `json:"waypoints"`
+}
+
+type RideListResponse struct {
+	TotalPages  int64        `json:"total_pages"`
+	CurrentPage int          `json:"current_page"`
+	Limit       int          `json:"limit"`
+	TotalRides  int64        `json:"total_rides"`
+	Rides       []RideDetail `json:"rides"`
+}
