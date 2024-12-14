@@ -1823,6 +1823,45 @@ definitions:
     required:
     - vehicle_id
     type: object
+  schemas.VehicleListDetail:
+    properties:
+      cavet:
+        description: Certificate of vehicle registration each vehicle has a unique
+          number
+        type: string
+      created_at:
+        type: string
+      fuel_consumed:
+        type: number
+      id:
+        type: string
+      license_plate:
+        type: string
+      owner:
+        allOf:
+        - $ref: '#/definitions/schemas.UserInfo'
+        description: Owner info of the vehicle
+      total_rides:
+        description: Total rides of the vehicle that have been taken
+        type: integer
+      vehicle_name:
+        type: string
+    type: object
+  schemas.VehicleListResponse:
+    properties:
+      current_page:
+        type: integer
+      limit:
+        type: integer
+      total_pages:
+        type: integer
+      total_vehicles:
+        type: integer
+      vehicles:
+        items:
+          $ref: '#/definitions/schemas.VehicleListDetail'
+        type: array
+    type: object
   schemas.VerifyCCCDResponse:
     properties:
       access_token:
@@ -2291,6 +2330,71 @@ paths:
       security:
       - BearerAuth: []
       summary: Get the data of the dashboard for the vehicle
+      tags:
+      - admin
+  /admin/get-vehicle-list:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of vehicles with pagination and filters
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: Limit number for pagination (max 100)
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: Start date for custom filter (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date for custom filter (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      - description: Optional filter for owner
+        in: query
+        name: search_owner
+        type: string
+      - description: Optional filter for plate
+        in: query
+        name: search_plate
+        type: string
+      - description: Optional filter for vehicle name
+        in: query
+        name: search_vehicle_name
+        type: string
+      - description: Optional filter for cavet
+        in: query
+        name: search_cavet
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Vehicle list
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.VehicleListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the list of vehicles with pagination and filters
       tags:
       - admin
   /auth/delete-user:

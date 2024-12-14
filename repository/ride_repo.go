@@ -32,6 +32,7 @@ type IRideRepository interface {
 	RatingRideDriver(req schemas.RatingRideDriverRequest, userID uuid.UUID) error
 	GetRideHistory(userID uuid.UUID) ([]migration.Ride, error)
 	GetTotalRidesForUser(userID uuid.UUID) (int64, error)
+	GetTotalRidesForVehicle(vehicleID uuid.UUID) (int64, error)
 }
 
 type RideRepository struct {
@@ -797,6 +798,22 @@ func (r *RideRepository) GetTotalRidesForUser(userID uuid.UUID) (int64, error) {
 	var totalRides int64
 	err := r.db.Model(&migration.Ride{}).
 		Where("(ride_offer_id IN (SELECT id FROM ride_offers WHERE user_id = ?) OR ride_request_id IN (SELECT id FROM ride_requests WHERE user_id = ?)) AND status IN ('completed', 'cancelled')", userID, userID).
+		Count(&totalRides).
+		Error
+
+	if err != nil {
+		return 0, err
+	}
+
+	return totalRides, nil
+}
+
+func (r *RideRepository) GetTotalRidesForVehicle(vehicleID uuid.UUID) (int64, error) {
+	var totalRides int64
+
+	// Get rides that have been completed with the vehicle
+	err := r.db.Model(&migration.Ride{}).
+		Where("vehicle_id = ? AND status = 'completed'", vehicleID).
 		Count(&totalRides).
 		Error
 

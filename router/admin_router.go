@@ -24,4 +24,5 @@ func SetupAdminRouter(group *gin.RouterGroup, server *APIServer) {
 	group.GET("/get-vehicle-dashboard-data", adminController.GetVehicleDashboardData)
 	group.GET("/get-user-list", adminController.GetUserList)
 	group.GET("/get-ride-list", adminController.GetRideList)
+	group.GET("/get-vehicle-list", adminController.GetVehicleList)
 }

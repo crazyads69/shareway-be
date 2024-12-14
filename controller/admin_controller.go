@@ -1171,3 +1171,179 @@ func (ac *AdminController) GetRideList(ctx *gin.Context) {
 	response := helper.SuccessResponse(res, "Ride list retrieved successfully", "Lấy danh sách chuyến đi thành công")
 	helper.GinResponse(ctx, 200, response)
 }
+
+// GetVehicleList returns the list of vehicles with pagination and filters
+// @Summary Get the list of vehicles with pagination and filters
+// @Description Get the list of vehicles with pagination and filters
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int true "Page number for pagination"
+// @Param limit query int true "Limit number for pagination (max 100)"
+// @Param start_date query string false "Start date for custom filter (YYYY-MM-DD)"
+// @Param end_date query string false "End date for custom filter (YYYY-MM-DD)"
+// @Param search_owner query string false "Optional filter for owner"
+// @Param search_plate query string false "Optional filter for plate"
+// @Param search_vehicle_name query string false "Optional filter for vehicle name"
+// @Param search_cavet query string false "Optional filter for cavet"
+// @Success 200 {object} helper.Response{data=schemas.VehicleListResponse} "Vehicle list"
+// @Failure 400 {object} helper.Response "Bad request"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /admin/get-vehicle-list [get]
+func (ac *AdminController) GetVehicleList(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert the payload to a map of string and interface
+	// Convert payload to map
+	data, err := helper.ConvertToAdminPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	log.Info().Msgf("Admin ID: %s", data.AdminID)
+
+	var req schemas.VehicleListRequest
+
+	// Bind request to struct
+	if err := ctx.ShouldBind(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind request",
+			"Không thể bind request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Validate request
+	if err := ac.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	if req.StartDate.IsZero() {
+		// Set to the oldest time possible
+		req.StartDate = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
+	} else {
+		// Set to the start of the day
+		req.StartDate = time.Date(req.StartDate.Year(), req.StartDate.Month(), req.StartDate.Day(), 0, 0, 0, 0, time.UTC)
+	}
+
+	if req.EndDate.IsZero() {
+		req.EndDate = time.Now()
+	} else {
+		// Set to the end of the day
+		req.EndDate = time.Date(req.EndDate.Year(), req.EndDate.Month(), req.EndDate.Day(), 23, 59, 59, 0, time.UTC)
+	}
+
+	if req.StartDate.After(req.EndDate) {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("start date must be before end date"),
+			"Start date must be before end date",
+			"Ngày bắt đầu phải trước ngày kết thúc",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Get the list of vehicles
+	vehicles, totalVehicles, totalPages, err := ac.AdminService.GetVehicleList(req)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get vehicle list",
+			"Không thể lấy danh sách xe",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	vehicleDetails := make([]schemas.VehicleListDetail, len(vehicles))
+
+	// Check if vehicles is empty
+	if len(vehicles) == 0 {
+		response := helper.SuccessResponse(schemas.VehicleListResponse{
+			Vehicles:      vehicleDetails,
+			TotalVehicles: 0,
+			TotalPages:    0,
+			Limit:         req.Limit,
+			CurrentPage:   req.Page,
+		}, "Vehicle list retrieved successfully", "Lấy danh sách xe thành công")
+		helper.GinResponse(ctx, 200, response)
+		return
+	} else {
+		// Get the vehicle details
+		for i, vehicle := range vehicles {
+			// Get the owner details
+			owner, err := ac.UserService.GetUserByID(vehicle.UserID)
+			if err != nil {
+				response := helper.ErrorResponseWithMessage(
+					err,
+					"Failed to get owner details",
+					"Không thể lấy thông tin chủ xe",
+				)
+				helper.GinResponse(ctx, 500, response)
+				return
+			}
+
+			// Get the total number of rides that completed with this vehicle
+			totalRides, err := ac.RideService.GetTotalRidesForVehicle(vehicle.ID)
+			if err != nil {
+				response := helper.ErrorResponseWithMessage(
+					err,
+					"Failed to get total rides for vehicle",
+					"Không thể lấy tổng số chuyến đi của xe",
+				)
+				helper.GinResponse(ctx, 500, response)
+				return
+			}
+
+			// Get the vehicle details
+			vehicleDetails[i] = schemas.VehicleListDetail{
+				ID:        vehicle.ID,
+				CreatedAt: vehicle.CreatedAt,
+				Owner: schemas.UserInfo{
+					ID:            owner.ID,
+					PhoneNumber:   owner.PhoneNumber,
+					FullName:      owner.FullName,
+					AvatarURL:     owner.AvatarURL,
+					AverageRating: owner.AverageRating,
+					Gender:        owner.Gender,
+					IsMomoLinked:  owner.IsMomoLinked,
+					BalanceInApp:  owner.BalanceInApp,
+				},
+				LicensePlate: vehicle.LicensePlate,
+				VehicleName:  vehicle.Name,
+				CaVet:        vehicle.CaVet,
+				FuelConsumed: vehicle.FuelConsumed,
+				TotalRides:   totalRides,
+			}
+		}
+
+		// Return the list of vehicles
+		res := schemas.VehicleListResponse{
+			Vehicles:      vehicleDetails,
+			TotalVehicles: totalVehicles,
+			TotalPages:    totalPages,
+			Limit:         req.Limit,
+			CurrentPage:   req.Page,
+		}
+		response := helper.SuccessResponse(res, "Vehicle list retrieved successfully", "Lấy danh sách xe thành công")
+		helper.GinResponse(ctx, 200, response)
+	}
+}

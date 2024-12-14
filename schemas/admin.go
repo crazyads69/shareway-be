@@ -134,3 +134,33 @@ type RideListResponse struct {
 	TotalRides  int64        `json:"total_rides"`
 	Rides       []RideDetail `json:"rides"`
 }
+
+type VehicleListRequest struct {
+	Page              int       `form:"page" binding:"required,min=1"`          // Page number for pagination
+	Limit             int       `form:"limit" binding:"required,min=1,max=100"` // Limit number for pagination (max 100)
+	StartDate         time.Time `form:"start_date" time_format:"2006-01-02"`    // Use time.Time for date parsing
+	EndDate           time.Time `form:"end_date" time_format:"2006-01-02"`      // Use time.Time for date parsing
+	SearchOwner       string    `form:"search_owner"`                           // Optional filter for owner
+	SearchPlate       string    `form:"search_plate"`                           // Optional filter for plate
+	SearchVehicleName string    `form:"search_vehicle_name"`                    // Optional filter for vehicle name
+	SearchCavet       string    `form:"search_cavet"`                           // Optional filter for cavet
+}
+
+type VehicleListDetail struct {
+	Owner        UserInfo  `json:"owner"` // Owner info of the vehicle
+	ID           uuid.UUID `json:"id"`
+	CreatedAt    time.Time `json:"created_at"`
+	LicensePlate string    `json:"license_plate"`
+	VehicleName  string    `json:"vehicle_name"`
+	CaVet        string    `json:"cavet"` // Certificate of vehicle registration each vehicle has a unique number
+	FuelConsumed float64   `json:"fuel_consumed"`
+	TotalRides   int64     `json:"total_rides"` // Total rides of the vehicle that have been taken
+}
+
+type VehicleListResponse struct {
+	TotalPages    int64               `json:"total_pages"`
+	CurrentPage   int                 `json:"current_page"`
+	Limit         int                 `json:"limit"`
+	TotalVehicles int64               `json:"total_vehicles"`
+	Vehicles      []VehicleListDetail `json:"vehicles"`
+}

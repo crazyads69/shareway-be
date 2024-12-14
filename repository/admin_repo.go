@@ -35,6 +35,7 @@ type IAdminRepository interface {
 	GetVehicleDashboardData(startDate time.Time, endDate time.Time) (schemas.VehicleDashboardDataResponse, error)
 	GetUserList(req schemas.UserListRequest) ([]migration.User, int64, int64, error)
 	GetRideList(req schemas.RideListRequest) ([]migration.Ride, int64, int64, error)
+	GetVehicleList(req schemas.VehicleListRequest) ([]migration.Vehicle, int64, int64, error)
 }
 
 // CheckAdminExists checks if the admin exists in the database
@@ -298,6 +299,51 @@ func (r *AdminRepository) GetRideList(req schemas.RideListRequest) ([]migration.
 
 	totalPages := int64(math.Ceil(float64(totalRides) / float64(req.Limit)))
 	return rides, totalRides, totalPages, nil
+}
+
+// GetVehicleList gets the list of vehicles
+func (r *AdminRepository) GetVehicleList(req schemas.VehicleListRequest) ([]migration.Vehicle, int64, int64, error) {
+	var vehicles []migration.Vehicle
+	var totalVehicles int64
+
+	query := r.db.Model(&migration.Vehicle{}).Preload("User").Preload("VehicleType")
+
+	if !req.StartDate.IsZero() {
+		query = query.Where("vehicles.created_at >= ?", req.StartDate)
+	}
+
+	if !req.EndDate.IsZero() {
+		query = query.Where("vehicles.created_at <= ?", req.EndDate)
+	}
+
+	if req.SearchOwner != "" {
+		query = query.Joins("LEFT JOIN users ON vehicles.user_id = users.id").
+			Where("LOWER(users.full_name) LIKE LOWER(?)", "%"+req.SearchOwner+"%")
+	}
+
+	if req.SearchPlate != "" {
+		query = query.Where("LOWER(license_plate) LIKE LOWER(?)", "%"+req.SearchPlate+"%")
+	}
+
+	if req.SearchVehicleName != "" {
+		query = query.Where("LOWER(name) LIKE LOWER(?)", "%"+req.SearchVehicleName+"%")
+	}
+
+	if req.SearchCavet != "" {
+		query = query.Where("LOWER(cavet) LIKE LOWER(?)", "%"+req.SearchCavet+"%")
+	}
+
+	if err := query.Count(&totalVehicles).Error; err != nil {
+		return vehicles, 0, 0, err
+	}
+
+	// Apply pagination
+	offset := (req.Page - 1) * req.Limit
+	if err := query.Offset(offset).Limit(req.Limit).Order("vehicles.created_at DESC").Find(&vehicles).Error; err != nil {
+		return vehicles, 0, 0, err
+	}
+	totalPages := int64(math.Ceil(float64(totalVehicles) / float64(req.Limit)))
+	return vehicles, totalVehicles, totalPages, nil
 }
 
 // Ensure that the AdminRepository implements the IAdminRepository interface
