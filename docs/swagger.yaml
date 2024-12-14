@@ -1522,6 +1522,38 @@ definitions:
       transaction_id:
         type: string
     type: object
+  schemas.TransactionListDetail:
+    properties:
+      amount:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: string
+      payment_method:
+        type: string
+      payment_status:
+        type: string
+      receiver:
+        $ref: '#/definitions/schemas.UserInfo'
+      sender:
+        $ref: '#/definitions/schemas.UserInfo'
+    type: object
+  schemas.TransactionListResponse:
+    properties:
+      current_page:
+        type: integer
+      limit:
+        type: integer
+      total_pages:
+        type: integer
+      total_transactions:
+        type: integer
+      transactions:
+        items:
+          $ref: '#/definitions/schemas.TransactionListDetail'
+        type: array
+    type: object
   schemas.UpdateAvatarResponse:
     properties:
       user:
@@ -2179,6 +2211,85 @@ paths:
       security:
       - BearerAuth: []
       summary: Get the data of the dashboard for the transaction
+      tags:
+      - admin
+  /admin/get-transaction-list:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of transactions with pagination and filters
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: Limit number for pagination (max 100)
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: Start date for custom filter (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date for custom filter (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      - description: Optional filter for sender
+        in: query
+        name: search_sender
+        type: string
+      - description: Optional filter for receiver
+        in: query
+        name: search_receiver
+        type: string
+      - collectionFormat: csv
+        description: Optional filter for payment method
+        in: query
+        items:
+          type: string
+        name: payment_method
+        type: array
+      - collectionFormat: csv
+        description: Optional filter for payment status
+        in: query
+        items:
+          type: string
+        name: payment_status
+        type: array
+      - description: Optional filter for minimum amount
+        in: query
+        name: min_amount
+        type: integer
+      - description: Optional filter for maximum amount
+        in: query
+        name: max_amount
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transaction list
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.TransactionListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the list of transactions with pagination and filters
       tags:
       - admin
   /admin/get-user-dashboard-data:

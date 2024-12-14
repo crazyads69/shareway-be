@@ -36,6 +36,7 @@ type IAdminRepository interface {
 	GetUserList(req schemas.UserListRequest) ([]migration.User, int64, int64, error)
 	GetRideList(req schemas.RideListRequest) ([]migration.Ride, int64, int64, error)
 	GetVehicleList(req schemas.VehicleListRequest) ([]migration.Vehicle, int64, int64, error)
+	GetTransactionList(req schemas.TransactionListRequest) ([]migration.Transaction, int64, int64, error)
 }
 
 // CheckAdminExists checks if the admin exists in the database
@@ -344,6 +345,63 @@ func (r *AdminRepository) GetVehicleList(req schemas.VehicleListRequest) ([]migr
 	}
 	totalPages := int64(math.Ceil(float64(totalVehicles) / float64(req.Limit)))
 	return vehicles, totalVehicles, totalPages, nil
+}
+
+// GetTransactionList gets the list of transactions
+func (r *AdminRepository) GetTransactionList(req schemas.TransactionListRequest) ([]migration.Transaction, int64, int64, error) {
+	var transactions []migration.Transaction
+	var totalTransactions int64
+
+	query := r.db.Model(&migration.Transaction{}).
+		Preload("Payer").
+		Preload("Receiver")
+
+	if !req.StartDate.IsZero() {
+		query = query.Where("transactions.created_at >= ?", req.StartDate)
+	}
+
+	if !req.EndDate.IsZero() {
+		query = query.Where("transactions.created_at <= ?", req.EndDate)
+	}
+
+	if req.SearchSender != "" {
+		query = query.Joins("JOIN users AS payer ON transactions.payer_id = payer.id").
+			Where("LOWER(payer.full_name) LIKE LOWER(?)", "%"+req.SearchSender+"%")
+	}
+
+	if req.SearchReceiver != "" {
+		query = query.Joins("JOIN users AS receiver ON transactions.receiver_id = receiver.id").
+			Where("LOWER(receiver.full_name) LIKE LOWER(?)", "%"+req.SearchReceiver+"%")
+	}
+
+	if len(req.PaymentMethod) > 0 {
+		query = query.Where("transactions.payment_method IN (?)", req.PaymentMethod)
+	}
+
+	if len(req.PaymentStatus) > 0 {
+		query = query.Where("transactions.status IN (?)", req.PaymentStatus)
+	}
+
+	if req.MinAmount > 0 {
+		query = query.Where("transactions.amount >= ?", req.MinAmount)
+	}
+
+	if req.MaxAmount > 0 {
+		query = query.Where("transactions.amount <= ?", req.MaxAmount)
+	}
+
+	if err := query.Count(&totalTransactions).Error; err != nil {
+		return transactions, 0, 0, err
+	}
+
+	// Apply pagination
+	offset := (req.Page - 1) * req.Limit
+	if err := query.Offset(offset).Limit(req.Limit).Order("transactions.created_at DESC").Find(&transactions).Error; err != nil {
+		return transactions, 0, 0, err
+	}
+
+	totalPages := int64(math.Ceil(float64(totalTransactions) / float64(req.Limit)))
+	return transactions, totalTransactions, totalPages, nil
 }
 
 // Ensure that the AdminRepository implements the IAdminRepository interface

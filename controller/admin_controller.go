@@ -1347,3 +1347,188 @@ func (ac *AdminController) GetVehicleList(ctx *gin.Context) {
 		helper.GinResponse(ctx, 200, response)
 	}
 }
+
+// GetTransactionList returns the list of transactions with pagination and filters
+// @Summary Get the list of transactions with pagination and filters
+// @Description Get the list of transactions with pagination and filters
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int true "Page number for pagination"
+// @Param limit query int true "Limit number for pagination (max 100)"
+// @Param start_date query string false "Start date for custom filter (YYYY-MM-DD)"
+// @Param end_date query string false "End date for custom filter (YYYY-MM-DD)"
+// @Param search_sender query string false "Optional filter for sender"
+// @Param search_receiver query string false "Optional filter for receiver"
+// @Param payment_method query []string false "Optional filter for payment method"
+// @Param payment_status query []string false "Optional filter for payment status"
+// @Param min_amount query int64 false "Optional filter for minimum amount"
+// @Param max_amount query int64 false "Optional filter for maximum amount"
+// @Success 200 {object} helper.Response{data=schemas.TransactionListResponse} "Transaction list"
+// @Failure 400 {object} helper.Response "Bad request"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /admin/get-transaction-list [get]
+func (ac *AdminController) GetTransactionList(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert the payload to a map of string and interface
+	// Convert payload to map
+	data, err := helper.ConvertToAdminPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	log.Info().Msgf("Admin ID: %s", data.AdminID)
+
+	var req schemas.TransactionListRequest
+
+	// Bind request to struct
+	if err := ctx.ShouldBind(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind request",
+			"Không thể bind request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Validate request
+	if err := ac.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	if req.StartDate.IsZero() {
+		// Set to the oldest time possible
+		req.StartDate = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
+	} else {
+		// Set to the start of the day
+		req.StartDate = time.Date(req.StartDate.Year(), req.StartDate.Month(), req.StartDate.Day(), 0, 0, 0, 0, time.UTC)
+	}
+
+	if req.EndDate.IsZero() {
+		req.EndDate = time.Now()
+	} else {
+		// Set to the end of the day
+		req.EndDate = time.Date(req.EndDate.Year(), req.EndDate.Month(), req.EndDate.Day(), 23, 59, 59, 0, time.UTC)
+	}
+
+	if req.StartDate.After(req.EndDate) {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("start date must be before end date"),
+			"Start date must be before end date",
+			"Ngày bắt đầu phải trước ngày kết thúc",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Get the list of transactions
+	transactions, totalTransactions, totalPages, err := ac.AdminService.GetTransactionList(req)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get transaction list",
+			"Không thể lấy danh sách giao dịch",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	transactionDetails := make([]schemas.TransactionListDetail, len(transactions))
+
+	// Check if transactions is empty
+	if len(transactions) == 0 {
+		response := helper.SuccessResponse(schemas.TransactionListResponse{
+			Transactions:      transactionDetails,
+			TotalTransactions: totalTransactions,
+			TotalPages:        totalPages,
+			Limit:             req.Limit,
+			CurrentPage:       req.Page,
+		}, "Transaction list retrieved successfully", "Lấy danh sách giao dịch thành công")
+		helper.GinResponse(ctx, 200, response)
+		return
+	} else {
+		// Get the transaction details
+		for i, transaction := range transactions {
+			// Get the sender details
+			sender, err := ac.UserService.GetUserByID(transaction.PayerID)
+			if err != nil {
+				response := helper.ErrorResponseWithMessage(
+					err,
+					"Failed to get sender details",
+					"Không thể lấy thông tin người gửi",
+				)
+				helper.GinResponse(ctx, 500, response)
+				return
+			}
+
+			// Get the receiver details
+			receiver, err := ac.UserService.GetUserByID(transaction.ReceiverID)
+			if err != nil {
+				response := helper.ErrorResponseWithMessage(
+					err,
+					"Failed to get receiver details",
+					"Không thể lấy thông tin người nhận",
+				)
+				helper.GinResponse(ctx, 500, response)
+				return
+			}
+
+			// Append the transaction details
+			transactionDetails[i] = schemas.TransactionListDetail{
+				ID:        transaction.ID,
+				CreatedAt: transaction.CreatedAt,
+				Sender: schemas.UserInfo{
+					ID:            sender.ID,
+					PhoneNumber:   sender.PhoneNumber,
+					FullName:      sender.FullName,
+					AvatarURL:     sender.AvatarURL,
+					AverageRating: sender.AverageRating,
+					Gender:        sender.Gender,
+					IsMomoLinked:  sender.IsMomoLinked,
+					BalanceInApp:  sender.BalanceInApp,
+				},
+				Receiver: schemas.UserInfo{
+					ID:            receiver.ID,
+					PhoneNumber:   receiver.PhoneNumber,
+					FullName:      receiver.FullName,
+					AvatarURL:     receiver.AvatarURL,
+					AverageRating: receiver.AverageRating,
+					Gender:        receiver.Gender,
+					IsMomoLinked:  receiver.IsMomoLinked,
+					BalanceInApp:  receiver.BalanceInApp,
+				},
+				Amount:        transaction.Amount,
+				PaymentStatus: transaction.Status,
+				PaymentMethod: transaction.PaymentMethod,
+			}
+		}
+
+		res := schemas.TransactionListResponse{
+			Transactions:      transactionDetails,
+			TotalTransactions: totalTransactions,
+			TotalPages:        totalPages,
+			Limit:             req.Limit,
+			CurrentPage:       req.Page,
+		}
+		response := helper.SuccessResponse(res, "Transaction list retrieved successfully", "Lấy danh sách giao dịch thành công")
+		helper.GinResponse(ctx, 200, response)
+	}
+}

@@ -164,3 +164,34 @@ type VehicleListResponse struct {
 	TotalVehicles int64               `json:"total_vehicles"`
 	Vehicles      []VehicleListDetail `json:"vehicles"`
 }
+
+type TransactionListRequest struct {
+	Page           int       `form:"page" binding:"required,min=1"`          // Page number for pagination
+	Limit          int       `form:"limit" binding:"required,min=1,max=100"` // Limit number for pagination (max 100)
+	StartDate      time.Time `form:"start_date" time_format:"2006-01-02"`    // Use time.Time for date parsing
+	EndDate        time.Time `form:"end_date" time_format:"2006-01-02"`      // Use time.Time for date parsing
+	SearchSender   string    `form:"search_sender"`                          // Optional filter for sender
+	SearchReceiver string    `form:"search_receiver"`                        // Optional filter for receiver
+	PaymentMethod  []string  `form:"payment_method"`                         // Optional filter for payment method
+	PaymentStatus  []string  `form:"payment_status"`                         // Optional filter for payment status
+	MinAmount      int64     `form:"min_amount"`                             // Optional filter for min amount
+	MaxAmount      int64     `form:"max_amount"`                             // Optional filter for max amount
+}
+
+type TransactionListDetail struct {
+	ID            uuid.UUID `json:"id"`
+	CreatedAt     time.Time `json:"created_at"`
+	Sender        UserInfo  `json:"sender"`
+	Receiver      UserInfo  `json:"receiver"`
+	Amount        int64     `json:"amount"`
+	PaymentMethod string    `json:"payment_method"`
+	PaymentStatus string    `json:"payment_status"`
+}
+
+type TransactionListResponse struct {
+	TotalPages        int64                   `json:"total_pages"`
+	CurrentPage       int                     `json:"current_page"`
+	Limit             int                     `json:"limit"`
+	TotalTransactions int64                   `json:"total_transactions"`
+	Transactions      []TransactionListDetail `json:"transactions"`
+}

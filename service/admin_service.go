@@ -45,6 +45,7 @@ type IAdminService interface {
 	GetUserList(req schemas.UserListRequest) ([]migration.User, int64, int64, error)
 	GetRideList(req schemas.RideListRequest) ([]migration.Ride, int64, int64, error)
 	GetVehicleList(req schemas.VehicleListRequest) ([]migration.Vehicle, int64, int64, error)
+	GetTransactionList(req schemas.TransactionListRequest) ([]migration.Transaction, int64, int64, error)
 }
 
 // CheckAdminExists checks if an admin exists with the given email and password
@@ -197,6 +198,11 @@ func (s *AdminService) GetRideList(req schemas.RideListRequest) ([]migration.Rid
 // GetVehicleList gets the list of vehicles
 func (s *AdminService) GetVehicleList(req schemas.VehicleListRequest) ([]migration.Vehicle, int64, int64, error) {
 	return s.repo.GetVehicleList(req)
+}
+
+// GetTransactionList gets the list of transactions
+func (s *AdminService) GetTransactionList(req schemas.TransactionListRequest) ([]migration.Transaction, int64, int64, error) {
+	return s.repo.GetTransactionList(req)
 }
 
 // Ensure that the AdminService implements the IAdminService interface
