@@ -375,11 +375,13 @@ func (r *AdminRepository) GetTransactionList(req schemas.TransactionListRequest)
 	}
 
 	if len(req.PaymentMethod) > 0 {
-		query = query.Where("transactions.payment_method IN (?)", req.PaymentMethod)
+		paymentMethod := strings.Split(req.PaymentMethod[0], ",")
+		query = query.Where("transactions.payment_method IN (?)", paymentMethod)
 	}
 
 	if len(req.PaymentStatus) > 0 {
-		query = query.Where("transactions.status IN (?)", req.PaymentStatus)
+		paymentStatus := strings.Split(req.PaymentStatus[0], ",")
+		query = query.Where("transactions.status IN (?)", paymentStatus)
 	}
 
 	if req.MinAmount > 0 {
