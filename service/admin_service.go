@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"shareway/helper"
 	"shareway/infra/bucket"
 	"shareway/infra/db/migration"
 	"shareway/infra/ws"
@@ -16,6 +18,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/phpdave11/gofpdf"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -54,6 +57,7 @@ type IAdminService interface {
 	GetDashboardData(req schemas.DashboardReportRequest) (schemas.ReportData, error)
 	AnalyzeDashboardData(data schemas.ReportData) (string, error)
 	CreateExcelReport(data schemas.ReportData, analysis string) (*bytes.Buffer, error)
+	CreatePDFReport(data schemas.ReportData, analysis string) (*bytes.Buffer, error)
 }
 
 // CheckAdminExists checks if an admin exists with the given email and password
@@ -560,6 +564,127 @@ func (s *AdminService) CreateExcelReport(data schemas.ReportData, analysis strin
 	}
 
 	return buffer, nil
+}
+
+// CreatePDFReport creates a PDF report from the data and analysis
+func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string) (*bytes.Buffer, error) {
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.SetFont("Arial", "", 12)
+	pdf.AddPage()
+
+	// **Section 1: Report Title**
+	pdf.SetFont("Arial", "B", 16)
+	pdf.Cell(0, 10, "Báo cáo Bảng Điều Khiển")
+	pdf.Ln(15)
+
+	// **Section 2: Summary Data**
+	pdf.SetFont("Arial", "B", 14)
+	pdf.Cell(0, 10, "1. Tổng Quan")
+	pdf.Ln(12)
+
+	pdf.SetFont("Arial", "", 12)
+	pdf.CellFormat(70, 10, "Tổng số người dùng:", "", 0, "", false, 0, "")
+	pdf.CellFormat(40, 10, fmt.Sprintf("%d", data.TotalUsers), "", 1, "", false, 0, "")
+	pdf.CellFormat(70, 10, "Người dùng hoạt động:", "", 0, "", false, 0, "")
+	pdf.CellFormat(40, 10, fmt.Sprintf("%d", data.ActiveUsers), "", 1, "", false, 0, "")
+	pdf.CellFormat(70, 10, "Tổng số chuyến đi:", "", 0, "", false, 0, "")
+	pdf.CellFormat(40, 10, fmt.Sprintf("%d", data.TotalRides), "", 1, "", false, 0, "")
+	pdf.CellFormat(70, 10, "Chuyến đi hoàn thành:", "", 0, "", false, 0, "")
+	pdf.CellFormat(40, 10, fmt.Sprintf("%d", data.CompletedRides), "", 1, "", false, 0, "")
+	pdf.CellFormat(70, 10, "Chuyến đi bị hủy:", "", 0, "", false, 0, "")
+	pdf.CellFormat(40, 10, fmt.Sprintf("%d", data.CancelledRides), "", 1, "", false, 0, "")
+	pdf.CellFormat(70, 10, "Tổng giá trị giao dịch (VND):", "", 0, "", false, 0, "")
+	pdf.CellFormat(40, 10, fmt.Sprintf("%d", data.TotalTransactions), "", 1, "", false, 0, "")
+	pdf.CellFormat(70, 10, "Đánh giá trung bình:", "", 0, "", false, 0, "")
+	pdf.CellFormat(40, 10, fmt.Sprintf("%.2f", data.AverageRating), "", 1, "", false, 0, "")
+	pdf.Ln(10)
+
+	// **Section 3: Analysis**
+	pdf.SetFont("Arial", "B", 14)
+	pdf.Cell(0, 10, "2. Phân Tích")
+	pdf.Ln(12)
+
+	pdf.SetFont("Arial", "", 12)
+	pdf.MultiCell(0, 10, analysis, "", "", false)
+	pdf.Ln(10)
+
+	// **Section 4: Popular Routes**
+	pdf.AddPage()
+	pdf.SetFont("Arial", "B", 14)
+	pdf.Cell(0, 10, "3. Tuyến Đường Phổ Biến")
+	pdf.Ln(12)
+
+	// Table header
+	pdf.SetFillColor(200, 200, 200)
+	pdf.SetFont("Arial", "B", 12)
+	pdf.CellFormat(60, 10, "Địa chỉ bắt đầu", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(60, 10, "Địa chỉ kết thúc", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(30, 10, "Số lượt", "1", 1, "C", true, 0, "")
+
+	// Table data
+	pdf.SetFont("Arial", "", 12)
+	for _, route := range data.PopularRoutes {
+		pdf.CellFormat(60, 10, route.StartAddress, "1", 0, "", false, 0, "")
+		pdf.CellFormat(60, 10, route.EndAddress, "1", 0, "", false, 0, "")
+		pdf.CellFormat(30, 10, fmt.Sprintf("%d", route.Count), "1", 1, "", false, 0, "")
+	}
+	pdf.Ln(10)
+
+	// **Section 5: Vehicle Type Distribution**
+	pdf.SetFont("Arial", "B", 14)
+	pdf.Cell(0, 10, "4. Phân Bố Loại Xe")
+	pdf.Ln(12)
+
+	// Table header
+	pdf.SetFillColor(200, 200, 200)
+	pdf.SetFont("Arial", "B", 12)
+	pdf.CellFormat(70, 10, "Loại xe", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(40, 10, "Số lượng", "1", 1, "C", true, 0, "")
+
+	// Table data
+	pdf.SetFont("Arial", "", 12)
+	for _, vehicle := range data.VehicleTypeDistribution {
+		pdf.CellFormat(70, 10, vehicle.Type, "1", 0, "", false, 0, "")
+		pdf.CellFormat(40, 10, fmt.Sprintf("%d", vehicle.Count), "1", 1, "", false, 0, "")
+	}
+	pdf.Ln(10)
+
+	// **Section 6: Charts**
+	pdf.AddPage()
+	pdf.SetFont("Arial", "B", 14)
+	pdf.Cell(0, 10, "5. Biểu Đồ")
+	pdf.Ln(12)
+
+	// Generate and add User Growth chart
+	userGrowthChartPath := "user_growth_chart.png"
+	err := helper.GenerateUserGrowthChart(data.UserGrowth, userGrowthChartPath)
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(userGrowthChartPath)
+
+	pdf.ImageOptions(userGrowthChartPath, 15, pdf.GetY(), 180, 90, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
+	pdf.Ln(95)
+
+	// Generate and add Transactions by Day chart
+	transactionChartPath := "transaction_chart.png"
+	err = helper.GenerateTransactionChart(data.TransactionByDay, transactionChartPath)
+	if err != nil {
+		return nil, err
+	}
+	defer os.Remove(transactionChartPath)
+
+	pdf.ImageOptions(transactionChartPath, 15, pdf.GetY(), 180, 90, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
+	pdf.Ln(95)
+
+	// Output to buffer
+	buf := new(bytes.Buffer)
+	err = pdf.Output(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf, nil
 }
 
 // Ensure that the AdminService implements the IAdminService interface

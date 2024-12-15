@@ -2059,7 +2059,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get the excel file of the report details
+      description: Get the PDF file of the report details
       parameters:
       - description: Start date for custom filter (YYYY-MM-DD)
         in: query
@@ -2070,10 +2070,10 @@ paths:
         name: end_date
         type: string
       produces:
-      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      - application/pdf
       responses:
         "200":
-          description: Excel file" application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+          description: PDF file" application/pdf
           schema:
             type: file
         "400":
@@ -2086,7 +2086,7 @@ paths:
             $ref: '#/definitions/helper.Response'
       security:
       - BearerAuth: []
-      summary: Get the excel file of the report details
+      summary: Get the PDF file of the report details
       tags:
       - admin
   /admin/get-ride-dashboard-data:

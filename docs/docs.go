@@ -178,17 +178,17 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get the excel file of the report details",
+                "description": "Get the PDF file of the report details",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    "application/pdf"
                 ],
                 "tags": [
                     "admin"
                 ],
-                "summary": "Get the excel file of the report details",
+                "summary": "Get the PDF file of the report details",
                 "parameters": [
                     {
                         "type": "string",
@@ -205,7 +205,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Excel file\" application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "description": "PDF file\" application/pdf",
                         "schema": {
                             "type": "file"
                         }
