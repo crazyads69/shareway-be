@@ -195,3 +195,44 @@ type TransactionListResponse struct {
 	TotalTransactions int64                   `json:"total_transactions"`
 	Transactions      []TransactionListDetail `json:"transactions"`
 }
+
+// For report request
+type ReportData struct {
+	TotalUsers              int64
+	ActiveUsers             int64
+	TotalRides              int64
+	CompletedRides          int64
+	CancelledRides          int64
+	TotalTransactions       int64
+	AverageRating           float64
+	PopularRoutes           []PopularRoute
+	UserGrowth              []UserGrowthData
+	TransactionByDay        []TransactionDayData
+	VehicleTypeDistribution []VehicleTypeData
+}
+
+type PopularRoute struct {
+	StartAddress string
+	EndAddress   string
+	Count        int64
+}
+
+type UserGrowthData struct {
+	Date  time.Time
+	Count int64
+}
+
+type TransactionDayData struct {
+	Date        time.Time
+	Transaction int64
+}
+
+type VehicleTypeData struct {
+	Type  string
+	Count int64
+}
+
+type DashboardReportRequest struct {
+	StartDate time.Time `form:"start_date" time_format:"2006-01-02"` // Use time.Time for date parsing
+	EndDate   time.Time `form:"end_date" time_format:"2006-01-02"`   // Use time.Time for date parsing
+}

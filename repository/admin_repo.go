@@ -37,6 +37,7 @@ type IAdminRepository interface {
 	GetRideList(req schemas.RideListRequest) ([]migration.Ride, int64, int64, error)
 	GetVehicleList(req schemas.VehicleListRequest) ([]migration.Vehicle, int64, int64, error)
 	GetTransactionList(req schemas.TransactionListRequest) ([]migration.Transaction, int64, int64, error)
+	GetDashboardData(req schemas.DashboardReportRequest) (schemas.ReportData, error)
 }
 
 // CheckAdminExists checks if the admin exists in the database
@@ -404,6 +405,88 @@ func (r *AdminRepository) GetTransactionList(req schemas.TransactionListRequest)
 
 	totalPages := int64(math.Ceil(float64(totalTransactions) / float64(req.Limit)))
 	return transactions, totalTransactions, totalPages, nil
+}
+
+// GetDashboardData gets the data for the dashboard report
+func (r *AdminRepository) GetDashboardData(req schemas.DashboardReportRequest) (schemas.ReportData, error) {
+	var reportData schemas.ReportData
+
+	// Tổng số người dùng
+	if err := r.db.Model(&migration.User{}).Count(&reportData.TotalUsers).Error; err != nil {
+		return reportData, err
+	}
+
+	// Số người dùng hoạt động (có chuyến đi trong khoảng thời gian)
+	if err := r.db.Model(&migration.Ride{}).Where("start_time BETWEEN ? AND ?", req.StartDate, req.EndDate).Distinct("ride_offer.user_id").Count(&reportData.ActiveUsers).Error; err != nil {
+		return reportData, err
+	}
+
+	// Tổng số chuyến đi
+	if err := r.db.Model(&migration.Ride{}).Count(&reportData.TotalRides).Error; err != nil {
+		return reportData, err
+	}
+
+	// Số chuyến đi hoàn thành
+	if err := r.db.Model(&migration.Ride{}).Where("status = ?", "completed").Count(&reportData.CompletedRides).Error; err != nil {
+		return reportData, err
+	}
+
+	// Số chuyến đi bị hủy
+	if err := r.db.Model(&migration.Ride{}).Where("status = ?", "cancelled").Count(&reportData.CancelledRides).Error; err != nil {
+		return reportData, err
+	}
+
+	// Tổng giá tri giao dịch
+	if err := r.db.Model(&migration.Transaction{}).Where("status = ?", "completed").Select("COALESCE(SUM(amount), 0)").Scan(&reportData.TotalTransactions).Error; err != nil {
+		return reportData, err
+	}
+
+	// Đánh giá trung bình
+	if err := r.db.Model(&migration.Rating{}).Select("AVG(rating)").Scan(&reportData.AverageRating).Error; err != nil {
+		return reportData, err
+	}
+
+	// Các tuyến đường phổ biến
+	if err := r.db.Model(&migration.Ride{}).
+		Select("start_address, end_address, COUNT(*) as count").
+		Group("start_address, end_address").
+		Order("count DESC").
+		Limit(10).
+		Scan(&reportData.PopularRoutes).Error; err != nil {
+		return reportData, err
+	}
+
+	// Tăng trưởng người dùng theo ngày
+	if err := r.db.Model(&migration.User{}).
+		Select("DATE(created_at) as date, COUNT(*) as count").
+		Where("created_at BETWEEN ? AND ?", req.StartDate, req.EndDate).
+		Group("DATE(created_at)").
+		Order("date").
+		Scan(&reportData.UserGrowth).Error; err != nil {
+		return reportData, err
+	}
+
+	// Doanh thu theo ngày
+	if err := r.db.Model(&migration.Transaction{}).
+		Select("DATE(created_at) as date, SUM(amount) as transaction").
+		Where("created_at BETWEEN ? AND ? AND status = ?", req.StartDate, req.EndDate, "completed").
+		Group("DATE(created_at)").
+		Order("date").
+		Scan(&reportData.TransactionByDay).Error; err != nil {
+		return reportData, err
+	}
+
+	// Phân bố loại xe
+	if err := r.db.Model(&migration.Vehicle{}).
+		Select("vehicle_types.name as type, COUNT(*) as count").
+		Joins("JOIN vehicle_types ON vehicles.vehicle_type_id = vehicle_types.id").
+		Group("vehicle_types.name").
+		Scan(&reportData.VehicleTypeDistribution).Error; err != nil {
+		return reportData, err
+	}
+
+	return reportData, nil
+
 }
 
 // Ensure that the AdminRepository implements the IAdminRepository interface

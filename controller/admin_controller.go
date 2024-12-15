@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"net/http"
 	"shareway/helper"
 	"shareway/middleware"
 	"shareway/schemas"
@@ -1531,4 +1532,118 @@ func (ac *AdminController) GetTransactionList(ctx *gin.Context) {
 		response := helper.SuccessResponse(res, "Transaction list retrieved successfully", "Lấy danh sách giao dịch thành công")
 		helper.GinResponse(ctx, 200, response)
 	}
+}
+
+// GetReportDetails returns the excel file of the report details
+// @Summary Get the excel file of the report details
+// @Description Get the excel file of the report details
+// @Tags admin
+// @Accept json
+// @Produce application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+// @Security BearerAuth
+// @Param start_date query string false "Start date for custom filter (YYYY-MM-DD)"
+// @Param end_date query string false "End date for custom filter (YYYY-MM-DD)"
+// @Success 200 {file} file "Excel file" application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+// @Failure 400 {object} helper.Response "Bad request"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /admin/get-report-details [get]
+func (ac *AdminController) GetReportDetails(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert the payload to a map of string and interface
+	// Convert payload to map
+	data, err := helper.ConvertToAdminPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	log.Info().Msgf("Admin ID: %s", data.AdminID)
+
+	var req schemas.DashboardReportRequest
+
+	// Bind request to struct
+	if err := ctx.ShouldBind(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind request",
+			"Không thể bind request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Validate request
+	if err := ac.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	if req.StartDate.IsZero() {
+		// Set to the oldest time possible
+		req.StartDate = time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC)
+	} else {
+		// Set to the start of the day
+		req.StartDate = time.Date(req.StartDate.Year(), req.StartDate.Month(), req.StartDate.Day(), 0, 0, 0, 0, time.UTC)
+	}
+
+	if req.EndDate.IsZero() {
+		req.EndDate = time.Now()
+	} else {
+		// Set to the end of the day
+		req.EndDate = time.Date(req.EndDate.Year(), req.EndDate.Month(), req.EndDate.Day(), 23, 59, 59, 0, time.UTC)
+	}
+
+	if req.StartDate.After(req.EndDate) {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("start date must be before end date"),
+			"Start date must be before end date",
+			"Ngày bắt đầu phải trước ngày kết thúc",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Get the report details data
+	dashboardData, err := ac.AdminService.GetDashboardData(req)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(err, "Failed to get dashboard data", "Không thể lấy dữ liệu dashboard")
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	analysis, err := ac.AdminService.AnalyzeDashboardData(dashboardData)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(err, "Failed to analyze dashboard data", "Không thể phân tích dữ liệu dashboard")
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	excelBuffer, err := ac.AdminService.CreateExcelReport(dashboardData, analysis)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(err, "Failed to create Excel report", "Không thể tạo báo cáo Excel")
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Create file name
+	fileName := fmt.Sprintf("report-from-%s-to-%s.xlsx", req.StartDate.Format("2006-01-02"), req.EndDate.Format("2006-01-02"))
+
+	// Return the excel file
+	ctx.Header("Content-Description", "File Transfer")
+	ctx.Header("Content-Disposition", "attachment; filename="+fileName)
+	ctx.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelBuffer.Bytes())
 }

@@ -2055,6 +2055,40 @@ paths:
       summary: Get the profile of the admin
       tags:
       - admin
+  /admin/get-report-details:
+    get:
+      consumes:
+      - application/json
+      description: Get the excel file of the report details
+      parameters:
+      - description: Start date for custom filter (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date for custom filter (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      responses:
+        "200":
+          description: Excel file" application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+          schema:
+            type: file
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the excel file of the report details
+      tags:
+      - admin
   /admin/get-ride-dashboard-data:
     get:
       consumes:
