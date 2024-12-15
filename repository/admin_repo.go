@@ -417,7 +417,11 @@ func (r *AdminRepository) GetDashboardData(req schemas.DashboardReportRequest) (
 	}
 
 	// Số người dùng hoạt động (có chuyến đi trong khoảng thời gian)
-	if err := r.db.Model(&migration.Ride{}).Where("start_time BETWEEN ? AND ?", req.StartDate, req.EndDate).Distinct("ride_offer.user_id").Count(&reportData.ActiveUsers).Error; err != nil {
+	if err := r.db.Model(&migration.Ride{}).
+		Joins("JOIN ride_offers ON rides.ride_offer_id = ride_offers.id").
+		Where("rides.start_time BETWEEN ? AND ?", req.StartDate, req.EndDate).
+		Distinct("ride_offers.user_id").
+		Count(&reportData.ActiveUsers).Error; err != nil {
 		return reportData, err
 	}
 
