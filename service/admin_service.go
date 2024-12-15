@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"shareway/helper"
@@ -478,7 +479,20 @@ func (s *AdminService) CreateExcelReport(data schemas.ReportData, analysis strin
 	// Popular Routes Sheet
 	if len(data.PopularRoutes) > 0 {
 		routesSheet := "Tuyến đường phổ biến"
-		createRoutesSheet(f, routesSheet, data.PopularRoutes, headerStyle, dataStyle, numberStyle)
+		f.NewSheet(routesSheet)
+		f.SetColWidth(routesSheet, "A", "C", 25)
+
+		// Set title
+		f.MergeCell(routesSheet, "A1", "C1")
+		f.SetCellValue(routesSheet, "A1", routesSheet)
+
+		headers := []string{"Địa chỉ bắt đầu", "Địa chỉ kết thúc", "Số lượt"}
+		var routesData [][]interface{}
+		for _, route := range data.PopularRoutes {
+			routesData = append(routesData, []interface{}{route.StartAddress, route.EndAddress, route.Count})
+		}
+
+		setTableData(f, routesSheet, headers, routesData, headerStyle, dataStyle, numberStyle, 2)
 	}
 
 	// Transaction Sheet
@@ -524,8 +538,11 @@ func setTableData(f *excelize.File, sheet string, headers []string, data [][]int
 }
 
 func createChartSheet(f *excelize.File, sheet string, data []schemas.VehicleTypeData, headerStyle, dataStyle int, chartStyle *excelize.Chart) {
+	log.Printf("Creating chart sheet with %d data points", len(data))
+
 	f.NewSheet(sheet)
 	f.SetColWidth(sheet, "A", "B", 20)
+	f.SetColWidth(sheet, "D", "K", 15) // Space for chart
 
 	// Set title
 	f.MergeCell(sheet, "A1", "B1")
@@ -534,30 +551,44 @@ func createChartSheet(f *excelize.File, sheet string, data []schemas.VehicleType
 	headers := []string{"Loại xe", "Số lượng"}
 	var chartData [][]interface{}
 	for _, vt := range data {
+		log.Printf("Adding data point: %s - %d", vt.Type, vt.Count)
 		chartData = append(chartData, []interface{}{vt.Type, vt.Count})
 	}
 
 	setTableData(f, sheet, headers, chartData, headerStyle, dataStyle, dataStyle, 2)
 
+	if len(data) == 0 {
+		log.Printf("No data available for chart")
+		return
+	}
+
 	pieChartStyle := *chartStyle
 	pieChartStyle.Type = excelize.Pie
 	pieChartStyle.Series = []excelize.ChartSeries{
 		{
-			Name:       sheet,
+			Name:       "Vehicle Distribution",
 			Categories: fmt.Sprintf("%s!$A$3:$A$%d", sheet, len(data)+2),
 			Values:     fmt.Sprintf("%s!$B$3:$B$%d", sheet, len(data)+2),
 		},
 	}
 	pieChartStyle.Title = []excelize.RichTextRun{{Text: sheet}}
+	pieChartStyle.Dimension = excelize.ChartDimension{
+		Width:  480,
+		Height: 290,
+	}
 
-	f.AddChart(sheet, "D2", &pieChartStyle)
+	err := f.AddChart(sheet, "D2", &pieChartStyle)
+	if err != nil {
+		log.Printf("Error adding chart: %v", err)
+	}
 }
 
+// Update time series function for UserGrowthData
 func createTimeSeriesSheet(f *excelize.File, sheet string, data []schemas.UserGrowthData, headerStyle, dataStyle, numberStyle int, chartStyle *excelize.Chart) {
 	f.NewSheet(sheet)
 	f.SetColWidth(sheet, "A", "B", 20)
+	f.SetColWidth(sheet, "D", "K", 15) // Space for chart
 
-	// Set title
 	f.MergeCell(sheet, "A1", "B1")
 	f.SetCellValue(sheet, "A1", sheet)
 
@@ -581,45 +612,43 @@ func createTimeSeriesSheet(f *excelize.File, sheet string, data []schemas.UserGr
 	lineChartStyle.Title = []excelize.RichTextRun{{Text: sheet}}
 	lineChartStyle.XAxis = excelize.ChartAxis{MajorUnit: 1}
 	lineChartStyle.YAxis = excelize.ChartAxis{MajorUnit: 10}
-
-	f.AddChart(sheet, "D2", &lineChartStyle)
-}
-
-func createAnalysisSheet(f *excelize.File, sheet string, analysis string, titleStyle int) {
-	f.NewSheet(sheet)
-	f.SetColWidth(sheet, "A", "A", 100)
-
-	// Set title
-	f.SetCellValue(sheet, "A1", "Phân tích chi tiết")
-	f.SetCellStyle(sheet, "A1", "A1", titleStyle)
-	f.SetRowHeight(sheet, 1, 30)
-
-	// Set analysis content
-	f.SetCellValue(sheet, "A2", analysis)
-}
-
-func createRoutesSheet(f *excelize.File, sheet string, data []schemas.PopularRoute, headerStyle, dataStyle, numberStyle int) {
-	f.NewSheet(sheet)
-	f.SetColWidth(sheet, "A", "C", 30)
-
-	// Set title
-	f.MergeCell(sheet, "A1", "C1")
-	f.SetCellValue(sheet, "A1", sheet)
-
-	headers := []string{"Địa chỉ bắt đầu", "Địa chỉ kết thúc", "Tổng số lần"}
-	var routeData [][]interface{}
-	for _, route := range data {
-		routeData = append(routeData, []interface{}{route.StartAddress, route.EndAddress, route.Count})
+	lineChartStyle.Dimension = excelize.ChartDimension{
+		Width:  480,
+		Height: 290,
 	}
 
-	setTableData(f, sheet, headers, routeData, headerStyle, dataStyle, numberStyle, 2)
+	err := f.AddChart(sheet, "D2", &lineChartStyle)
+	if err != nil {
+		log.Printf("Error adding chart: %v", err)
+	}
+}
+
+// Update transaction function for TransactionDayData
+func createAnalysisSheet(f *excelize.File, sheet string, analysis string, titleStyle int) {
+	f.NewSheet(sheet)
+	f.SetColWidth(sheet, "A", "B", 100)
+
+	// Set title
+	f.MergeCell(sheet, "A1", "B1")
+	f.SetCellValue(sheet, "A1", "Phân tích chi tiết")
+	f.SetCellStyle(sheet, "A1", "B1", titleStyle)
+
+	// Set analysis text with word wrap
+	analysisStyle, _ := f.NewStyle(&excelize.Style{
+		Font:      &excelize.Font{Size: 11, Family: "Arial"},
+		Alignment: &excelize.Alignment{Horizontal: "left", Vertical: "top", WrapText: true},
+	})
+
+	f.SetCellStyle(sheet, "A2", "A2", analysisStyle)
+	f.SetRowHeight(sheet, 2, 400) // Adjust row height to accommodate the text
+	f.SetCellValue(sheet, "A2", analysis)
 }
 
 func createTransactionSheet(f *excelize.File, sheet string, data []schemas.TransactionDayData, headerStyle, dataStyle, numberStyle int, chartStyle *excelize.Chart) {
 	f.NewSheet(sheet)
 	f.SetColWidth(sheet, "A", "B", 20)
+	f.SetColWidth(sheet, "D", "K", 15) // Space for chart
 
-	// Set title
 	f.MergeCell(sheet, "A1", "B1")
 	f.SetCellValue(sheet, "A1", sheet)
 
@@ -643,8 +672,15 @@ func createTransactionSheet(f *excelize.File, sheet string, data []schemas.Trans
 	colChartStyle.Title = []excelize.RichTextRun{{Text: sheet}}
 	colChartStyle.XAxis = excelize.ChartAxis{MajorUnit: 1}
 	colChartStyle.YAxis = excelize.ChartAxis{MajorUnit: 1000000}
+	colChartStyle.Dimension = excelize.ChartDimension{
+		Width:  480,
+		Height: 290,
+	}
 
-	f.AddChart(sheet, "D2", &colChartStyle)
+	err := f.AddChart(sheet, "D2", &colChartStyle)
+	if err != nil {
+		log.Printf("Error adding chart: %v", err)
+	}
 }
 
 // CreatePDFReport creates a PDF report from the data and analysis
