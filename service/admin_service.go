@@ -251,13 +251,8 @@ func (s *AdminService) AnalyzeDashboardData(data schemas.ReportData) (string, er
 		Model: "google/gemini-exp-1206:free",
 		Messages: []schemas.Message{
 			{
-				Role: "user",
-				Content: []schemas.Content{
-					{
-						Type: "text",
-						Text: prompt,
-					},
-				},
+				Role:    "user",
+				Content: prompt,
 			},
 		},
 	}
@@ -307,7 +302,12 @@ func (s *AdminService) AnalyzeDashboardData(data schemas.ReportData) (string, er
 	// Extract the response
 	response := openRouterResponse.Choices[0].Message.Content
 
-	return response, nil
+	// Check if the response is a string
+	if str, ok := response.(string); ok {
+		return str, nil
+	} else {
+		return "", fmt.Errorf("invalid response from OpenRouter")
+	}
 }
 
 // CreateExcelReport creates an Excel report from the data and analysis
