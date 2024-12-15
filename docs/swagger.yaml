@@ -2070,10 +2070,10 @@ paths:
         name: end_date
         type: string
       produces:
-      - application/pdf
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
       responses:
         "200":
-          description: PDF file" application/pdf
+          description: PDF file" application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
           schema:
             type: file
         "400":

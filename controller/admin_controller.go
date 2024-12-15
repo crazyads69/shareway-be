@@ -1539,11 +1539,11 @@ func (ac *AdminController) GetTransactionList(ctx *gin.Context) {
 // @Description Get the PDF file of the report details
 // @Tags admin
 // @Accept json
-// @Produce application/pdf
+// @Produce application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 // @Security BearerAuth
 // @Param start_date query string false "Start date for custom filter (YYYY-MM-DD)"
 // @Param end_date query string false "End date for custom filter (YYYY-MM-DD)"
-// @Success 200 {file} file "PDF file" application/pdf
+// @Success 200 {file} file "PDF file" application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 // @Failure 400 {object} helper.Response "Bad request"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /admin/get-report-details [get]
@@ -1632,27 +1632,26 @@ func (ac *AdminController) GetReportDetails(ctx *gin.Context) {
 		return
 	}
 
-	// excelBuffer, err := ac.AdminService.CreateExcelReport(dashboardData, analysis)
-	// if err != nil {
-	// 	response := helper.ErrorResponseWithMessage(err, "Failed to create Excel report", "Không thể tạo báo cáo Excel")
-	// 	helper.GinResponse(ctx, 500, response)
-	// 	return
-	// }
-
-	// Generate PDF report
-	pdfBuffer, err := ac.AdminService.CreatePDFReport(dashboardData, analysis)
+	excelBuffer, err := ac.AdminService.CreateExcelReport(dashboardData, analysis)
 	if err != nil {
-		response := helper.ErrorResponseWithMessage(err, "Failed to create PDF report", "Không thể tạo báo cáo PDF")
+		response := helper.ErrorResponseWithMessage(err, "Failed to create Excel report", "Không thể tạo báo cáo Excel")
 		helper.GinResponse(ctx, 500, response)
 		return
 	}
 
+	// // Generate PDF report
+	// pdfBuffer, err := ac.AdminService.CreatePDFReport(dashboardData, analysis)
+	// if err != nil {
+	// 	response := helper.ErrorResponseWithMessage(err, "Failed to create PDF report", "Không thể tạo báo cáo PDF")
+	// 	helper.GinResponse(ctx, 500, response)
+	// 	return
+	// }
+
 	// Create file name
-	fileName := fmt.Sprintf("report-from-%s-to-%s.pdf", req.StartDate.Format("2006-01-02"), req.EndDate.Format("2006-01-02"))
+	fileName := fmt.Sprintf("report-from-%s-to-%s.xlsx", req.StartDate.Format("2006-01-02"), req.EndDate.Format("2006-01-02"))
 
 	// Return the excel file
 	ctx.Header("Content-Description", "File Transfer")
 	ctx.Header("Content-Disposition", "attachment; filename="+fileName)
-	ctx.Data(http.StatusOK, "application/pdf", pdfBuffer.Bytes())
-	// ctx.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelBuffer.Bytes())
+	ctx.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelBuffer.Bytes())
 }

@@ -183,7 +183,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "produces": [
-                    "application/pdf"
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 ],
                 "tags": [
                     "admin"
@@ -205,7 +205,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "PDF file\" application/pdf",
+                        "description": "PDF file\" application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         "schema": {
                             "type": "file"
                         }
