@@ -13,7 +13,6 @@ import (
 	"shareway/schemas"
 	"shareway/util"
 	"shareway/util/sanctum"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -322,7 +321,7 @@ Mỗi phần nên ngắn gọn, súc tích và dễ hiểu.`,
 	}
 }
 
-// // CreateExcelReport creates an Excel report from the data and analysis
+// CreateExcelReport creates an Excel report from the data and analysis
 // func (s *AdminService) CreateExcelReport(data schemas.ReportData, analysis string) (*bytes.Buffer, error) {
 // 	f := excelize.NewFile()
 
@@ -390,173 +389,170 @@ Mỗi phần nên ngắn gọn, súc tích và dễ hiểu.`,
 func (s *AdminService) CreateExcelReport(data schemas.ReportData, analysis string) (*bytes.Buffer, error) {
 	f := excelize.NewFile()
 
-	// Định nghĩa các style
-	titleStyle, _ := f.NewStyle(&excelize.Style{
-		Font: &excelize.Font{
-			Bold: true,
-			Size: 14,
-		},
-		Alignment: &excelize.Alignment{
-			Horizontal: "center",
-		},
-	})
-	headerStyle, _ := f.NewStyle(&excelize.Style{
-		Font: &excelize.Font{
-			Bold: true,
-		},
-		Fill: excelize.Fill{
-			Type:    "pattern",
-			Pattern: 1,
-			Color:   []string{"#E0EBF5"},
-		},
-		Alignment: &excelize.Alignment{
-			Horizontal: "center",
-		},
-	})
-	numberStyle, _ := f.NewStyle(&excelize.Style{
-		NumFmt: 43,
-	})
-
 	// Tạo sheet tổng quan
-	f.NewSheet("Tổng quan")
-	f.SetCellValue("Tổng quan", "A1", "Báo cáo Tổng quan")
-	f.MergeCell("Tổng quan", "A1", "B1")
-	f.SetCellStyle("Tổng quan", "A1", "B1", titleStyle)
+	overviewSheet := "Tổng quan"
+	f.NewSheet(overviewSheet)
+	f.SetColWidth(overviewSheet, "A", "B", 25)
 
+	// Tạo tiêu đề
+	titleStyle, _ := f.NewStyle(&excelize.Style{
+		Font:      &excelize.Font{Bold: true, Size: 16, Color: "#1F497D"},
+		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center"},
+	})
+	f.MergeCell(overviewSheet, "A1", "B1")
+	f.SetCellValue(overviewSheet, "A1", "Báo cáo Tổng quan")
+	f.SetCellStyle(overviewSheet, "A1", "B1", titleStyle)
+	f.SetRowHeight(overviewSheet, 1, 30)
+
+	// Tạo bảng tổng quan
 	headers := []string{"Chỉ số", "Giá trị"}
-	reportData := [][]interface{}{
+	overviewData := [][]interface{}{
 		{"Tổng số người dùng", data.TotalUsers},
 		{"Người dùng hoạt động", data.ActiveUsers},
 		{"Tổng số chuyến đi", data.TotalRides},
-		{"Số chuyến đi hoàn thành", data.CompletedRides},
-		{"Số chuyến đi bị hủy", data.CancelledRides},
+		{"Chuyến đi hoàn thành", data.CompletedRides},
+		{"Chuyến đi bị hủy", data.CancelledRides},
 		{"Tổng giá trị giao dịch", data.TotalTransactions},
 		{"Trung bình đánh giá", data.AverageRating},
 	}
 
+	headerStyle, _ := f.NewStyle(&excelize.Style{
+		Font:      &excelize.Font{Bold: true, Color: "#FFFFFF"},
+		Fill:      excelize.Fill{Type: "pattern", Color: []string{"#4472C4"}, Pattern: 1},
+		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center"},
+		Border: []excelize.Border{{Type: "left", Color: "#000000", Style: 1},
+			{Type: "top", Color: "#000000", Style: 1},
+			{Type: "bottom", Color: "#000000", Style: 1},
+			{Type: "right", Color: "#000000", Style: 1}},
+	})
+
+	dataStyle, _ := f.NewStyle(&excelize.Style{
+		Border: []excelize.Border{{Type: "left", Color: "#000000", Style: 1},
+			{Type: "top", Color: "#000000", Style: 1},
+			{Type: "bottom", Color: "#000000", Style: 1},
+			{Type: "right", Color: "#000000", Style: 1}},
+	})
+
 	for col, header := range headers {
-		cell := fmt.Sprintf("%c2", 'A'+col)
-		f.SetCellValue("Tổng quan", cell, header)
-		f.SetCellStyle("Tổng quan", cell, cell, headerStyle)
+		cell := fmt.Sprintf("%s3", string(rune('A'+col)))
+		f.SetCellValue(overviewSheet, cell, header)
+		f.SetCellStyle(overviewSheet, cell, cell, headerStyle)
 	}
 
-	for row, record := range reportData {
+	for row, record := range overviewData {
 		for col, value := range record {
-			cell := fmt.Sprintf("%c%d", 'A'+col, row+3)
-			f.SetCellValue("Tổng quan", cell, value)
-			if col == 1 {
-				f.SetCellStyle("Tổng quan", cell, cell, numberStyle)
-			}
+			cell := fmt.Sprintf("%s%d", string(rune('A'+col)), row+4)
+			f.SetCellValue(overviewSheet, cell, value)
+			f.SetCellStyle(overviewSheet, cell, cell, dataStyle)
 		}
 	}
 
-	f.SetColWidth("Tổng quan", "A", "B", 25)
+	// Tạo biểu đồ tròn cho phân bố loại xe
+	pieChart := "Phân bố loại xe"
+	f.NewSheet(pieChart)
+	f.SetColWidth(pieChart, "A", "B", 20)
 
-	// Tạo biểu đồ tròn cho tỷ lệ chuyến đi hoàn thành/hủy
-	if err := createPieChart(f, "Tổng quan", "D2", "Tỷ lệ chuyến đi", data.CompletedRides, data.CancelledRides); err != nil {
+	f.SetCellValue(pieChart, "A1", "Loại xe")
+	f.SetCellValue(pieChart, "B1", "Số lượng")
+	for i, vt := range data.VehicleTypeDistribution {
+		f.SetCellValue(pieChart, fmt.Sprintf("A%d", i+2), vt.Type)
+		f.SetCellValue(pieChart, fmt.Sprintf("B%d", i+2), vt.Count)
+	}
+
+	if err := f.AddChart(pieChart, "D2", &excelize.Chart{
+		Type: excelize.Pie,
+		Series: []excelize.ChartSeries{
+			{
+				Name:       "Phân bố loại xe",
+				Categories: fmt.Sprintf("%s!$A$2:$A$%d", pieChart, len(data.VehicleTypeDistribution)+1),
+				Values:     fmt.Sprintf("%s!$B$2:$B$%d", pieChart, len(data.VehicleTypeDistribution)+1),
+			},
+		},
+		Title: []excelize.RichTextRun{
+			{Text: "Phân bố loại xe"},
+		},
+	}); err != nil {
 		return nil, err
 	}
-
-	// Tạo sheet cho các tuyến đường phổ biến
-	f.NewSheet("Tuyến đường phổ biến")
-	f.SetCellValue("Tuyến đường phổ biến", "A1", "Các Tuyến Đường Phổ Biến")
-	f.MergeCell("Tuyến đường phổ biến", "A1", "C1")
-	f.SetCellStyle("Tuyến đường phổ biến", "A1", "C1", titleStyle)
-
-	headers = []string{"Địa chỉ bắt đầu", "Địa chỉ kết thúc", "Tổng số lần"}
-	for col, header := range headers {
-		cell := fmt.Sprintf("%c2", 'A'+col)
-		f.SetCellValue("Tuyến đường phổ biến", cell, header)
-		f.SetCellStyle("Tuyến đường phổ biến", cell, cell, headerStyle)
-	}
-
-	for i, route := range data.PopularRoutes {
-		f.SetCellValue("Tuyến đường phổ biến", fmt.Sprintf("A%d", i+3), route.StartAddress)
-		f.SetCellValue("Tuyến đường phổ biến", fmt.Sprintf("B%d", i+3), route.EndAddress)
-		f.SetCellValue("Tuyến đường phổ biến", fmt.Sprintf("C%d", i+3), route.Count)
-	}
-
-	f.SetColWidth("Tuyến đường phổ biến", "A", "B", 30)
-	f.SetColWidth("Tuyến đường phổ biến", "C", "C", 15)
-
-	// Tạo biểu đồ cột cho các tuyến đường phổ biến
-	if err := createBarChart(f, "Tuyến đường phổ biến", "E2", "Top 5 Tuyến Đường Phổ Biến", data.PopularRoutes); err != nil {
-		return nil, err
-	}
-
-	// Tạo sheet cho tăng trưởng người dùng
-	f.NewSheet("Tăng trưởng người dùng")
-	f.SetCellValue("Tăng trưởng người dùng", "A1", "Chỉ số Tăng Trưởng Người Dùng")
-	f.MergeCell("Tăng trưởng người dùng", "A1", "B1")
-	f.SetCellStyle("Tăng trưởng người dùng", "A1", "B1", titleStyle)
-
-	headers = []string{"Ngày", "Số lượng người dùng mới"}
-	for col, header := range headers {
-		cell := fmt.Sprintf("%c2", 'A'+col)
-		f.SetCellValue("Tăng trưởng người dùng", cell, header)
-		f.SetCellStyle("Tăng trưởng người dùng", cell, cell, headerStyle)
-	}
-
-	for i, growth := range data.UserGrowth {
-		f.SetCellValue("Tăng trưởng người dùng", fmt.Sprintf("A%d", i+3), growth.Date.Format("02/01/2006"))
-		f.SetCellValue("Tăng trưởng người dùng", fmt.Sprintf("B%d", i+3), growth.Count)
-	}
-
-	f.SetColWidth("Tăng trưởng người dùng", "A", "B", 25)
 
 	// Tạo biểu đồ đường cho tăng trưởng người dùng
-	if err := createLineChart(f, "Tăng trưởng người dùng", "D2", "Tăng Trưởng Người Dùng Theo Thời Gian", data.UserGrowth); err != nil {
+	userGrowthSheet := "Tăng trưởng người dùng"
+	f.NewSheet(userGrowthSheet)
+	f.SetColWidth(userGrowthSheet, "A", "B", 20)
+
+	f.SetCellValue(userGrowthSheet, "A1", "Ngày")
+	f.SetCellValue(userGrowthSheet, "B1", "Số lượng người dùng mới")
+	for i, ug := range data.UserGrowth {
+		f.SetCellValue(userGrowthSheet, fmt.Sprintf("A%d", i+2), ug.Date.Format("02/01/2006"))
+		f.SetCellValue(userGrowthSheet, fmt.Sprintf("B%d", i+2), ug.Count)
+	}
+
+	if err := f.AddChart(userGrowthSheet, "D2", &excelize.Chart{
+		Type: excelize.Line,
+		Series: []excelize.ChartSeries{
+			{
+				Name:       "Tăng trưởng người dùng",
+				Categories: fmt.Sprintf("%s!$A$2:$A$%d", userGrowthSheet, len(data.UserGrowth)+1),
+				Values:     fmt.Sprintf("%s!$B$2:$B$%d", userGrowthSheet, len(data.UserGrowth)+1),
+			},
+		},
+		Title: []excelize.RichTextRun{{Text: "Tăng trưởng người dùng theo ngày"}},
+	}); err != nil {
 		return nil, err
 	}
 
-	// Tạo sheet cho giao dịch theo ngày
-	f.NewSheet("Giao dịch theo ngày")
-	f.SetCellValue("Giao dịch theo ngày", "A1", "Giao Dịch Theo Ngày")
-	f.MergeCell("Giao dịch theo ngày", "A1", "B1")
-	f.SetCellStyle("Giao dịch theo ngày", "A1", "B1", titleStyle)
+	// Tạo sheet phân tích
+	analysisSheet := "Phân tích"
+	f.NewSheet(analysisSheet)
+	f.SetColWidth(analysisSheet, "A", "A", 100)
+	f.SetCellValue(analysisSheet, "A1", "Phân tích chi tiết")
+	f.SetCellValue(analysisSheet, "A2", analysis)
 
-	headers = []string{"Ngày", "Tổng giá trị"}
-	for col, header := range headers {
-		cell := fmt.Sprintf("%c2", 'A'+col)
-		f.SetCellValue("Giao dịch theo ngày", cell, header)
-		f.SetCellStyle("Giao dịch theo ngày", cell, cell, headerStyle)
+	// Tạo sheet cho các tuyến đường phổ biến
+	routesSheet := "Tuyến đường phổ biến"
+	f.NewSheet(routesSheet)
+	f.SetColWidth(routesSheet, "A", "C", 30)
+	f.SetCellValue(routesSheet, "A1", "Địa chỉ bắt đầu")
+	f.SetCellValue(routesSheet, "B1", "Địa chỉ kết thúc")
+	f.SetCellValue(routesSheet, "C1", "Tổng số lần")
+	for i, route := range data.PopularRoutes {
+		f.SetCellValue(routesSheet, fmt.Sprintf("A%d", i+2), route.StartAddress)
+		f.SetCellValue(routesSheet, fmt.Sprintf("B%d", i+2), route.EndAddress)
+		f.SetCellValue(routesSheet, fmt.Sprintf("C%d", i+2), route.Count)
 	}
-
-	for i, transaction := range data.TransactionByDay {
-		f.SetCellValue("Giao dịch theo ngày", fmt.Sprintf("A%d", i+3), transaction.Date.Format("02/01/2006"))
-		f.SetCellValue("Giao dịch theo ngày", fmt.Sprintf("B%d", i+3), transaction.Transaction)
-		f.SetCellStyle("Giao dịch theo ngày", fmt.Sprintf("B%d", i+3), fmt.Sprintf("B%d", i+3), numberStyle)
-	}
-
-	f.SetColWidth("Giao dịch theo ngày", "A", "B", 25)
 
 	// Tạo biểu đồ cột cho giao dịch theo ngày
-	if err := createColumnChart(f, "Giao dịch theo ngày", "D2", "Giao Dịch Theo Ngày", data.TransactionByDay); err != nil {
+	transactionSheet := "Giao dịch theo ngày"
+	f.NewSheet(transactionSheet)
+	f.SetColWidth(transactionSheet, "A", "B", 20)
+
+	f.SetCellValue(transactionSheet, "A1", "Ngày")
+	f.SetCellValue(transactionSheet, "B1", "Tổng giá trị")
+	for i, td := range data.TransactionByDay {
+		f.SetCellValue(transactionSheet, fmt.Sprintf("A%d", i+2), td.Date.Format("02/01/2006"))
+		f.SetCellValue(transactionSheet, fmt.Sprintf("B%d", i+2), td.Transaction)
+	}
+
+	if err := f.AddChart(transactionSheet, "D2", &excelize.Chart{
+		Type: excelize.Col,
+		Series: []excelize.ChartSeries{
+			{
+				Name:       "Giao dịch theo ngày",
+				Categories: fmt.Sprintf("%s!$A$2:$A$%d", transactionSheet, len(data.TransactionByDay)+1),
+				Values:     fmt.Sprintf("%s!$B$2:$B$%d", transactionSheet, len(data.TransactionByDay)+1),
+			},
+		},
+		Title: []excelize.RichTextRun{{Text: "Giao dịch theo ngày"}},
+	}); err != nil {
 		return nil, err
 	}
 
-	// Tạo sheet cho phân tích
-	f.NewSheet("Phân tích")
-	f.SetCellValue("Phân tích", "A1", "Phân Tích Chi Tiết")
-	f.SetCellStyle("Phân tích", "A1", "A1", titleStyle)
-
-	// Phân tích văn bản thành các phần
-	sections := strings.Split(analysis, "\n")
-	row := 2
-	for _, section := range sections {
-		if strings.Contains(section, ":") {
-			parts := strings.SplitN(section, ":", 2)
-			if len(parts) == 2 {
-				f.SetCellValue("Phân tích", fmt.Sprintf("A%d", row), strings.TrimSpace(parts[0]))
-				f.SetCellValue("Phân tích", fmt.Sprintf("B%d", row), strings.TrimSpace(parts[1]))
-				f.SetCellStyle("Phân tích", fmt.Sprintf("A%d", row), fmt.Sprintf("A%d", row), headerStyle)
-				row++
-			}
-		}
+	// Đặt sheet tổng quan làm sheet mặc định
+	sheetIndex, err := f.GetSheetIndex(overviewSheet)
+	if err != nil {
+		return nil, err
 	}
-
-	f.SetColWidth("Phân tích", "A", "A", 20)
-	f.SetColWidth("Phân tích", "B", "B", 100)
+	f.SetActiveSheet(sheetIndex)
 
 	buffer, err := f.WriteToBuffer()
 	if err != nil {
@@ -564,127 +560,6 @@ func (s *AdminService) CreateExcelReport(data schemas.ReportData, analysis strin
 	}
 
 	return buffer, nil
-}
-
-// Hàm tạo biểu đồ tròn
-func createPieChart(f *excelize.File, sheet, cell, title string, completed, cancelled int64) error {
-	categories := fmt.Sprintf("='{%s}'!$A$4:$A$5", sheet)
-	values := fmt.Sprintf("='{%s}'!$B$4:$B$5", sheet)
-
-	if err := f.AddChart(sheet, cell, &excelize.Chart{
-		Type: excelize.Pie,
-		Series: []excelize.ChartSeries{
-			{
-				Name:       "Tỷ lệ chuyến đi",
-				Categories: categories,
-				Values:     values,
-			},
-		},
-		Title: []excelize.RichTextRun{
-			{
-				Text: title,
-			},
-		},
-	}); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Hàm tạo biểu đồ cột
-func createBarChart(f *excelize.File, sheet, cell, title string, routes []schemas.PopularRoute) error {
-	categories := fmt.Sprintf("='{%s}'!$A$3:$A$7", sheet)
-	values := fmt.Sprintf("='{%s}'!$C$3:$C$7", sheet)
-
-	if err := f.AddChart(sheet, cell, &excelize.Chart{
-		Type: excelize.Bar,
-		Series: []excelize.ChartSeries{
-			{
-				Name:       "Số lượt",
-				Categories: categories,
-				Values:     values,
-			},
-		},
-		Title: []excelize.RichTextRun{
-			{
-				Text: title,
-			},
-		},
-		PlotArea: excelize.ChartPlotArea{
-			ShowCatName:     false,
-			ShowLeaderLines: false,
-			ShowPercent:     false,
-			ShowSerName:     false,
-			ShowVal:         true,
-		},
-	}); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Hàm tạo biểu đồ đường
-func createLineChart(f *excelize.File, sheet, cell, title string, growth []schemas.UserGrowthData) error {
-	categories := fmt.Sprintf("='{%s}'!$A$3:$A$%d", sheet, len(growth)+2)
-	values := fmt.Sprintf("='{%s}'!$B$3:$B$%d", sheet, len(growth)+2)
-
-	if err := f.AddChart(sheet, cell, &excelize.Chart{
-		Type: excelize.Line,
-		Series: []excelize.ChartSeries{
-			{
-				Name:       "Số người dùng mới",
-				Categories: categories,
-				Values:     values,
-			},
-		},
-		Title: []excelize.RichTextRun{
-			{
-				Text: title,
-			},
-		},
-		PlotArea: excelize.ChartPlotArea{
-			ShowCatName:     false,
-			ShowLeaderLines: false,
-			ShowPercent:     false,
-			ShowSerName:     false,
-			ShowVal:         true,
-		},
-	}); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Hàm tạo biểu đồ cột
-func createColumnChart(f *excelize.File, sheet, cell, title string, transactions []schemas.TransactionDayData) error {
-	categories := fmt.Sprintf("='{%s}'!$A$3:$A$%d", sheet, len(transactions)+2)
-	values := fmt.Sprintf("='{%s}'!$B$3:$B$%d", sheet, len(transactions)+2)
-
-	if err := f.AddChart(sheet, cell, &excelize.Chart{
-		Type: excelize.Col,
-		Series: []excelize.ChartSeries{
-			{
-				Name:       "Tổng giá trị giao dịch",
-				Categories: categories,
-				Values:     values,
-			},
-		},
-		Title: []excelize.RichTextRun{
-			{
-				Text: title,
-			},
-		},
-		PlotArea: excelize.ChartPlotArea{
-			ShowCatName:     false,
-			ShowLeaderLines: false,
-			ShowPercent:     false,
-			ShowSerName:     false,
-			ShowVal:         true,
-		},
-	}); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Ensure that the AdminService implements the IAdminService interface
