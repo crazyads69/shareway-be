@@ -13,6 +13,7 @@ import (
 	"shareway/schemas"
 	"shareway/util"
 	"shareway/util/sanctum"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -220,35 +221,46 @@ func (s *AdminService) GetDashboardData(req schemas.DashboardReportRequest) (sch
 
 // AnalyzeDashboardData analyzes the data for the dashboard report using OpenRouter AI with LLM
 func (s *AdminService) AnalyzeDashboardData(data schemas.ReportData) (string, error) {
-	prompt := fmt.Sprintf(`Analyze the following dashboard data and provide insights:
-    Total Users: %d
-    Active Users: %d
-    Total Rides: %d
-    Completed Rides: %d
-    Cancelled Rides: %d
-    Total Transactions Amount: %d VND
-    Average Rating: %.2f
+	prompt := fmt.Sprintf(`Phân tích dữ liệu bảng điều khiển sau đây và cung cấp thông tin chi tiết:
 
-    Popular Routes:
-    %v
+Tổng số người dùng: %d
+Người dùng hoạt động: %d
+Tổng số chuyến đi: %d
+Chuyến đi hoàn thành: %d
+Chuyến đi bị hủy: %d
+Tổng giá trị giao dịch: %d VND
+Đánh giá trung bình: %.2f
 
-    User Growth:
-    %v
+Tuyến đường phổ biến:
+%v
 
-    Revenue by Day:
-    %v
+Tăng trưởng người dùng:
+%v
 
-    Vehicle Type Distribution:
-    %v
+Doanh thu theo ngày:
+%v
 
-    Please provide a detailed analysis of the data, including trends, potential areas for improvement, and recommendations for business growth.`,
+Phân bố loại xe:
+%v
+
+Hãy cung cấp phân tích chi tiết về dữ liệu, bao gồm xu hướng, các lĩnh vực tiềm năng cần cải thiện và đề xuất cho sự tăng trưởng kinh doanh. Trả lời bằng tiếng Việt và định dạng phù hợp để dễ dàng đưa vào file Excel. Phân tích nên được chia thành các phần sau, mỗi phần cách nhau bằng dấu hai chấm và xuống dòng:
+
+1. Tổng quan: [Phân tích tổng quan]
+2. Xu hướng chính: [Liệt kê và phân tích các xu hướng chính]
+3. Điểm mạnh: [Liệt kê và phân tích điểm mạnh]
+4. Điểm yếu: [Liệt kê và phân tích điểm yếu]
+5. Cơ hội: [Liệt kê và phân tích cơ hội]
+6. Thách thức: [Liệt kê và phân tích thách thức]
+7. Đề xuất cải thiện: [Liệt kê và giải thích các đề xuất cải thiện]
+
+Mỗi phần nên ngắn gọn, súc tích và dễ hiểu.`,
 		data.TotalUsers, data.ActiveUsers, data.TotalRides, data.CompletedRides, data.CancelledRides,
 		data.TotalTransactions, data.AverageRating, data.PopularRoutes, data.UserGrowth, data.TransactionByDay,
 		data.VehicleTypeDistribution)
 
 	// Call OpenRouter API directly
 	requestBody := schemas.OpenRouterRequestBody{
-		Model: "google/gemini-exp-1206:free",
+		Model: "mistralai/mistral-nemo",
 		Messages: []schemas.Message{
 			{
 				Role:    "user",
@@ -362,10 +374,32 @@ func (s *AdminService) CreateExcelReport(data schemas.ReportData, analysis strin
 		f.SetCellValue("Giao dịch theo ngày", fmt.Sprintf("B%d", i+2), revenue.Transaction)
 	}
 
+	// // Tạo sheet cho phân tích
+	// f.NewSheet("Phân tích")
+	// f.SetCellValue("Phân tích", "A1", "Phân tích")
+	// f.SetCellValue("Phân tích", "A2", analysis)
+
 	// Tạo sheet cho phân tích
 	f.NewSheet("Phân tích")
-	f.SetCellValue("Phân tích", "A1", "Phân tích")
-	f.SetCellValue("Phân tích", "A2", analysis)
+	f.SetCellValue("Phân tích", "A1", "Phân tích chi tiết")
+
+	// Phân tích văn bản thành các phần
+	sections := strings.Split(analysis, "\n")
+	row := 2
+	for _, section := range sections {
+		if strings.Contains(section, ":") {
+			parts := strings.SplitN(section, ":", 2)
+			if len(parts) == 2 {
+				f.SetCellValue("Phân tích", fmt.Sprintf("A%d", row), strings.TrimSpace(parts[0]))
+				f.SetCellValue("Phân tích", fmt.Sprintf("B%d", row), strings.TrimSpace(parts[1]))
+				row++
+			}
+		}
+	}
+
+	// Điều chỉnh chiều rộng cột
+	f.SetColWidth("Phân tích", "A", "A", 20)
+	f.SetColWidth("Phân tích", "B", "B", 100)
 
 	buffer, err := f.WriteToBuffer()
 	if err != nil {
