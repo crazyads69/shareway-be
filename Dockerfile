@@ -5,7 +5,7 @@ RUN go build -o main main.go
 
 
 # Running stage
-FROM alpine:3.18
+FROM alpine:3.20
 
 WORKDIR /app
 COPY --from=builder /app/main .
@@ -14,6 +14,8 @@ COPY ./serviceAccountKey.json .
 
 # Install netcat for the wait-for-it functionality
 RUN apk add --no-cache netcat-openbsd
+# Install chromium for the headless browser
+RUN apk add chromium 
 
 COPY ./entrypoint.sh .
 
