@@ -14,8 +14,6 @@ COPY ./serviceAccountKey.json .
 
 # Install netcat for the wait-for-it functionality
 RUN apk add --no-cache netcat-openbsd
-# Install chromium for the headless browser
-RUN apk add chromium 
 
 COPY ./entrypoint.sh .
 
