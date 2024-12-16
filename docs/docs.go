@@ -178,17 +178,17 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get the PDF file of the report details",
+                "description": "Get the ZIP file of the report details, including an Excel report and PDF analysis",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    "application/zip"
                 ],
                 "tags": [
                     "admin"
                 ],
-                "summary": "Get the PDF file of the report details",
+                "summary": "Get the ZIP file of the report details",
                 "parameters": [
                     {
                         "type": "string",
@@ -205,7 +205,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "PDF file\" application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "description": "ZIP file containing Excel and PDF reports",
                         "schema": {
                             "type": "file"
                         }

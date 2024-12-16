@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"archive/zip"
+	"bytes"
 	"fmt"
 	"net/http"
 	"shareway/helper"
@@ -1534,16 +1536,16 @@ func (ac *AdminController) GetTransactionList(ctx *gin.Context) {
 	}
 }
 
-// GetReportDetails returns the PDF file of the report details
-// @Summary Get the PDF file of the report details
-// @Description Get the PDF file of the report details
+// GetReportDetails returns the ZIP file of the report details
+// @Summary Get the ZIP file of the report details
+// @Description Get the ZIP file of the report details, including an Excel report and PDF analysis
 // @Tags admin
 // @Accept json
-// @Produce application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+// @Produce application/zip
 // @Security BearerAuth
 // @Param start_date query string false "Start date for custom filter (YYYY-MM-DD)"
 // @Param end_date query string false "End date for custom filter (YYYY-MM-DD)"
-// @Success 200 {file} file "PDF file" application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+// @Success 200 {file} file "ZIP file containing Excel and PDF reports"
 // @Failure 400 {object} helper.Response "Bad request"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /admin/get-report-details [get]
@@ -1639,19 +1641,61 @@ func (ac *AdminController) GetReportDetails(ctx *gin.Context) {
 		return
 	}
 
-	// // Generate PDF report
-	// pdfBuffer, err := ac.AdminService.CreatePDFReport(dashboardData, analysis)
-	// if err != nil {
-	// 	response := helper.ErrorResponseWithMessage(err, "Failed to create PDF report", "Không thể tạo báo cáo PDF")
-	// 	helper.GinResponse(ctx, 500, response)
-	// 	return
-	// }
+	// Generate PDF report
+	pdfBuffer, err := ac.AdminService.CreatePDFReport(dashboardData, analysis)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(err, "Failed to create PDF report", "Không thể tạo báo cáo PDF")
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
 
 	// Create file name
-	fileName := fmt.Sprintf("report-from-%s-to-%s.xlsx", req.StartDate.Format("2006-01-02"), req.EndDate.Format("2006-01-02"))
+	excelFileName := fmt.Sprintf("report-from-%s-to-%s.xlsx", req.StartDate.Format("2006-01-02"), req.EndDate.Format("2006-01-02"))
+	pdfFileName := fmt.Sprintf("analysis-from-%s-to-%s.pdf", req.StartDate.Format("2006-01-02"), req.EndDate.Format("2006-01-02"))
 
-	// Return the excel file
+	// Create ZIP file
+	var zipBuffer bytes.Buffer
+	zipWriter := zip.NewWriter(&zipBuffer)
+
+	// Add file to ZIP
+	excelFile, err := zipWriter.Create(excelFileName)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(err, "Failed to create ZIP file", "Không thể tạo file ZIP")
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+	_, err = excelFile.Write(excelBuffer.Bytes())
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(err, "Failed to write Excel to ZIP", "Không thể ghi file Excel vào ZIP")
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Add file to ZIP
+	pdfFile, err := zipWriter.Create(pdfFileName)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(err, "Failed to create ZIP file", "Không thể tạo file ZIP")
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+	_, err = pdfFile.Write(pdfBuffer.Bytes())
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(err, "Failed to write PDF to ZIP", "Không thể ghi file PDF vào ZIP")
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Close the ZIP writer
+	err = zipWriter.Close()
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(err, "Failed to close ZIP writer", "Không thể đóng ZIP writer")
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Send the ZIP file
+	zipFileName := fmt.Sprintf("report-and-analysis-from-%s-to-%s.zip", req.StartDate.Format("2006-01-02"), req.EndDate.Format("2006-01-02"))
 	ctx.Header("Content-Description", "File Transfer")
-	ctx.Header("Content-Disposition", "attachment; filename="+fileName)
-	ctx.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", excelBuffer.Bytes())
+	ctx.Header("Content-Disposition", "attachment; filename="+zipFileName)
+	ctx.Data(http.StatusOK, "application/zip", zipBuffer.Bytes())
 }

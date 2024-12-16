@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"shareway/helper"
 	"shareway/infra/bucket"
 	"shareway/infra/db/migration"
 	"shareway/infra/ws"
@@ -15,11 +13,11 @@ import (
 	"shareway/schemas"
 	"shareway/util"
 	"shareway/util/sanctum"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/phpdave11/gofpdf"
+	"github.com/russross/blackfriday/v2"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -486,42 +484,6 @@ func (s *AdminService) CreateExcelReport(data schemas.ReportData, analysis strin
 	}
 	setTableData(overviewSheet, overviewHeaders, overviewData, 3)
 
-	// Tạo trang Phân tích
-	analysisSheet := "Phân tích"
-	f.NewSheet(analysisSheet)
-	f.SetColWidth(analysisSheet, "A", "B", 100)
-
-	f.MergeCell(analysisSheet, "A1", "B1")
-	f.SetCellValue(analysisSheet, "A1", "Phân tích chi tiết")
-	f.SetCellStyle(analysisSheet, "A1", "B1", titleStyle)
-
-	// Phân tích văn bản markdown và định dạng
-	sections := strings.Split(analysis, "\n\n")
-	currentRow := 2
-
-	for _, section := range sections {
-		parts := strings.SplitN(section, ": ", 2)
-		if len(parts) == 2 {
-			// Tiêu đề phần
-			sectionTitleStyle, _ := f.NewStyle(&excelize.Style{
-				Font: &excelize.Font{Bold: true, Size: 14, Color: "#1F497D", Family: "Arial"},
-			})
-			f.SetCellValue(analysisSheet, fmt.Sprintf("A%d", currentRow), parts[0])
-			f.SetCellStyle(analysisSheet, fmt.Sprintf("A%d", currentRow), fmt.Sprintf("A%d", currentRow), sectionTitleStyle)
-			currentRow++
-
-			// Nội dung phần
-			contentStyle, _ := f.NewStyle(&excelize.Style{
-				Font:      &excelize.Font{Size: 11, Family: "Arial"},
-				Alignment: &excelize.Alignment{WrapText: true, Vertical: "top"},
-			})
-			f.SetCellValue(analysisSheet, fmt.Sprintf("A%d", currentRow), parts[1])
-			f.SetCellStyle(analysisSheet, fmt.Sprintf("A%d", currentRow), fmt.Sprintf("A%d", currentRow), contentStyle)
-			f.SetRowHeight(analysisSheet, currentRow, 60) // Điều chỉnh chiều cao hàng nếu cần
-			currentRow += 2                               // Thêm một hàng trống giữa các phần
-		}
-	}
-
 	// Tạo trang Tóm tắt
 	summarySheet := "Tóm tắt"
 	f.NewSheet(summarySheet)
@@ -596,45 +558,81 @@ func (s *AdminService) CreateExcelReport(data schemas.ReportData, analysis strin
 func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string) (*bytes.Buffer, error) {
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.SetFont("Arial", "", 12)
-	pdf.AddPage()
+	ht := pdf.PointConvert(12)
 
-	// **Section 1: Report Title**
+	// Thêm đầu trang
+	pdf.SetHeaderFunc(func() {
+		pdf.SetFont("Arial", "B", 12)
+		pdf.Cell(0, 10, "Báo cáo Bảng Điều Khiển")
+		pdf.Ln(5)
+	})
+
+	// Thêm chân trang với số trang
+	pdf.SetFooterFunc(func() {
+		pdf.SetY(-15)
+		pdf.SetFont("Arial", "I", 8)
+		pdf.CellFormat(0, 10, fmt.Sprintf("Trang %d/{nb}", pdf.PageNo()), "", 0, "C", false, 0, "")
+	})
+
+	pdf.AliasNbPages("{nb}") // Để sử dụng tổng số trang trong chân trang
+
+	// Tạo mục lục
+	pdf.AddPage()
 	pdf.SetFont("Arial", "B", 16)
-	pdf.Cell(0, 10, "Báo cáo Bảng Điều Khiển")
+	pdf.Cell(0, 10, "Mục lục")
 	pdf.Ln(15)
 
-	// **Section 2: Summary Data**
+	sections := []string{"Tổng Quan", "Phân Tích", "Tuyến Đường Phổ Biến", "Phân Bố Loại Xe"}
+	for i, section := range sections {
+		pdf.SetFont("Arial", "", 12)
+		pdf.Cell(0, 10, fmt.Sprintf("%d. %s", i+1, section))
+		pdf.SetFont("Arial", "", 12)
+		pdf.CellFormat(0, 10, fmt.Sprintf("%d", i+2), "", 1, "R", false, 0, "")
+	}
+
+	// Nội dung báo cáo
+	pdf.AddPage()
+
+	// **Section 1: Tổng Quan**
 	pdf.SetFont("Arial", "B", 14)
 	pdf.Cell(0, 10, "1. Tổng Quan")
 	pdf.Ln(12)
 
 	pdf.SetFont("Arial", "", 12)
-	pdf.CellFormat(70, 10, "Tổng số người dùng:", "", 0, "", false, 0, "")
-	pdf.CellFormat(40, 10, fmt.Sprintf("%d", data.TotalUsers), "", 1, "", false, 0, "")
-	pdf.CellFormat(70, 10, "Người dùng hoạt động:", "", 0, "", false, 0, "")
-	pdf.CellFormat(40, 10, fmt.Sprintf("%d", data.ActiveUsers), "", 1, "", false, 0, "")
-	pdf.CellFormat(70, 10, "Tổng số chuyến đi:", "", 0, "", false, 0, "")
-	pdf.CellFormat(40, 10, fmt.Sprintf("%d", data.TotalRides), "", 1, "", false, 0, "")
-	pdf.CellFormat(70, 10, "Chuyến đi hoàn thành:", "", 0, "", false, 0, "")
-	pdf.CellFormat(40, 10, fmt.Sprintf("%d", data.CompletedRides), "", 1, "", false, 0, "")
-	pdf.CellFormat(70, 10, "Chuyến đi bị hủy:", "", 0, "", false, 0, "")
-	pdf.CellFormat(40, 10, fmt.Sprintf("%d", data.CancelledRides), "", 1, "", false, 0, "")
-	pdf.CellFormat(70, 10, "Tổng giá trị giao dịch (VND):", "", 0, "", false, 0, "")
-	pdf.CellFormat(40, 10, fmt.Sprintf("%d", data.TotalTransactions), "", 1, "", false, 0, "")
-	pdf.CellFormat(70, 10, "Đánh giá trung bình:", "", 0, "", false, 0, "")
-	pdf.CellFormat(40, 10, fmt.Sprintf("%.2f", data.AverageRating), "", 1, "", false, 0, "")
+	summaryData := [][]string{
+		{"Tổng số người dùng:", fmt.Sprintf("%d", data.TotalUsers)},
+		{"Người dùng hoạt động:", fmt.Sprintf("%d", data.ActiveUsers)},
+		{"Tổng số chuyến đi:", fmt.Sprintf("%d", data.TotalRides)},
+		{"Chuyến đi hoàn thành:", fmt.Sprintf("%d", data.CompletedRides)},
+		{"Chuyến đi bị hủy:", fmt.Sprintf("%d", data.CancelledRides)},
+		{"Tổng giá trị giao dịch (VND):", fmt.Sprintf("%d", data.TotalTransactions)},
+		{"Đánh giá trung bình:", fmt.Sprintf("%.2f", data.AverageRating)},
+	}
+
+	for _, row := range summaryData {
+		pdf.CellFormat(70, 10, row[0], "", 0, "", false, 0, "")
+		pdf.CellFormat(40, 10, row[1], "", 1, "", false, 0, "")
+	}
 	pdf.Ln(10)
 
-	// **Section 3: Analysis**
+	// **Section 2: Phân Tích**
+	pdf.AddPage()
 	pdf.SetFont("Arial", "B", 14)
 	pdf.Cell(0, 10, "2. Phân Tích")
 	pdf.Ln(12)
 
 	pdf.SetFont("Arial", "", 12)
-	pdf.MultiCell(0, 10, analysis, "", "", false)
+
+	// Chuyển đổi markdown thành HTML
+	html := blackfriday.Run([]byte(analysis))
+
+	// Phân tích HTML và thêm vào PDF
+	tr := pdf.UnicodeTranslatorFromDescriptor("")
+	htmlFile := pdf.HTMLBasicNew()
+	htmlFile.Write(ht, tr(string(html)))
 	pdf.Ln(10)
 
-	// **Section 4: Popular Routes**
+	// **Section 3: Tuyến Đường Phổ Biến**
 	pdf.AddPage()
 	pdf.SetFont("Arial", "B", 14)
 	pdf.Cell(0, 10, "3. Tuyến Đường Phổ Biến")
@@ -650,13 +648,25 @@ func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string)
 	// Table data
 	pdf.SetFont("Arial", "", 12)
 	for _, route := range data.PopularRoutes {
+		// Kiểm tra nếu cần thêm trang mới
+		if pdf.GetY() > 250 {
+			pdf.AddPage()
+			// In lại header của bảng
+			pdf.SetFillColor(200, 200, 200)
+			pdf.SetFont("Arial", "B", 12)
+			pdf.CellFormat(60, 10, "Địa chỉ bắt đầu", "1", 0, "C", true, 0, "")
+			pdf.CellFormat(60, 10, "Địa chỉ kết thúc", "1", 0, "C", true, 0, "")
+			pdf.CellFormat(30, 10, "Số lượt", "1", 1, "C", true, 0, "")
+			pdf.SetFont("Arial", "", 12)
+		}
 		pdf.CellFormat(60, 10, route.StartAddress, "1", 0, "", false, 0, "")
 		pdf.CellFormat(60, 10, route.EndAddress, "1", 0, "", false, 0, "")
 		pdf.CellFormat(30, 10, fmt.Sprintf("%d", route.Count), "1", 1, "", false, 0, "")
 	}
 	pdf.Ln(10)
 
-	// **Section 5: Vehicle Type Distribution**
+	// **Section 4: Phân Bố Loại Xe**
+	pdf.AddPage()
 	pdf.SetFont("Arial", "B", 14)
 	pdf.Cell(0, 10, "4. Phân Bố Loại Xe")
 	pdf.Ln(12)
@@ -675,39 +685,10 @@ func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string)
 	}
 	pdf.Ln(10)
 
-	// **Section 6: Charts**
-	pdf.AddPage()
-	pdf.SetFont("Arial", "B", 14)
-	pdf.Cell(0, 10, "5. Biểu Đồ")
-	pdf.Ln(12)
-
-	// Generate and add User Growth chart
-	userGrowthChartPath := "user_growth_chart.png"
-	err := helper.GenerateUserGrowthChart(data.UserGrowth, userGrowthChartPath)
-	if err != nil {
-		return nil, err
-	}
-	defer os.Remove(userGrowthChartPath)
-
-	pdf.ImageOptions(userGrowthChartPath, 15, pdf.GetY(), 180, 90, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
-	pdf.Ln(95)
-
-	// Generate and add Transactions by Day chart
-	transactionChartPath := "transaction_chart.png"
-	err = helper.GenerateTransactionChart(data.TransactionByDay, transactionChartPath)
-	if err != nil {
-		return nil, err
-	}
-	defer os.Remove(transactionChartPath)
-
-	pdf.ImageOptions(transactionChartPath, 15, pdf.GetY(), 180, 90, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
-	pdf.Ln(95)
-
 	// Output to buffer
 	buf := new(bytes.Buffer)
-	err = pdf.Output(buf)
-	if err != nil {
-		return nil, err
+	if err := pdf.Output(buf); err != nil {
+		return nil, fmt.Errorf("error outputting PDF: %w", err)
 	}
 
 	return buf, nil
