@@ -610,19 +610,20 @@ func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string)
 	// Add UTF-8 translator
 	tr := pdf.UnicodeTranslatorFromDescriptor("")
 
+	// Modified header function
 	pdf.SetHeaderFunc(func() {
 		pdf.SetFont("DejaVu", "B", 12)
 		pdf.Cell(0, 10, tr("Báo cáo Bảng Điều Khiển"))
 		pdf.Ln(5)
 	})
 
+	// Modified footer function with proper page numbering
 	pdf.SetFooterFunc(func() {
 		pdf.SetY(-15)
 		pdf.SetFont("DejaVu", "I", 8)
-		pdf.CellFormat(0, 10, tr(fmt.Sprintf("Trang %d/{nb}", pdf.PageNo())), "", 0, "C", false, 0, "")
+		pageStr := fmt.Sprintf("Trang %d", pdf.PageNo())
+		pdf.CellFormat(0, 10, tr(pageStr), "", 0, "C", false, 0, "")
 	})
-
-	pdf.AliasNbPages("{nb}")
 
 	pdf.AddPage()
 	pdf.SetFont("DejaVu", "B", 16)
