@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	"math"
 	"shareway/helper"
 	"shareway/infra/db/migration"
@@ -446,9 +447,11 @@ func (r *AdminRepository) GetDashboardData(req schemas.DashboardReportRequest) (
 	}
 
 	// Đánh giá trung bình
-	if err := r.db.Model(&migration.Rating{}).Select("AVG(rating)").Scan(&reportData.AverageRating).Error; err != nil {
+	var avgRating sql.NullFloat64
+	if err := r.db.Model(&migration.Rating{}).Select("COALESCE(AVG(rating), 0)").Scan(&avgRating).Error; err != nil {
 		return reportData, err
 	}
+	reportData.AverageRating = avgRating.Float64
 
 	// Các tuyến đường phổ biến
 	if err := r.db.Model(&migration.Ride{}).
