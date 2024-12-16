@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"shareway/infra/bucket"
 	"shareway/infra/db/migration"
 	"shareway/infra/ws"
@@ -57,6 +58,7 @@ type IAdminService interface {
 	AnalyzeDashboardData(data schemas.ReportData) (string, error)
 	CreateExcelReport(data schemas.ReportData, analysis string) (*bytes.Buffer, error)
 	CreatePDFReport(data schemas.ReportData, analysis string) (*bytes.Buffer, error)
+	LoadFonts(pdf *gofpdf.Fpdf) error
 }
 
 // CheckAdminExists checks if an admin exists with the given email and password
@@ -325,6 +327,28 @@ Mỗi phần nên ngắn gọn, súc tích và dễ hiểu.`,
 	}
 }
 
+func (s *AdminService) LoadFonts(pdf *gofpdf.Fpdf) error {
+	fontPaths := []struct {
+		family string
+		style  string
+		file   string
+	}{
+		{"DejaVu", "", "fonts/DejaVuSansCondensed.ttf"},
+		{"DejaVu", "B", "fonts/DejaVuSansCondensed-Bold.ttf"},
+		{"DejaVu", "I", "fonts/DejaVuSansCondensed-Oblique.ttf"},
+	}
+
+	for _, font := range fontPaths {
+		// Check if font file exists
+		if _, err := os.Stat(font.file); os.IsNotExist(err) {
+			return fmt.Errorf("font file not found: %s", font.file)
+		}
+
+		pdf.AddUTF8Font(font.family, font.style, font.file)
+	}
+	return nil
+}
+
 // CreateExcelReport creates an Excel report from the data and analysis
 // func (s *AdminService) CreateExcelReport(data schemas.ReportData, analysis string) (*bytes.Buffer, error) {
 // 	f := excelize.NewFile()
@@ -538,6 +562,24 @@ func (s *AdminService) CreateExcelReport(data schemas.ReportData, analysis strin
 		setTableData(transactionSheet, transactionHeaders, transactionData, 2)
 	}
 
+	// Tạo trang Phân bố loại xe (nếu có dữ liệu)
+	if len(data.VehicleTypeDistribution) > 0 {
+		vehicleSheet := "Phân bố loại xe"
+		f.NewSheet(vehicleSheet)
+		f.SetColWidth(vehicleSheet, "A", "B", 20)
+
+		f.MergeCell(vehicleSheet, "A1", "B1")
+		f.SetCellValue(vehicleSheet, "A1", vehicleSheet)
+		f.SetCellStyle(vehicleSheet, "A1", "B1", titleStyle)
+
+		vehicleHeaders := []string{"Loại xe", "Số lượng"}
+		var vehicleData [][]interface{}
+		for _, vd := range data.VehicleTypeDistribution {
+			vehicleData = append(vehicleData, []interface{}{vd.Type, vd.Count})
+		}
+		setTableData(vehicleSheet, vehicleHeaders, vehicleData, 2)
+	}
+
 	// Đặt trang mặc định
 	sheetIndex, err := f.GetSheetIndex(overviewSheet)
 	if err != nil {
@@ -557,48 +599,50 @@ func (s *AdminService) CreateExcelReport(data schemas.ReportData, analysis strin
 // CreatePDFReport creates a PDF report from the data and analysis
 func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string) (*bytes.Buffer, error) {
 	pdf := gofpdf.New("P", "mm", "A4", "")
-	pdf.SetFont("Arial", "", 12)
+	// Load fonts
+	if err := s.LoadFonts(pdf); err != nil {
+		return nil, fmt.Errorf("error loading fonts: %w", err)
+	}
+
+	pdf.SetFont("DejaVu", "", 12)
 	ht := pdf.PointConvert(12)
 
-	// Thêm đầu trang
+	// Add UTF-8 translator
+	tr := pdf.UnicodeTranslatorFromDescriptor("")
+
 	pdf.SetHeaderFunc(func() {
-		pdf.SetFont("Arial", "B", 12)
-		pdf.Cell(0, 10, "Báo cáo Bảng Điều Khiển")
+		pdf.SetFont("DejaVu", "B", 12)
+		pdf.Cell(0, 10, tr("Báo cáo Bảng Điều Khiển"))
 		pdf.Ln(5)
 	})
 
-	// Thêm chân trang với số trang
 	pdf.SetFooterFunc(func() {
 		pdf.SetY(-15)
-		pdf.SetFont("Arial", "I", 8)
-		pdf.CellFormat(0, 10, fmt.Sprintf("Trang %d/{nb}", pdf.PageNo()), "", 0, "C", false, 0, "")
+		pdf.SetFont("DejaVu", "I", 8)
+		pdf.CellFormat(0, 10, tr(fmt.Sprintf("Trang %d/{nb}", pdf.PageNo())), "", 0, "C", false, 0, "")
 	})
 
-	pdf.AliasNbPages("{nb}") // Để sử dụng tổng số trang trong chân trang
+	pdf.AliasNbPages("{nb}")
 
-	// Tạo mục lục
 	pdf.AddPage()
-	pdf.SetFont("Arial", "B", 16)
-	pdf.Cell(0, 10, "Mục lục")
+	pdf.SetFont("DejaVu", "B", 16)
+	pdf.Cell(0, 10, tr("Mục lục"))
 	pdf.Ln(15)
 
 	sections := []string{"Tổng Quan", "Phân Tích", "Tuyến Đường Phổ Biến", "Phân Bố Loại Xe"}
 	for i, section := range sections {
-		pdf.SetFont("Arial", "", 12)
-		pdf.Cell(0, 10, fmt.Sprintf("%d. %s", i+1, section))
-		pdf.SetFont("Arial", "", 12)
+		pdf.SetFont("DejaVu", "", 12)
+		pdf.Cell(0, 10, tr(fmt.Sprintf("%d. %s", i+1, section)))
+		pdf.SetFont("DejaVu", "", 12)
 		pdf.CellFormat(0, 10, fmt.Sprintf("%d", i+2), "", 1, "R", false, 0, "")
 	}
 
-	// Nội dung báo cáo
 	pdf.AddPage()
-
-	// **Section 1: Tổng Quan**
-	pdf.SetFont("Arial", "B", 14)
-	pdf.Cell(0, 10, "1. Tổng Quan")
+	pdf.SetFont("DejaVu", "B", 14)
+	pdf.Cell(0, 10, tr("1. Tổng Quan"))
 	pdf.Ln(12)
 
-	pdf.SetFont("Arial", "", 12)
+	pdf.SetFont("DejaVu", "", 12)
 	summaryData := [][]string{
 		{"Tổng số người dùng:", fmt.Sprintf("%d", data.TotalUsers)},
 		{"Người dùng hoạt động:", fmt.Sprintf("%d", data.ActiveUsers)},
@@ -610,82 +654,67 @@ func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string)
 	}
 
 	for _, row := range summaryData {
-		pdf.CellFormat(70, 10, row[0], "", 0, "", false, 0, "")
-		pdf.CellFormat(40, 10, row[1], "", 1, "", false, 0, "")
+		pdf.CellFormat(70, 10, tr(row[0]), "", 0, "", false, 0, "")
+		pdf.CellFormat(40, 10, tr(row[1]), "", 1, "", false, 0, "")
 	}
 	pdf.Ln(10)
 
-	// **Section 2: Phân Tích**
 	pdf.AddPage()
-	pdf.SetFont("Arial", "B", 14)
-	pdf.Cell(0, 10, "2. Phân Tích")
+	pdf.SetFont("DejaVu", "B", 14)
+	pdf.Cell(0, 10, tr("2. Phân Tích"))
 	pdf.Ln(12)
 
-	pdf.SetFont("Arial", "", 12)
-
-	// Chuyển đổi markdown thành HTML
+	pdf.SetFont("DejaVu", "", 12)
 	html := blackfriday.Run([]byte(analysis))
-
-	// Phân tích HTML và thêm vào PDF
-	tr := pdf.UnicodeTranslatorFromDescriptor("")
 	htmlFile := pdf.HTMLBasicNew()
 	htmlFile.Write(ht, tr(string(html)))
 	pdf.Ln(10)
 
-	// **Section 3: Tuyến Đường Phổ Biến**
 	pdf.AddPage()
-	pdf.SetFont("Arial", "B", 14)
-	pdf.Cell(0, 10, "3. Tuyến Đường Phổ Biến")
+	pdf.SetFont("DejaVu", "B", 14)
+	pdf.Cell(0, 10, tr("3. Tuyến Đường Phổ Biến"))
 	pdf.Ln(12)
 
-	// Table header
 	pdf.SetFillColor(200, 200, 200)
-	pdf.SetFont("Arial", "B", 12)
-	pdf.CellFormat(60, 10, "Địa chỉ bắt đầu", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(60, 10, "Địa chỉ kết thúc", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(30, 10, "Số lượt", "1", 1, "C", true, 0, "")
+	pdf.SetFont("DejaVu", "B", 12)
+	pdf.CellFormat(60, 10, tr("Địa chỉ bắt đầu"), "1", 0, "C", true, 0, "")
+	pdf.CellFormat(60, 10, tr("Địa chỉ kết thúc"), "1", 0, "C", true, 0, "")
+	pdf.CellFormat(30, 10, tr("Số lượt"), "1", 1, "C", true, 0, "")
 
-	// Table data
-	pdf.SetFont("Arial", "", 12)
+	pdf.SetFont("DejaVu", "", 12)
 	for _, route := range data.PopularRoutes {
-		// Kiểm tra nếu cần thêm trang mới
 		if pdf.GetY() > 250 {
 			pdf.AddPage()
-			// In lại header của bảng
 			pdf.SetFillColor(200, 200, 200)
-			pdf.SetFont("Arial", "B", 12)
-			pdf.CellFormat(60, 10, "Địa chỉ bắt đầu", "1", 0, "C", true, 0, "")
-			pdf.CellFormat(60, 10, "Địa chỉ kết thúc", "1", 0, "C", true, 0, "")
-			pdf.CellFormat(30, 10, "Số lượt", "1", 1, "C", true, 0, "")
-			pdf.SetFont("Arial", "", 12)
+			pdf.SetFont("DejaVu", "B", 12)
+			pdf.CellFormat(60, 10, tr("Địa chỉ bắt đầu"), "1", 0, "C", true, 0, "")
+			pdf.CellFormat(60, 10, tr("Địa chỉ kết thúc"), "1", 0, "C", true, 0, "")
+			pdf.CellFormat(30, 10, tr("Số lượt"), "1", 1, "C", true, 0, "")
+			pdf.SetFont("DejaVu", "", 12)
 		}
-		pdf.CellFormat(60, 10, route.StartAddress, "1", 0, "", false, 0, "")
-		pdf.CellFormat(60, 10, route.EndAddress, "1", 0, "", false, 0, "")
+		pdf.CellFormat(60, 10, tr(route.StartAddress), "1", 0, "", false, 0, "")
+		pdf.CellFormat(60, 10, tr(route.EndAddress), "1", 0, "", false, 0, "")
 		pdf.CellFormat(30, 10, fmt.Sprintf("%d", route.Count), "1", 1, "", false, 0, "")
 	}
 	pdf.Ln(10)
 
-	// **Section 4: Phân Bố Loại Xe**
 	pdf.AddPage()
-	pdf.SetFont("Arial", "B", 14)
-	pdf.Cell(0, 10, "4. Phân Bố Loại Xe")
+	pdf.SetFont("DejaVu", "B", 14)
+	pdf.Cell(0, 10, tr("4. Phân Bố Loại Xe"))
 	pdf.Ln(12)
 
-	// Table header
 	pdf.SetFillColor(200, 200, 200)
-	pdf.SetFont("Arial", "B", 12)
-	pdf.CellFormat(70, 10, "Loại xe", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(40, 10, "Số lượng", "1", 1, "C", true, 0, "")
+	pdf.SetFont("DejaVu", "B", 12)
+	pdf.CellFormat(70, 10, tr("Loại xe"), "1", 0, "C", true, 0, "")
+	pdf.CellFormat(40, 10, tr("Số lượng"), "1", 1, "C", true, 0, "")
 
-	// Table data
-	pdf.SetFont("Arial", "", 12)
+	pdf.SetFont("DejaVu", "", 12)
 	for _, vehicle := range data.VehicleTypeDistribution {
-		pdf.CellFormat(70, 10, vehicle.Type, "1", 0, "", false, 0, "")
+		pdf.CellFormat(70, 10, tr(vehicle.Type), "1", 0, "", false, 0, "")
 		pdf.CellFormat(40, 10, fmt.Sprintf("%d", vehicle.Count), "1", 1, "", false, 0, "")
 	}
 	pdf.Ln(10)
 
-	// Output to buffer
 	buf := new(bytes.Buffer)
 	if err := pdf.Output(buf); err != nil {
 		return nil, fmt.Errorf("error outputting PDF: %w", err)
