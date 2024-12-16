@@ -597,6 +597,7 @@ func (s *AdminService) CreateExcelReport(data schemas.ReportData, analysis strin
 }
 
 // CreatePDFReport creates a PDF report from the data and analysis
+// CreatePDFReport creates a PDF report from the data and analysis
 func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string) (*bytes.Buffer, error) {
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	// Load fonts
@@ -610,27 +611,8 @@ func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string)
 	// Add UTF-8 translator
 	tr := pdf.UnicodeTranslatorFromDescriptor("")
 
-	// Enable page numbers
-	pdf.AliasNbPages("")
-
-	// Custom header and footer without using SetHeaderFunc and SetFooterFunc
-	addHeaderAndFooter := func() {
-		// Save current position
-		currentY := pdf.GetY()
-
-		// Header
-		pdf.SetY(10)
-		pdf.SetFont("DejaVu", "B", 12)
-		pdf.Cell(0, 10, tr("ShareWay - Báo Cáo Bảng Điều Khiển"))
-
-		// Restore position
-		pdf.SetY(currentY)
-	}
-
+	// Remove header and footer functions
 	pdf.AddPage()
-	addHeaderAndFooter()
-	pdf.SetY(30) // Start content below header
-
 	pdf.SetFont("DejaVu", "B", 16)
 	pdf.Cell(0, 10, tr("Mục lục"))
 	pdf.Ln(15)
@@ -644,8 +626,6 @@ func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string)
 	}
 
 	pdf.AddPage()
-	addHeaderAndFooter()
-	pdf.SetY(30)
 	pdf.SetFont("DejaVu", "B", 14)
 	pdf.Cell(0, 10, tr("1. Tổng Quan"))
 	pdf.Ln(12)
@@ -668,8 +648,6 @@ func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string)
 	pdf.Ln(10)
 
 	pdf.AddPage()
-	addHeaderAndFooter()
-	pdf.SetY(30)
 	pdf.SetFont("DejaVu", "B", 14)
 	pdf.Cell(0, 10, tr("2. Phân Tích"))
 	pdf.Ln(12)
@@ -681,8 +659,6 @@ func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string)
 	pdf.Ln(10)
 
 	pdf.AddPage()
-	addHeaderAndFooter()
-	pdf.SetY(30)
 	pdf.SetFont("DejaVu", "B", 14)
 	pdf.Cell(0, 10, tr("3. Tuyến Đường Phổ Biến"))
 	pdf.Ln(12)
@@ -697,8 +673,6 @@ func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string)
 	for _, route := range data.PopularRoutes {
 		if pdf.GetY() > 250 {
 			pdf.AddPage()
-			addHeaderAndFooter()
-			pdf.SetY(30)
 			pdf.SetFillColor(200, 200, 200)
 			pdf.SetFont("DejaVu", "B", 12)
 			pdf.CellFormat(60, 10, tr("Địa chỉ bắt đầu"), "1", 0, "C", true, 0, "")
@@ -713,8 +687,6 @@ func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string)
 	pdf.Ln(10)
 
 	pdf.AddPage()
-	addHeaderAndFooter()
-	pdf.SetY(30)
 	pdf.SetFont("DejaVu", "B", 14)
 	pdf.Cell(0, 10, tr("4. Phân Bố Loại Xe"))
 	pdf.Ln(12)
