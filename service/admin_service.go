@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"shareway/infra/bucket"
@@ -656,26 +657,104 @@ func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string)
 	}
 	pdf.Ln(10)
 
+	// // **Section 3: Tuyến Đường Phổ Biến**
+	// pdf.AddPage()
+	// pdf.SetFont("DejaVu", "B", 14)
+	// pdf.Cell(0, 10, "3. Tuyến Đường Phổ Biến")
+	// pdf.Ln(12)
+
+	// // Table header
+	// pdf.SetFillColor(200, 200, 200)
+	// pdf.SetFont("DejaVu", "B", 12)
+	// pdf.CellFormat(60, 10, "Địa chỉ bắt đầu", "1", 0, "C", true, 0, "")
+	// pdf.CellFormat(60, 10, "Địa chỉ kết thúc", "1", 0, "C", true, 0, "")
+	// pdf.CellFormat(30, 10, "Số lượt", "1", 1, "C", true, 0, "")
+
+	// // Table data
+	// pdf.SetFont("DejaVu", "", 12)
+	// for _, route := range data.PopularRoutes {
+	// 	checkAndAddPage()
+	// 	pdf.CellFormat(60, 10, route.StartAddress, "1", 0, "", false, 0, "")
+	// 	pdf.CellFormat(60, 10, route.EndAddress, "1", 0, "", false, 0, "")
+	// 	pdf.CellFormat(30, 10, fmt.Sprintf("%d", route.Count), "1", 1, "", false, 0, "")
+	// }
+	// pdf.Ln(10)
+
 	// **Section 3: Tuyến Đường Phổ Biến**
 	pdf.AddPage()
 	pdf.SetFont("DejaVu", "B", 14)
 	pdf.Cell(0, 10, "3. Tuyến Đường Phổ Biến")
 	pdf.Ln(12)
 
+	// Định nghĩa chiều rộng cột
+	colWidth := []float64{70, 70, 30}
+
+	// Hàm để cắt ngắn và thêm dấu "..." nếu văn bản quá dài
+	truncateText := func(text string, width float64, fontSize float64) string {
+		pdf.SetFont("DejaVu", "", fontSize)
+		if pdf.GetStringWidth(text) > width {
+			for len(text) > 0 {
+				text = text[:len(text)-1]
+				if pdf.GetStringWidth(text+"...") <= width {
+					return text + "..."
+				}
+			}
+		}
+		return text
+	}
+
 	// Table header
 	pdf.SetFillColor(200, 200, 200)
-	pdf.SetFont("DejaVu", "B", 12)
-	pdf.CellFormat(60, 10, "Địa chỉ bắt đầu", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(60, 10, "Địa chỉ kết thúc", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(30, 10, "Số lượt", "1", 1, "C", true, 0, "")
+	pdf.SetFont("DejaVu", "B", 10)
+	headers := []string{"Địa chỉ bắt đầu", "Địa chỉ kết thúc", "Số lượt"}
+	for i, header := range headers {
+		pdf.CellFormat(colWidth[i], 10, header, "1", 0, "C", true, 0, "")
+	}
+	pdf.Ln(-1)
 
 	// Table data
-	pdf.SetFont("DejaVu", "", 12)
+	pdf.SetFont("DejaVu", "", 9)
 	for _, route := range data.PopularRoutes {
-		checkAndAddPage()
-		pdf.CellFormat(60, 10, route.StartAddress, "1", 0, "", false, 0, "")
-		pdf.CellFormat(60, 10, route.EndAddress, "1", 0, "", false, 0, "")
-		pdf.CellFormat(30, 10, fmt.Sprintf("%d", route.Count), "1", 1, "", false, 0, "")
+		startX := pdf.GetX()
+		startY := pdf.GetY()
+
+		// Kiểm tra nếu cần thêm trang mới
+		if startY > 250 {
+			pdf.AddPage()
+			pdf.SetFont("DejaVu", "B", 10)
+			for i, header := range headers {
+				pdf.CellFormat(colWidth[i], 10, header, "1", 0, "C", true, 0, "")
+			}
+			pdf.Ln(-1)
+			pdf.SetFont("DejaVu", "", 9)
+			startY = pdf.GetY()
+			startX = pdf.GetX()
+		}
+
+		// Cắt ngắn nội dung nếu cần
+		startAddress := truncateText(route.StartAddress, colWidth[0]-2, 9)
+		endAddress := truncateText(route.EndAddress, colWidth[1]-2, 9)
+
+		// Tính chiều cao cần thiết cho mỗi ô
+		pdf.SetFont("DejaVu", "", 9)
+		startHeight := pdf.SplitLines([]byte(startAddress), colWidth[0]-2)
+		endHeight := pdf.SplitLines([]byte(endAddress), colWidth[1]-2)
+		maxHeight := math.Max(float64(len(startHeight)), float64(len(endHeight))) * 5 // 5 là chiều cao của mỗi dòng
+
+		// Vẽ ô và điền nội dung
+		pdf.Rect(startX, startY, colWidth[0], maxHeight, "D")
+		pdf.MultiCell(colWidth[0], 5, startAddress, "", "", false)
+		pdf.SetXY(startX+colWidth[0], startY)
+
+		pdf.Rect(startX+colWidth[0], startY, colWidth[1], maxHeight, "D")
+		pdf.MultiCell(colWidth[1], 5, endAddress, "", "", false)
+
+		pdf.SetXY(startX+colWidth[0]+colWidth[1], startY)
+		pdf.Rect(startX+colWidth[0]+colWidth[1], startY, colWidth[2], maxHeight, "D")
+		pdf.CellFormat(colWidth[2], maxHeight, fmt.Sprintf("%d", route.Count), "", 0, "C", false, 0, "")
+
+		// Đặt lại vị trí cho hàng tiếp theo
+		pdf.SetXY(startX, startY+maxHeight)
 	}
 	pdf.Ln(10)
 
