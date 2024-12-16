@@ -11,6 +11,8 @@ WORKDIR /app
 COPY --from=builder /app/main .
 COPY ./app.env .
 COPY ./serviceAccountKey.json .
+# Copy fonts folder
+COPY ./fonts ./fonts
 
 # Install netcat for the wait-for-it functionality
 RUN apk add --no-cache netcat-openbsd
