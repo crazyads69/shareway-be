@@ -623,13 +623,6 @@ func (s *AdminService) CreatePDFReport(data schemas.ReportData, analysis string)
 		pdf.SetFont("DejaVu", "B", 12)
 		pdf.Cell(0, 10, tr("ShareWay - Báo Cáo Bảng Điều Khiển"))
 
-		// Footer
-		_, pageHeight := pdf.GetPageSize()
-		pdf.SetY(pageHeight - 15)                                    // Position at bottom of page
-		pdf.SetFont("DejaVu", "I", 8)                                // Set italic font, size 8
-		pageStr := fmt.Sprintf("Trang %d / {nb}", pdf.PageNo())      // Create page number string
-		pdf.CellFormat(0, 10, tr(pageStr), "", 0, "C", false, 0, "") // Add centered page number
-
 		// Restore position
 		pdf.SetY(currentY)
 	}
