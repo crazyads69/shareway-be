@@ -334,8 +334,14 @@
                     },
                     {
                         "type": "string",
-                        "description": "Optional filter for full name",
-                        "name": "search_full_name",
+                        "description": "Optional filter for driver",
+                        "name": "search_driver",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for hitcher",
+                        "name": "search_hitcher",
                         "in": "query"
                     },
                     {

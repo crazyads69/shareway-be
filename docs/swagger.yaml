@@ -2159,9 +2159,13 @@ paths:
         in: query
         name: end_date_time
         type: string
-      - description: Optional filter for full name
+      - description: Optional filter for driver
         in: query
-        name: search_full_name
+        name: search_driver
+        type: string
+      - description: Optional filter for hitcher
+        in: query
+        name: search_hitcher
         type: string
       - description: Optional filter for route
         in: query

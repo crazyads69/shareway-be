@@ -89,14 +89,15 @@ type UserListResponse struct {
 }
 
 type RideListRequest struct {
-	Page           int       `form:"page" binding:"required,min=1"`            // Page number for pagination
-	Limit          int       `form:"limit" binding:"required,min=1,max=100"`   // Limit number for pagination (max 100)
-	StartDate      time.Time `form:"start_date_time" time_format:"2006-01-02"` // Use time.Time for date parsing
-	EndDate        time.Time `form:"end_date_time" time_format:"2006-01-02"`   // Use time.Time for date parsing
-	SearchFullName string    `form:"search_full_name"`                         // Optional filter for full name
-	SearchRoute    string    `form:"search_route"`                             // Optional filter for route
-	SearchVehicle  string    `form:"search_vehicle"`                           // Optional filter for vehicle
-	RideStatus     []string  `form:"ride_status"`                              // Optional filter for ride status
+	Page          int       `form:"page" binding:"required,min=1"`            // Page number for pagination
+	Limit         int       `form:"limit" binding:"required,min=1,max=100"`   // Limit number for pagination (max 100)
+	StartDate     time.Time `form:"start_date_time" time_format:"2006-01-02"` // Use time.Time for date parsing
+	EndDate       time.Time `form:"end_date_time" time_format:"2006-01-02"`   // Use time.Time for date parsing
+	SearchDriver  string    `form:"search_driver"`                            // Optional filter for driver
+	SearchHitcher string    `form:"search_hitcher"`                           // Optional filter for hitcher
+	SearchRoute   string    `form:"search_route"`                             // Optional filter for route
+	SearchVehicle string    `form:"search_vehicle"`                           // Optional filter for vehicle
+	RideStatus    []string  `form:"ride_status"`                              // Optional filter for ride status
 }
 
 type RideDetail struct {
