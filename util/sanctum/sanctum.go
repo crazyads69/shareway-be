@@ -20,16 +20,16 @@ type SanctumTokenPayload struct {
 }
 
 type SanctumToken struct {
-	Token ITokenSanctum
-	Cryto ICryptoSanctum
-	db    *gorm.DB
+	Token  ITokenSanctum
+	Crypto ICryptoSanctum
+	db     *gorm.DB
 }
 
 func NewSanctumToken(token ITokenSanctum, crypto ICryptoSanctum, db *gorm.DB) *SanctumToken {
 	return &SanctumToken{
-		Token: token,
-		Cryto: crypto,
-		db:    db,
+		Token:  token,
+		Crypto: crypto,
+		db:     db,
 	}
 }
 
@@ -79,7 +79,7 @@ func (st *SanctumToken) VerifySanctumToken(token string) (*SanctumTokenPayload, 
 	}
 
 	// Use constant-time comparison
-	if !st.Cryto.SecureCompare(hashedToken, dbToken.Token) {
+	if !st.Crypto.SecureCompare(hashedToken, dbToken.Token) {
 		return nil, fmt.Errorf("token does not match")
 	}
 
@@ -94,4 +94,22 @@ func (st *SanctumToken) VerifySanctumToken(token string) (*SanctumTokenPayload, 
 		CreatedAt: dbToken.CreatedAt,
 		Ability:   dbToken.Ability,
 	}, nil
+}
+
+func (st *SanctumToken) InvalidateToken(data *SanctumTokenPayload) error {
+	// Set the token to be revoked
+	if err := st.db.Model(&migration.SanctumToken{}).
+		Where("id = ?", data.TokenID).
+		Update("is_revoked", true).Error; err != nil {
+		return err
+	}
+
+	// Update the expired at to the current time
+	if err := st.db.Model(&migration.SanctumToken{}).
+		Where("id = ?", data.TokenID).
+		Update("expired_at", time.Now().UTC()).Error; err != nil {
+		return err
+	}
+
+	return nil
 }

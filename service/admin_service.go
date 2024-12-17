@@ -60,6 +60,12 @@ type IAdminService interface {
 	CreateExcelReport(data schemas.ReportData, analysis string) (*bytes.Buffer, error)
 	CreatePDFReport(data schemas.ReportData, analysis string) (*bytes.Buffer, error)
 	LoadFonts(pdf *gofpdf.Fpdf) error
+	LogoutAdmin(data *sanctum.SanctumTokenPayload) error
+}
+
+// LogoutAdmin logs out the admin by invalidating the token
+func (s *AdminService) LogoutAdmin(data *sanctum.SanctumTokenPayload) error {
+	return s.sanctumToken.InvalidateToken(data)
 }
 
 // CheckAdminExists checks if an admin exists with the given email and password
@@ -69,7 +75,7 @@ func (s *AdminService) CheckAdminExists(req schemas.LoginAdminRequest) (migratio
 
 // VerifyPassword verifies if the given password matches the hashed password
 func (s *AdminService) VerifyPassword(password, hashedPassword string) bool {
-	return s.sanctumToken.Cryto.VerifyPassword(hashedPassword, password)
+	return s.sanctumToken.Crypto.VerifyPassword(hashedPassword, password)
 }
 
 // CreateToken creates a new token for the admin

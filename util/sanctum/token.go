@@ -41,7 +41,7 @@ func (t *TokenSanctum) CreateToken() (*NewToken, error) {
 	if err != nil {
 		return nil, err
 	}
-	hashedText := t.Crypto.SHA256(plainText)
+	hashedText := t.Crypto.HMACSHA256(plainText)
 	return &NewToken{
 		PlainText:  plainText,
 		HashedText: hashedText,
@@ -54,7 +54,7 @@ func (t *TokenSanctum) SplitToken(token string) (string, string, error) {
 	if len(parts) != 2 {
 		return "", "", errors.New("invalid token")
 	}
-	return parts[0], t.Crypto.SHA256(parts[1]), nil
+	return parts[0], t.Crypto.HMACSHA256(parts[1]), nil
 }
 
 var _ ITokenSanctum = (*TokenSanctum)(nil)
