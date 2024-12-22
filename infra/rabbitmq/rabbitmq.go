@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
+
 	"shareway/schemas"
 	"shareway/util"
-	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )

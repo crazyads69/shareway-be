@@ -1,9 +1,10 @@
 package migration
 
 import (
+	"time"
+
 	"shareway/util/jsonb"
 	"shareway/util/polyline"
-	"time"
 
 	"github.com/google/uuid"
 )
