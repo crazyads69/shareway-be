@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	"math"
 	"shareway/helper"
 	"shareway/infra/db/migration"
@@ -263,13 +264,22 @@ func (r *AdminRepository) GetRideList(req schemas.RideListRequest) ([]migration.
 		query = query.Where("rides.created_at <= ?", req.EndDate)
 	}
 
-	if req.SearchFullName != "" {
+	if req.SearchDriver != "" {
+		// query = query.Joins("LEFT JOIN ride_offers ON rides.ride_offer_id = ride_offers.id").
+		// 	Joins("LEFT JOIN ride_requests ON rides.ride_request_id = ride_requests.id").
+		// 	Joins("LEFT JOIN users offer_user ON ride_offers.user_id = offer_user.id").
+		// 	Joins("LEFT JOIN users request_user ON ride_requests.user_id = request_user.id").
+		// 	Where("LOWER(offer_user.full_name) LIKE LOWER(?) OR LOWER(request_user.full_name) LIKE LOWER(?)",
+		// 		"%"+req.SearchFullName+"%", "%"+req.SearchFullName+"%")
 		query = query.Joins("LEFT JOIN ride_offers ON rides.ride_offer_id = ride_offers.id").
-			Joins("LEFT JOIN ride_requests ON rides.ride_request_id = ride_requests.id").
 			Joins("LEFT JOIN users offer_user ON ride_offers.user_id = offer_user.id").
+			Where("LOWER(offer_user.full_name) LIKE LOWER(?)", "%"+req.SearchDriver+"%")
+	}
+
+	if req.SearchHitcher != "" {
+		query = query.Joins("LEFT JOIN ride_requests ON rides.ride_request_id = ride_requests.id").
 			Joins("LEFT JOIN users request_user ON ride_requests.user_id = request_user.id").
-			Where("LOWER(offer_user.full_name) LIKE LOWER(?) OR LOWER(request_user.full_name) LIKE LOWER(?)",
-				"%"+req.SearchFullName+"%", "%"+req.SearchFullName+"%")
+			Where("LOWER(request_user.full_name) LIKE LOWER(?)", "%"+req.SearchHitcher+"%")
 	}
 
 	if req.SearchRoute != "" {
@@ -446,9 +456,11 @@ func (r *AdminRepository) GetDashboardData(req schemas.DashboardReportRequest) (
 	}
 
 	// Đánh giá trung bình
-	if err := r.db.Model(&migration.Rating{}).Select("AVG(rating)").Scan(&reportData.AverageRating).Error; err != nil {
+	var avgRating sql.NullFloat64
+	if err := r.db.Model(&migration.Rating{}).Select("COALESCE(AVG(rating), 0)").Scan(&avgRating).Error; err != nil {
 		return reportData, err
 	}
+	reportData.AverageRating = avgRating.Float64
 
 	// Các tuyến đường phổ biến
 	if err := r.db.Model(&migration.Ride{}).
