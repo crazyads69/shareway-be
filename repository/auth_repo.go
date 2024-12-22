@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"fmt"
+
 	"shareway/infra/db/migration"
 
 	"github.com/google/uuid"

@@ -11,11 +11,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+
 	"shareway/infra/ws"
 	"shareway/repository"
 	"shareway/schemas"
 	"shareway/util"
-	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"

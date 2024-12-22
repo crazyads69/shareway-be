@@ -8,6 +8,9 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"strings"
+	"time"
+
 	"shareway/infra/bucket"
 	"shareway/infra/db/migration"
 	"shareway/infra/ws"
@@ -15,12 +18,9 @@ import (
 	"shareway/schemas"
 	"shareway/util"
 	"shareway/util/sanctum"
-	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/phpdave11/gofpdf"
-	"github.com/xuri/excelize/v2"
 )
 
 type AdminService struct {

@@ -13,11 +13,12 @@ import (
 	"encoding/pem"
 	"fmt"
 	"net/http"
+	"time"
+
 	"shareway/infra/ws"
 	"shareway/repository"
 	"shareway/schemas"
 	"shareway/util"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"

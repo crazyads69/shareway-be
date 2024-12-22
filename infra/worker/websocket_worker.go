@@ -3,11 +3,12 @@ package worker
 import (
 	"encoding/json"
 	"log"
+	"time"
+
 	"shareway/infra/rabbitmq"
 	"shareway/infra/ws"
 	"shareway/schemas"
 	"shareway/util"
-	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )

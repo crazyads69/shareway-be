@@ -8,8 +8,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"shareway/util"
 	"time"
+
+	"shareway/util"
 
 	"golang.org/x/crypto/bcrypt"
 )

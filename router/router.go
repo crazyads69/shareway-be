@@ -1,6 +1,9 @@
 package router
 
 import (
+	"time"
+
+	docs "shareway/docs"
 	"shareway/infra/agora"
 	"shareway/infra/task"
 	"shareway/infra/ws"
@@ -9,14 +12,10 @@ import (
 	"shareway/util"
 	"shareway/util/sanctum"
 	"shareway/util/token"
-	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-
-	docs "shareway/docs"
-
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )

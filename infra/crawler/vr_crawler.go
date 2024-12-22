@@ -4,10 +4,11 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"shareway/infra/db/migration"
 	"strconv"
 	"strings"
 	"time"
+
+	"shareway/infra/db/migration"
 
 	"github.com/PuerkitoBio/goquery"
 	"gorm.io/gorm"

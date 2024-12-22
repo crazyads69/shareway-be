@@ -4,9 +4,10 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"shareway/infra/db/migration"
 	"strconv"
 	"strings"
+
+	"shareway/infra/db/migration"
 
 	"github.com/PuerkitoBio/goquery"
 	"gorm.io/gorm"

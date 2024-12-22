@@ -3,8 +3,9 @@ package middleware
 import (
 	"fmt"
 	"net/http"
-	"shareway/util/sanctum"
 	"strings"
+
+	"shareway/util/sanctum"
 
 	"github.com/gin-gonic/gin"
 )

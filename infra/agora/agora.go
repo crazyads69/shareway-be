@@ -2,8 +2,9 @@ package agora
 
 import (
 	"fmt"
-	"shareway/util"
 	"time"
+
+	"shareway/util"
 
 	rtctokenbuilder2 "github.com/AgoraIO-Community/go-tokenbuilder/rtctokenbuilder"
 )
