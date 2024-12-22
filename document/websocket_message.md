@@ -10,7 +10,7 @@ Call to endpoint ```/notification/create-test-websocket```
 
 ```json
 {
-  "type":"test",
+  "type":"test1",
   "data": {
     "message": "string"
   }
