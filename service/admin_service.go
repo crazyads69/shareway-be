@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/phpdave11/gofpdf"
+	"github.com/xuri/excelize/v2"
 )
 
 type AdminService struct {

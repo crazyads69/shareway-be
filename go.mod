@@ -28,7 +28,6 @@ require (
 	github.com/swaggo/swag v1.16.2
 	github.com/twilio/twilio-go v1.23.3
 	github.com/twpayne/go-polyline v1.1.1
-	github.com/xuri/excelize/v2 v2.9.0
 	golang.org/x/crypto v0.28.0
 	google.golang.org/api v0.170.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -111,6 +110,7 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	github.com/xuri/efp v0.0.0-20240408161823-9ad904a10d6d // indirect
+	github.com/xuri/excelize/v2 v2.9.0 // indirect
 	github.com/xuri/nfp v0.0.0-20240318013403-ab9948c2c4a7 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
@@ -121,7 +121,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/arch v0.7.0 // indirect
 	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8 // indirect
-	golang.org/x/image v0.23.0 // indirect
 	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect

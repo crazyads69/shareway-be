@@ -346,6 +346,7 @@ func (r *RideRepository) StartRide(req schemas.StartRideRequest, userID uuid.UUI
 		// }
 
 		// Check if the current location of the driver and hitcher is near less than 100 meters
+		// TODO: COMMENTED OUT FOR NOW FOR BETTER TESTING AND DEMO PURPOSES
 		// if !helper.IsNearby(schemas.Point{Lat: rideOffer.DriverCurrentLatitude, Lng: rideOffer.DriverCurrentLongitude}, schemas.Point{Lat: rideRequest.RiderCurrentLatitude, Lng: rideRequest.RiderCurrentLongitude}, 0.0001) {
 		// 	return errors.New("driver and rider are not nearby") // Make sure cannot fake the location
 		// }
