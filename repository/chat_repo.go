@@ -2,9 +2,10 @@ package repository
 
 import (
 	"fmt"
+	"strings"
+
 	"shareway/infra/db/migration"
 	"shareway/schemas"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"

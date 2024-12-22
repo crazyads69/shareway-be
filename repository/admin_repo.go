@@ -3,11 +3,12 @@ package repository
 import (
 	"database/sql"
 	"math"
+	"strings"
+	"time"
+
 	"shareway/helper"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
-	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"

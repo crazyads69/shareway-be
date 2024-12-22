@@ -4,11 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"time"
+
 	"shareway/helper"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
 	"shareway/util/polyline"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"

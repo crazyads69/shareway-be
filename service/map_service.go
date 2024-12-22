@@ -9,18 +9,18 @@ import (
 	"math"
 	"net/http"
 	"net/url"
-	"shareway/helper"
-	"shareway/infra/db/migration"
-	"shareway/repository"
-	"shareway/schemas"
-	"shareway/util"
 	"strconv"
 	"strings"
 	"time"
 	_ "time/tzdata"
 
+	"shareway/helper"
+	"shareway/infra/db/migration"
+	"shareway/repository"
+	"shareway/schemas"
+	"shareway/util"
+
 	"github.com/google/uuid"
-	"github.com/redis/go-redis/v9"
 )
 
 const (
