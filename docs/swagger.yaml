@@ -2159,9 +2159,13 @@ paths:
         in: query
         name: end_date_time
         type: string
-      - description: Optional filter for full name
+      - description: Optional filter for driver
         in: query
-        name: search_full_name
+        name: search_driver
+        type: string
+      - description: Optional filter for hitcher
+        in: query
+        name: search_hitcher
         type: string
       - description: Optional filter for route
         in: query
@@ -2541,6 +2545,27 @@ paths:
       security:
       - BearerAuth: []
       summary: Get the list of vehicles with pagination and filters
+      tags:
+      - admin
+  /admin/logout:
+    post:
+      consumes:
+      - application/json
+      description: Log out the admin user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Admin logged out successfully
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Log out the admin user
       tags:
       - admin
   /auth/delete-user:
