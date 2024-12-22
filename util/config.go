@@ -71,6 +71,7 @@ type Config struct {
 	MomoPaymentRedirectURL         string `mapstructure:"MOMO_PAYMENT_REDIRECT_URL"`
 	OpenRouterAPIKey               string `mapstructure:"OPENROUTER_API_KEY"`
 	OpenRouterAPIURL               string `mapstructure:"OPENROUTER_API_URL"`
+	SanctumSecretKey               string `mapstructure:"SANCTUM_SECRET_KEY"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

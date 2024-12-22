@@ -1,8 +1,10 @@
 package sanctum
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 
 type ICryptoSanctum interface {
 	SHA256(plainText string) string
+	HMACSHA256(plainText string) string
 	HashPassword(password string) (string, error)
 	VerifyPassword(hashedPassword string, password string) bool
 	SecureCompare(hashedPassword, password string) bool // Securely compare two strings (constant time compare for password)
@@ -35,6 +38,19 @@ func NewCryptoSanctum(
 func (c *CryptoSanctum) SHA256(plainText string) string {
 	hash := sha256.Sum256([]byte(plainText))
 	return hex.EncodeToString(hash[:])
+}
+
+// HMACSHA256 is a function to create an HMAC using SHA256
+func (c *CryptoSanctum) HMACSHA256(plainText string) string {
+	// Load secret key from environment variable and decode base64
+	sanctumSecretKey, err := base64.StdEncoding.DecodeString(c.cfg.SanctumSecretKey)
+	if err != nil {
+		return ""
+	}
+
+	h := hmac.New(sha256.New, []byte(sanctumSecretKey))
+	h.Write([]byte(plainText))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // HashPassword is a function to hash a password using SHA256 algorithm
