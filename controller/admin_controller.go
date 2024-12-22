@@ -41,6 +41,53 @@ func NewAdminController(cfg util.Config, validate *validator.Validate, adminServ
 	}
 }
 
+// AdminLogout logs out the admin user
+// @Summary Log out the admin user
+// @Description Log out the admin user
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} helper.Response "Admin logged out successfully"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /admin/logout [post]
+func (ac *AdminController) AdminLogout(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert the payload to a map of string and interface
+	// Convert payload to map
+	data, err := helper.ConvertToAdminPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Log out the admin user
+	err = ac.AdminService.LogoutAdmin(data)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to log out admin",
+			"Không thể đăng xuất admin",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	response := helper.SuccessResponse(nil, "Admin logged out successfully", "Đăng xuất admin thành công")
+	helper.GinResponse(ctx, 200, response)
+}
+
 // GetAdminProfile returns the profile of the admin
 // @Summary Get the profile of the admin
 // @Description Get the profile of the admin
@@ -778,7 +825,8 @@ func (ac *AdminController) GetUserList(ctx *gin.Context) {
 // @Param limit query int true "Limit number for pagination (max 100)"
 // @Param start_date_time query string false "Start date for custom filter (YYYY-MM-DD)"
 // @Param end_date_time query string false "End date for custom filter (YYYY-MM-DD)"
-// @Param search_full_name query string false "Optional filter for full name"
+// @Param search_driver query string false "Optional filter for driver"
+// @Param search_hitcher query string false "Optional filter for hitcher"
 // @Param search_route query string false "Optional filter for route"
 // @Param search_vehicle query string false "Optional filter for vehicle"
 // @Param ride_status query []string false "Optional filter for ride status"
