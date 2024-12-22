@@ -5,7 +5,6 @@ import (
 	"math"
 	"time"
 
-	"shareway/helper"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
 
@@ -347,9 +346,9 @@ func (r *RideRepository) StartRide(req schemas.StartRideRequest, userID uuid.UUI
 		// }
 
 		// Check if the current location of the driver and hitcher is near less than 100 meters
-		if !helper.IsNearby(schemas.Point{Lat: rideOffer.DriverCurrentLatitude, Lng: rideOffer.DriverCurrentLongitude}, schemas.Point{Lat: rideRequest.RiderCurrentLatitude, Lng: rideRequest.RiderCurrentLongitude}, 0.0001) {
-			return errors.New("driver and rider are not nearby") // Make sure cannot fake the location
-		}
+		// if !helper.IsNearby(schemas.Point{Lat: rideOffer.DriverCurrentLatitude, Lng: rideOffer.DriverCurrentLongitude}, schemas.Point{Lat: rideRequest.RiderCurrentLatitude, Lng: rideRequest.RiderCurrentLongitude}, 0.0001) {
+		// 	return errors.New("driver and rider are not nearby") // Make sure cannot fake the location
+		// }
 
 		// TODO: In the future must check start time and end time of the ride to prevent early start or late start
 
