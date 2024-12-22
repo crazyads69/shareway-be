@@ -345,8 +345,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Optional filter for full name",
-                        "name": "search_full_name",
+                        "description": "Optional filter for driver",
+                        "name": "search_driver",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for hitcher",
+                        "name": "search_hitcher",
                         "in": "query"
                     },
                     {
@@ -938,6 +944,40 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Log out the admin user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Log out the admin user",
+                "responses": {
+                    "200": {
+                        "description": "Admin logged out successfully",
                         "schema": {
                             "$ref": "#/definitions/helper.Response"
                         }

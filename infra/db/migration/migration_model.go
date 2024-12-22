@@ -27,13 +27,13 @@ type User struct {
 	DeviceToken string // FCM token for push notification
 
 	// MoMo Wallet fields
-	MomoFirstRequestID uuid.UUID `gorm:"type:uuid"`          // First request ID to link MoMo wallet (and use for get recurringToken so must store)
-	MoMoCallbackToken  string    `gorm:"type:text"`          // Token to verify callback from MoMo and get recurring token for later use
-	MoMoRecurringToken string    `gorm:"uniqueIndex"`        // Recurring token to use for later transactions
+	MomoFirstRequestID uuid.UUID `gorm:"type:uuid"` // First request ID to link MoMo wallet (and use for get recurringToken so must store)
+	MoMoCallbackToken  string    `gorm:"type:text"` // Token to verify callback from MoMo and get recurring token for later use
+	MoMoRecurringToken string    // Recurring token to use for later transactions
 	MoMoStatus         string    `gorm:"default:'inactive'"` // active, inactive
 	MoMoLastLinkedAt   time.Time
 	IsMomoLinked       bool   `gorm:"default:false"` // Check if user has linked MoMo wallet
-	MomoWalletID       string `gorm:"uniqueIndex"`   // MoMo wallet ID (phone number that is registered with MoMo wallet)
+	MomoWalletID       string // MoMo wallet ID (phone number that is registered with MoMo wallet)
 
 	// New field for storing money received in app
 	BalanceInApp int64 `gorm:"default:0"` // Store balance in vnđ currency unit

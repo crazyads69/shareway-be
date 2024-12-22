@@ -185,12 +185,14 @@ func (r *AuthRepository) CreateUser(phoneNumber, fullName, email string) (uuid.U
 		return uuid.Nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	// Update user avatar
-	avatarURL := fmt.Sprintf("https://api.multiavatar.com/%s.png", user.ID)
-	if err := tx.Model(&migration.User{}).Where("id = ?", user.ID).Update("avatar_url", avatarURL).Error; err != nil {
-		tx.Rollback()
-		return uuid.Nil, fmt.Errorf("failed to update user avatar: %w", err)
-	}
+	// // Update user avatar
+	// avatarURL := fmt.Sprintf("https://api.multiavatar.com/%s.png", user.ID)
+	// if err := tx.Model(&migration.User{}).Where("id = ?", user.ID).Update("avatar_url", avatarURL).Error; err != nil {
+	// 	tx.Rollback()
+	// 	return uuid.Nil, fmt.Errorf("failed to update user avatar: %w", err)
+	// }
+
+	// By default frontend handle the default avatar in the frontend
 
 	if err := tx.Commit().Error; err != nil {
 		return uuid.Nil, fmt.Errorf("failed to commit transaction: %w", err)
