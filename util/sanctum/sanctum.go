@@ -3,9 +3,10 @@ package sanctum
 import (
 	"errors"
 	"fmt"
-	"shareway/infra/db/migration"
 	"strconv"
 	"time"
+
+	"shareway/infra/db/migration"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"

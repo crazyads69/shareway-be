@@ -2,9 +2,10 @@ package helper
 
 import (
 	"fmt"
+	"time"
+
 	"shareway/infra/fpt"
 	"shareway/schemas"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -142,15 +143,14 @@ func validateDOB(dob, currentDate, issueDate time.Time, minAge int) error {
 	return nil
 }
 
-
 // Helper function to validate image types
 func IsValidImageType(contentType string) bool {
-    validTypes := map[string]bool{
-        "image/jpeg": true,
-        "image/png":  true,
-        "image/gif":  true,
-        "image/webp": true,
+	validTypes := map[string]bool{
+		"image/jpeg": true,
+		"image/png":  true,
+		"image/gif":  true,
+		"image/webp": true,
 		"image/jpg":  true,
-    }
-    return validTypes[contentType]
+	}
+	return validTypes[contentType]
 }
