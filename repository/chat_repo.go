@@ -335,10 +335,10 @@ func (r *ChatRepository) SearchUsers(req schemas.SearchUsersRequest, userID uuid
 func (r *ChatRepository) GetChatRoomByID(receiverID uuid.UUID, userID uuid.UUID) (migration.Room, error) {
 	var room migration.Room
 
-	// Ensure user IDs are in a consistent order
-	if userID.String() > receiverID.String() {
-		userID, receiverID = receiverID, userID
-	}
+	// // Ensure user IDs are in a consistent order
+	// if userID.String() > receiverID.String() {
+	// 	userID, receiverID = receiverID, userID
+	// }
 
 	// Check if the chat room already exists
 	err := r.db.Model(&migration.Room{}).
