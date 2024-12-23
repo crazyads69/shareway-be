@@ -906,8 +906,27 @@ func (cc *ChatController) UpdateCallStatus(ctx *gin.Context) {
 		Payload: res,
 	}
 
+	// Prepare second websocket message for the caller
+	wsMessageCaller := schemas.WebSocketMessage{
+		Type:    "update-call-status",
+		UserID:  data.UserID.String(),
+		Payload: res,
+	}
+
 	// Prepare notification message
 	resMap, err := helper.ConvertToStringMap(res)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert response to map",
+			"Không thể chuyển đổi response thành map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Prepare second notification message for the caller
+	resMapCaller, err := helper.ConvertToStringMap(res)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -934,6 +953,22 @@ func (cc *ChatController) UpdateCallStatus(ctx *gin.Context) {
 		return
 	}
 
+	// Second notification message for the caller
+	notificationPayloadCaller := schemas.NotificationPayload{
+		Type: "update-call-status",
+		Data: resMapCaller,
+	}
+	notificationPayloadMapCaller, err := helper.ConvertToStringMap(notificationPayloadCaller)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert notification payload to map",
+			"Không thể chuyển đổi notification payload thành map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	notification := schemas.Notification{
 		Title: "Trạng thái cuộc gọi",
 		Body:  fmt.Sprintf("Trạng thái cuộc gọi từ %s", caller.FullName),
@@ -941,10 +976,26 @@ func (cc *ChatController) UpdateCallStatus(ctx *gin.Context) {
 		Token: receiver.DeviceToken,
 	}
 
+	// Second notification message for the caller
+	notificationCaller := schemas.Notification{
+		Title: "Trạng thái cuộc gọi",
+		Body:  fmt.Sprintf("Trạng thái cuộc gọi từ %s", receiver.FullName),
+		Data:  notificationPayloadMapCaller,
+		Token: caller.DeviceToken,
+	}
+
 	go func() {
 		err := cc.asyncClient.EnqueueFCMNotification(notification)
 		if err != nil {
 			log.Printf("failed to send notification: %v", err)
+		}
+		// Check if the message is missed call
+		if message.MessageType == "missed_call" {
+			// Send notification to the caller
+			err := cc.asyncClient.EnqueueFCMNotification(notificationCaller)
+			if err != nil {
+				log.Printf("failed to send notification: %v", err)
+			}
 		}
 	}()
 
@@ -952,6 +1003,14 @@ func (cc *ChatController) UpdateCallStatus(ctx *gin.Context) {
 		err := cc.asyncClient.EnqueueWebsocketMessage(wsMessage)
 		if err != nil {
 			log.Printf("failed to send websocket message: %v", err)
+		}
+
+		// Send websocket message to the caller
+		if message.MessageType == "missed_call" {
+			err := cc.asyncClient.EnqueueWebsocketMessage(wsMessageCaller)
+			if err != nil {
+				log.Printf("failed to send websocket message: %v", err)
+			}
 		}
 	}()
 

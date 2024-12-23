@@ -35,6 +35,7 @@ type IRideService interface {
 	GetRideHistory(userID uuid.UUID) ([]migration.Ride, error)
 	GetTotalRidesForUser(userID uuid.UUID) (int64, error)
 	GetTotalRidesForVehicle(vehicleID uuid.UUID) (int64, error)
+	GetScheduledAndOngoingRide(userID uuid.UUID) ([]migration.Ride, error)
 }
 
 func NewRideService(repo repository.IRideRepository, hub *ws.Hub, cfg util.Config) IRideService {
@@ -125,6 +126,10 @@ func (s *RideService) GetTotalRidesForUser(userID uuid.UUID) (int64, error) {
 
 func (s *RideService) GetTotalRidesForVehicle(vehicleID uuid.UUID) (int64, error) {
 	return s.repo.GetTotalRidesForVehicle(vehicleID)
+}
+
+func (s *RideService) GetScheduledAndOngoingRide(userID uuid.UUID) ([]migration.Ride, error) {
+	return s.repo.GetScheduledAndOngoingRide(userID)
 }
 
 // Make sure the RideService implements the IRideService interface

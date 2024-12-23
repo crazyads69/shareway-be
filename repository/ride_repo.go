@@ -33,6 +33,7 @@ type IRideRepository interface {
 	GetRideHistory(userID uuid.UUID) ([]migration.Ride, error)
 	GetTotalRidesForUser(userID uuid.UUID) (int64, error)
 	GetTotalRidesForVehicle(vehicleID uuid.UUID) (int64, error)
+	GetScheduledAndOngoingRide(userID uuid.UUID) ([]migration.Ride, error)
 }
 
 type RideRepository struct {
@@ -823,6 +824,23 @@ func (r *RideRepository) GetTotalRidesForVehicle(vehicleID uuid.UUID) (int64, er
 	}
 
 	return totalRides, nil
+}
+
+func (r *RideRepository) GetScheduledAndOngoingRide(userID uuid.UUID) ([]migration.Ride, error) {
+	var rides []migration.Ride
+
+	err := r.db.Where("(ride_offer_id IN (SELECT id FROM ride_offers WHERE user_id = ?) OR ride_request_id IN (SELECT id FROM ride_requests WHERE user_id = ?)) AND status IN ('scheduled', 'ongoing')", userID, userID).
+		Preload("RideOffer").
+		Preload("RideRequest").
+		Preload("Vehicle").
+		Order("start_time ASC").
+		Find(&rides).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return rides, nil
 }
 
 // Make sure the RideRepository implements the IRideRepository interface

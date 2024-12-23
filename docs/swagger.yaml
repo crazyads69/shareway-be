@@ -486,6 +486,13 @@ definitions:
           $ref: '#/definitions/schemas.RideHistoryDetail'
         type: array
     type: object
+  schemas.GetScheduledAndOngoingRideResponse:
+    properties:
+      valid_ride:
+        items:
+          $ref: '#/definitions/schemas.ValidRideDetail'
+        type: array
+    type: object
   schemas.GetUserProfileResponse:
     properties:
       user:
@@ -1823,6 +1830,61 @@ definitions:
         type: string
     required:
     - id
+    type: object
+  schemas.ValidRideDetail:
+    properties:
+      distance:
+        type: number
+      driver:
+        $ref: '#/definitions/schemas.UserInfo'
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
+      duration:
+        type: integer
+      encoded_polyline:
+        type: string
+      end_address:
+        type: string
+      end_latitude:
+        type: number
+      end_longitude:
+        type: number
+      end_time:
+        type: string
+      fare:
+        type: integer
+      hitcher:
+        $ref: '#/definitions/schemas.UserInfo'
+      ride_id:
+        type: string
+      ride_offer_id:
+        type: string
+      ride_request_id:
+        type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
+      start_address:
+        type: string
+      start_latitude:
+        type: number
+      start_longitude:
+        type: number
+      start_time:
+        type: string
+      status:
+        type: string
+      transaction:
+        $ref: '#/definitions/schemas.TransactionDetail'
+      vehicle:
+        $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
     type: object
   schemas.Vehicle:
     properties:
@@ -4009,6 +4071,33 @@ paths:
       security:
       - BearerAuth: []
       summary: Get ride history of the user
+      tags:
+      - ride
+  /ride/get-scheduled-and-ongoing-ride:
+    get:
+      consumes:
+      - application/json
+      description: Get scheduled and ongoing ride of the user (both as driver and
+        hitcher)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully got scheduled and ongoing ride
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GetScheduledAndOngoingRideResponse'
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get scheduled and ongoing ride of the user
       tags:
       - ride
   /ride/give-ride-request:

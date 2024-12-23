@@ -3367,6 +3367,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/ride/get-scheduled-and-ongoing-ride": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get scheduled and ongoing ride of the user (both as driver and hitcher)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Get scheduled and ongoing ride of the user",
+                "responses": {
+                    "200": {
+                        "description": "Successfully got scheduled and ongoing ride",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GetScheduledAndOngoingRideResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/ride/give-ride-request": {
             "post": {
                 "security": [
@@ -4797,6 +4843,17 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/schemas.RideHistoryDetail"
+                    }
+                }
+            }
+        },
+        "schemas.GetScheduledAndOngoingRideResponse": {
+            "type": "object",
+            "properties": {
+                "valid_ride": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ValidRideDetail"
                     }
                 }
             }
@@ -6778,6 +6835,89 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.ValidRideDetail": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "driver": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "encoded_polyline": {
+                    "type": "string"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_latitude": {
+                    "type": "number"
+                },
+                "end_longitude": {
+                    "type": "number"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "fare": {
+                    "type": "integer"
+                },
+                "hitcher": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "ride_id": {
+                    "type": "string"
+                },
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "ride_request_id": {
+                    "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_latitude": {
+                    "type": "number"
+                },
+                "start_longitude": {
+                    "type": "number"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction": {
+                    "$ref": "#/definitions/schemas.TransactionDetail"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
                 }
             }
         },
