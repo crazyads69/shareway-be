@@ -72,6 +72,7 @@ type Config struct {
 	OpenRouterAPIKey               string `mapstructure:"OPENROUTER_API_KEY"`
 	OpenRouterAPIURL               string `mapstructure:"OPENROUTER_API_URL"`
 	SanctumSecretKey               string `mapstructure:"SANCTUM_SECRET_KEY"`
+	WsUrl                          string `mapstructure:"WS_URL"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

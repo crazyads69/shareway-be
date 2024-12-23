@@ -4,6 +4,7 @@ package ws
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 )
 
 // Hub maintains the set of active clients and broadcasts messages
@@ -38,6 +39,10 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.register:
+			if oldClient, exists := h.clients[client.userID]; exists {
+				// Close the old client's send channel
+				close(oldClient.send)
+			}
 			h.clients[client.userID] = client // Register new client
 		case client := <-h.unregister:
 			if _, ok := h.clients[client.userID]; ok {
@@ -78,8 +83,9 @@ func (h *Hub) SendToUser(userID string, messageType string, data interface{}) er
 	case client.send <- jsonMessage:
 		return nil
 	default:
-		close(client.send)
-		delete(h.clients, userID)
+		// close(client.send)
+		// delete(h.clients, userID)
+		log.Printf("Failed to send message to client %s: send buffer full", userID)
 		return fmt.Errorf("client send buffer full")
 	}
 }
