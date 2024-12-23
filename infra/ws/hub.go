@@ -39,10 +39,6 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.register:
-			if oldClient, exists := h.clients[client.userID]; exists {
-				// Close the old client's send channel
-				close(oldClient.send)
-			}
 			h.clients[client.userID] = client // Register new client
 		case client := <-h.unregister:
 			if _, ok := h.clients[client.userID]; ok {
