@@ -89,7 +89,7 @@ func (c *Client) readPump() {
 		c.mu.Unlock()
 
 		// Trigger reconnection
-		go c.reconnect(c.wsURL)
+		// go c.reconnect(c.wsURL)
 	}()
 
 	c.conn.SetReadLimit(maxMessageSize)
