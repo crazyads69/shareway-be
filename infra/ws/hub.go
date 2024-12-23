@@ -79,8 +79,8 @@ func (h *Hub) SendToUser(userID string, messageType string, data interface{}) er
 	case client.send <- jsonMessage:
 		return nil
 	default:
-		// close(client.send)
-		// delete(h.clients, userID)
+		close(client.send)
+		delete(h.clients, userID)
 		log.Printf("Failed to send message to client %s: send buffer full", userID)
 		return fmt.Errorf("client send buffer full")
 	}
