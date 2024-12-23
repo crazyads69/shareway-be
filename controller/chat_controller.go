@@ -865,7 +865,20 @@ func (cc *ChatController) UpdateCallStatus(ctx *gin.Context) {
 		return
 	}
 
+	// Get chatroomid from message
+	chatRoom, err := cc.ChatService.GetChatRoomByID(req.ReceiverID, data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get chat room",
+			"Không thể lấy chat room",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	res := schemas.UpdateCallStatusResponse{
+		ChatRoomID:  chatRoom.ID,
 		MessageID:   message.ID,
 		Message:     message.Message,
 		ReceiverID:  message.ReceiverID,

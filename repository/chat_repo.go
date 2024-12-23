@@ -33,6 +33,7 @@ type IChatRepository interface {
 	UpdateCallStatus(req schemas.UpdateCallStatusRequest, userID uuid.UUID) (migration.Chat, error)
 	InitiateCall(req schemas.InitiateCallRequest, userID uuid.UUID) (migration.Chat, error)
 	SearchUsers(req schemas.SearchUsersRequest, userID uuid.UUID) ([]migration.Room, error)
+	GetChatRoomByID(receiverID uuid.UUID, userID uuid.UUID) (migration.Room, error)
 }
 
 // GetChatRoomByUserIDs fetches a chat room by the user IDs
@@ -328,6 +329,28 @@ func (r *ChatRepository) SearchUsers(req schemas.SearchUsersRequest, userID uuid
 	}
 
 	return rooms, nil
+}
+
+// GetChatRoomByID fetches a chat room by ID
+func (r *ChatRepository) GetChatRoomByID(receiverID uuid.UUID, userID uuid.UUID) (migration.Room, error) {
+	var room migration.Room
+
+	// Ensure user IDs are in a consistent order
+	if userID.String() > receiverID.String() {
+		userID, receiverID = receiverID, userID
+	}
+
+	// Check if the chat room already exists
+	err := r.db.Model(&migration.Room{}).
+		Where("user1_id = ? AND user2_id = ?", userID, receiverID).
+		Or("user1_id = ? AND user2_id = ?", receiverID, userID).
+		First(&room).Error
+
+	if err != nil {
+		return migration.Room{}, err
+	}
+
+	return room, err
 }
 
 var _ IChatRepository = (*ChatRepository)(nil)
