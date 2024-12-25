@@ -381,7 +381,7 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 		return err
 	}
 
-	// Now it's safe to delete Rides
+	// Delete Rides
 	if err := tx.Where("ride_offer_id IN (SELECT id FROM ride_offers WHERE user_id = ?) OR ride_request_id IN (SELECT id FROM ride_requests WHERE user_id = ?)", user.ID, user.ID).Delete(&migration.Ride{}).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -419,6 +419,12 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 
 	// Chats (both sent and received)
 	if err := tx.Where("sender_id = ? OR receiver_id = ?", user.ID, user.ID).Delete(&migration.Chat{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Delete Rooms associated with the user
+	if err := tx.Where("user1_id = ? OR user2_id = ?", user.ID, user.ID).Delete(&migration.Room{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
