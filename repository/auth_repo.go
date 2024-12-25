@@ -369,28 +369,20 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 		return err
 	}
 
-	// Delete Rides associated with user's RideOffers and RideRequests
-	var rideOffers []migration.RideOffer
-	var rideRequests []migration.RideRequest
-	if err := tx.Where("user_id = ?", user.ID).Find(&rideOffers).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-	if err := tx.Where("user_id = ?", user.ID).Find(&rideRequests).Error; err != nil {
+	// Delete Transactions associated with user's Rides
+	if err := tx.Where("payer_id = ? OR receiver_id = ?", user.ID, user.ID).Delete(&migration.Transaction{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	var rideOfferIDs []uuid.UUID
-	var rideRequestIDs []uuid.UUID
-	for _, offer := range rideOffers {
-		rideOfferIDs = append(rideOfferIDs, offer.ID)
-	}
-	for _, request := range rideRequests {
-		rideRequestIDs = append(rideRequestIDs, request.ID)
+	// Delete Ratings associated with user's Rides
+	if err := tx.Where("rater_id = ? OR ratee_id = ?", user.ID, user.ID).Delete(&migration.Rating{}).Error; err != nil {
+		tx.Rollback()
+		return err
 	}
 
-	if err := tx.Where("ride_offer_id IN ? OR ride_request_id IN ?", rideOfferIDs, rideRequestIDs).Delete(&migration.Ride{}).Error; err != nil {
+	// Now it's safe to delete Rides
+	if err := tx.Where("ride_offer_id IN (SELECT id FROM ride_offers WHERE user_id = ?) OR ride_request_id IN (SELECT id FROM ride_requests WHERE user_id = ?)", user.ID, user.ID).Delete(&migration.Ride{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -407,7 +399,7 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 		return err
 	}
 
-	// Vehicles (now safe to delete after RideOffers are deleted)
+	// Vehicles
 	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.Vehicle{}).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -427,12 +419,6 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 
 	// Chats (both sent and received)
 	if err := tx.Where("sender_id = ? OR receiver_id = ?", user.ID, user.ID).Delete(&migration.Chat{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// Ratings (both given and received)
-	if err := tx.Where("rater_id = ? OR ratee_id = ?", user.ID, user.ID).Delete(&migration.Rating{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
