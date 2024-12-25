@@ -603,7 +603,7 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 	}
 
 	// Create a transaction to store fare details
-	transaction, err := ctrl.RideService.CreateRideTransaction(ride.ID, ride.Fare, "cash", req.ReceiverID, data.UserID)
+	transaction, err := ctrl.RideService.CreateRideTransaction(ride.ID, ride.Fare, "cash", data.UserID, req.ReceiverID)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
