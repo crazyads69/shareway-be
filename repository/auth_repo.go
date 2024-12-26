@@ -356,81 +356,88 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 		return err
 	}
 
-	// Delete related records in paseto_tokens table
-	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.PasetoToken{}).Error; err != nil {
+	// Delete related records in order to avoid foreign key violations
+
+	// PasetoTokens
+	if err := tx.Unscoped().Where("user_id = ?", user.ID).Delete(&migration.PasetoToken{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Delete related records in other tables
-	// OTP
-	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.OTP{}).Error; err != nil {
+	// OTPs
+	if err := tx.Unscoped().Where("user_id = ?", user.ID).Delete(&migration.OTP{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Delete Transactions associated with user's Rides
-	if err := tx.Where("payer_id = ? OR receiver_id = ?", user.ID, user.ID).Delete(&migration.Transaction{}).Error; err != nil {
+	// Chats
+	if err := tx.Unscoped().Where("sender_id = ? OR receiver_id = ?", user.ID, user.ID).Delete(&migration.Chat{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Delete Ratings associated with user's Rides
-	if err := tx.Where("rater_id = ? OR ratee_id = ?", user.ID, user.ID).Delete(&migration.Rating{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// Delete Rides
-	if err := tx.Where("ride_offer_id IN (SELECT id FROM ride_offers WHERE user_id = ?) OR ride_request_id IN (SELECT id FROM ride_requests WHERE user_id = ?)", user.ID, user.ID).Delete(&migration.Ride{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// RideRequests
-	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.RideRequest{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// RideOffers
-	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.RideOffer{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// Vehicles
-	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.Vehicle{}).Error; err != nil {
+	// Rooms
+	if err := tx.Unscoped().Where("user1_id = ? OR user2_id = ?", user.ID, user.ID).Delete(&migration.Room{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// Notifications
-	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.Notification{}).Error; err != nil {
+	if err := tx.Unscoped().Where("user_id = ?", user.ID).Delete(&migration.Notification{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// FavoriteLocations
-	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.FavoriteLocation{}).Error; err != nil {
+	if err := tx.Unscoped().Where("user_id = ?", user.ID).Delete(&migration.FavoriteLocation{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Chats (both sent and received)
-	if err := tx.Where("sender_id = ? OR receiver_id = ?", user.ID, user.ID).Delete(&migration.Chat{}).Error; err != nil {
+	// Ratings
+	if err := tx.Unscoped().Where("rater_id = ? OR ratee_id = ?", user.ID, user.ID).Delete(&migration.Rating{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Delete Rooms associated with the user
-	if err := tx.Where("user1_id = ? OR user2_id = ?", user.ID, user.ID).Delete(&migration.Room{}).Error; err != nil {
+	// Transactions
+	if err := tx.Unscoped().Where("payer_id = ? OR receiver_id = ?", user.ID, user.ID).Delete(&migration.Transaction{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Rides
+	if err := tx.Unscoped().Where("ride_offer_id IN (SELECT id FROM ride_offers WHERE user_id = ?) OR ride_request_id IN (SELECT id FROM ride_requests WHERE user_id = ?)", user.ID, user.ID).Delete(&migration.Ride{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Waypoints
+	if err := tx.Unscoped().Where("ride_offer_id IN (SELECT id FROM ride_offers WHERE user_id = ?)", user.ID).Delete(&migration.Waypoint{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// RideRequests
+	if err := tx.Unscoped().Where("user_id = ?", user.ID).Delete(&migration.RideRequest{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// RideOffers
+	if err := tx.Unscoped().Where("user_id = ?", user.ID).Delete(&migration.RideOffer{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Vehicles
+	if err := tx.Unscoped().Where("user_id = ?", user.ID).Delete(&migration.Vehicle{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// Finally, delete the user
-	if err := tx.Delete(&user).Error; err != nil {
+	if err := tx.Unscoped().Delete(&user).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
