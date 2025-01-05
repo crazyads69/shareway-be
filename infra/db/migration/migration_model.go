@@ -13,16 +13,31 @@ type User struct {
 	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
-	// DeletedAt         gorm.DeletedAt `gorm:"index"`
-	PhoneNumber       string `gorm:"uniqueIndex;not null"`
-	Email             string
-	CCCDNumber        string
-	FullName          string
-	IsVerified        bool `gorm:"default:false"`
-	IsActivated       bool `gorm:"default:false"` // Only activated user when first registered and verified OTP completely
-	VerifiedAt        time.Time
-	Role              string             `gorm:"default:'user'"`
-	DeviceToken       string             // FCM token for push notification
+	// DeletedAt     gorm.DeletedAt `gorm:"index"`
+	PhoneNumber string `gorm:"uniqueIndex;not null"`
+	Email       string
+	CCCDNumber  string
+	Gender      string `gorm:"default:'male'"` // gender is male or female
+	AvatarURL   string
+	FullName    string
+	IsVerified  bool `gorm:"default:false"`
+	IsActivated bool `gorm:"default:false"` // Only activated user when first registered and verified OTP completely
+	VerifiedAt  time.Time
+	Role        string `gorm:"default:'user'"`
+	DeviceToken string // FCM token for push notification
+
+	// MoMo Wallet fields
+	MomoFirstRequestID uuid.UUID `gorm:"type:uuid"`          // First request ID to link MoMo wallet (and use for get recurringToken so must store)
+	MoMoCallbackToken  string    `gorm:"type:text"`          // Token to verify callback from MoMo and get recurring token for later use
+	MoMoRecurringToken string    `gorm:"uniqueIndex"`        // Recurring token to use for later transactions
+	MoMoStatus         string    `gorm:"default:'inactive'"` // active, inactive
+	MoMoLastLinkedAt   time.Time
+	IsMomoLinked       bool   `gorm:"default:false"` // Check if user has linked MoMo wallet
+	MomoWalletID       string `gorm:"uniqueIndex"`   // MoMo wallet ID (phone number that is registered with MoMo wallet)
+
+	// New field for storing money received in app
+	BalanceInApp float64 `gorm:"default:0"` // Store balance in cents/smallest currency unit
+
 	Vehicles          []Vehicle          // One-to-many relationship with Vehicle
 	RatingsReceived   []Rating           `gorm:"foreignKey:RateeID"` // One-to-many relationship with Rating (received)
 	RatingsGiven      []Rating           `gorm:"foreignKey:RaterID"` // One-to-many relationship with Rating (given)
@@ -99,7 +114,7 @@ type Transaction struct {
 	ReceiverID    uuid.UUID `gorm:"type:uuid"`
 	Receiver      User      `gorm:"foreignKey:ReceiverID"`
 	Amount        float64
-	PaymentMethod string    `gorm:"default:'cash'"`    // cash, wallet, credit_card
+	PaymentMethod string    `gorm:"default:'cash'"`    // cash, momo
 	Status        string    `gorm:"default:'pending'"` // pending, completed, failed, refunded
 	RideID        uuid.UUID `gorm:"type:uuid"`
 	Ride          Ride      `gorm:"foreignKey:RideID"`
@@ -143,8 +158,22 @@ type RideOffer struct {
 	Status                 string  `gorm:"default:'created'"` // created, matched, ongoing, completed, cancelled
 	Rides                  []Ride  `gorm:"foreignKey:RideOfferID"`
 	StartTime              time.Time
-	EndTime                time.Time // Time to end the ride (end time = start time + duration)
-	Fare                   float64   // Total price of the ride offer (to show to the hitchhiker)
+	EndTime                time.Time  // Time to end the ride (end time = start time + duration)
+	Fare                   float64    // Total price of the ride offer (to show to the hitchhiker)
+	Waypoints              []Waypoint `gorm:"foreignKey:RideOfferID"`
+}
+
+// Waypoint represents a waypoint of a ride offer (because a ride offer can have multiple waypoints max 5 points)
+type Waypoint struct {
+	ID            uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	CreatedAt     time.Time `gorm:"autoCreateTime"`
+	UpdatedAt     time.Time `gorm:"autoUpdateTime"`
+	RideOfferID   uuid.UUID `gorm:"type:uuid"`
+	RideOffer     RideOffer `gorm:"foreignKey:RideOfferID"`
+	Latitude      float64
+	Longitude     float64
+	WaypointOrder int
+	Address       string `gorm:"type:text"`
 }
 
 // RideRequest represents a ride request in the system
@@ -160,6 +189,7 @@ type RideRequest struct {
 	EndLongitude          float64
 	RiderCurrentLatitude  float64
 	RiderCurrentLongitude float64
+	MomoTransID           int64             // MoMo transaction ID (if user paid with MoMo, then store the transaction ID here if later need to refund)
 	StartAddress          string            `gorm:"type:text"`
 	EndAddress            string            `gorm:"type:text"`
 	Status                string            `gorm:"default:'created'"` // created, matched, ongoing, completed, cancelled
