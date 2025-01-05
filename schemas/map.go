@@ -147,7 +147,7 @@ type GiveRideResponse struct {
 	Duration    int                     `json:"duration"`
 	StartTime   time.Time               `json:"start_time"`
 	EndTime     time.Time               `json:"end_time"`
-	Fare        float64                 `json:"fare"`
+	Fare        int64                   `json:"fare"`
 	Vehicle     VehicleDetail           `json:"vehicle"`
 	Waypoints   []Waypoint              `json:"waypoints"`
 }
@@ -265,12 +265,14 @@ type SuggestRideRequestResponse struct {
 
 // Define UserInfo struct
 type UserInfo struct {
-	ID           uuid.UUID `json:"user_id"`
-	PhoneNumber  string    `json:"phone_number"`
-	FullName     string    `json:"full_name"`
-	AvatarURL    string    `json:"avatar_url"`
-	Gender       string    `json:"gender"`
-	IsMomoLinked bool      `json:"is_momo_linked"`
+	ID            uuid.UUID `json:"user_id"`
+	PhoneNumber   string    `json:"phone_number"`
+	FullName      string    `json:"full_name"`
+	AvatarURL     string    `json:"avatar_url"`
+	AverageRating float64   `json:"average_rating"`
+	Gender        string    `json:"gender"`
+	IsMomoLinked  bool      `json:"is_momo_linked"`
+	BalanceInApp  int64     `json:"balance_in_app"`
 }
 
 // Define RideRequestDetail struct
@@ -331,6 +333,6 @@ type RideOfferDetail struct {
 	StartTime              time.Time     `json:"start_time"`
 	EndTime                time.Time     `json:"end_time"`
 	Status                 string        `json:"status"`
-	Fare                   float64       `json:"fare"`
+	Fare                   int64         `json:"fare"`
 	Waypoints              []Waypoint    `json:"waypoints"`
 }

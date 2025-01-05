@@ -115,3 +115,13 @@ type UpdateCallStatusResponse struct {
 	ReceiverID  uuid.UUID `json:"receiver_id"`  // User who received the call
 	MessageType string    `json:"message_type"` // text or image or missed_call or call
 }
+
+// Define SearchUsersRequest schema
+type SearchUsersRequest struct {
+	SearchInput string `json:"search_input" binding:"required"` // Search input can be username or phonenuber
+}
+
+// Define SearchUsersResponse schema
+type SearchUsersResponse struct {
+	ChatRooms []ChatRoomResponse `json:"chatRooms"` // Return chat rooms with the searched user
+}
