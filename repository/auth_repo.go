@@ -26,7 +26,8 @@ type IAuthRepository interface {
 	GetUserByID(userID uuid.UUID) (migration.User, error)
 	RegisterDeviceToken(userID uuid.UUID, deviceToken string) error
 	DeleteUser(phoneNumber string) error
-	UpdateUserProfile(userID uuid.UUID, phoneNumber string, fullName string, email string) error
+	UpdateUserProfile(userID uuid.UUID, fullName string, email string, gender string) error
+	UpdateAvatar(userID uuid.UUID, avatarURL string) error
 }
 
 // AuthRepository implements IAuthRepository
@@ -181,6 +182,13 @@ func (r *AuthRepository) CreateUser(phoneNumber, fullName, email string) (uuid.U
 	if err := tx.Create(&user).Error; err != nil {
 		tx.Rollback()
 		return uuid.Nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	// Update user avatar
+	avatarURL := fmt.Sprintf("https://api.multiavatar.com/%s.png", user.ID)
+	if err := tx.Model(&migration.User{}).Where("id = ?", user.ID).Update("avatar_url", avatarURL).Error; err != nil {
+		tx.Rollback()
+		return uuid.Nil, fmt.Errorf("failed to update user avatar: %w", err)
 	}
 
 	if err := tx.Commit().Error; err != nil {
@@ -435,7 +443,7 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 }
 
 // UpdateUser updates the user with the given user ID
-func (r *AuthRepository) UpdateUserProfile(userID uuid.UUID, phoneNumber, fullName, email string) error {
+func (r *AuthRepository) UpdateUserProfile(userID uuid.UUID, fullName, email, gender string) error {
 	tx := r.db.Begin()
 	// Defer a function to handle rollback or commit
 	defer func() {
@@ -446,8 +454,8 @@ func (r *AuthRepository) UpdateUserProfile(userID uuid.UUID, phoneNumber, fullNa
 
 	// Create a map to hold the fields to update
 	updates := map[string]interface{}{
-		"phone_number": phoneNumber,
-		"full_name":    fullName,
+		"gender":    gender,
+		"full_name": fullName,
 	}
 
 	// Only include email in updates if it's not empty
@@ -461,6 +469,33 @@ func (r *AuthRepository) UpdateUserProfile(userID uuid.UUID, phoneNumber, fullNa
 	if result.Error != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to update user profile: %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		tx.Rollback()
+		return errors.New("user not found")
+	}
+
+	return tx.Commit().Error
+}
+
+// UpdateAvatar updates the user avatar with the given user ID
+func (r *AuthRepository) UpdateAvatar(userID uuid.UUID, avatarURL string) error {
+	tx := r.db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// Update the user avatar URL with the given user ID
+	result := tx.Model(&migration.User{}).
+		Where("id = ?", userID).
+		Update("avatar_url", avatarURL)
+
+	if result.Error != nil {
+		tx.Rollback()
+		return result.Error
 	}
 
 	if result.RowsAffected == 0 {
