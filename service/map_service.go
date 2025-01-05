@@ -6,16 +6,19 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
+	"time"
+	_ "time/tzdata"
+
 	"shareway/helper"
 	"shareway/infra/db/migration"
 	"shareway/repository"
 	"shareway/schemas"
 	"shareway/util"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -194,7 +197,10 @@ func (s *MapService) GetAutoComplete(ctx context.Context, input string, limit in
 		} else {
 			for i := range response.Predictions {
 				if i < len(distanceMatrix.Rows[0].Elements) {
-					response.Predictions[i].Distance = float64(distanceMatrix.Rows[0].Elements[i].Distance.Value) / 1000 // Convert to km
+					// Convert to km and round to 2 decimal places
+					distanceKm := float64(distanceMatrix.Rows[0].Elements[i].Distance.Value) / 1000
+					roundedDistance := math.Round(distanceKm*100) / 100
+					response.Predictions[i].Distance = roundedDistance
 				}
 			}
 		}
@@ -277,11 +283,19 @@ func (s *MapService) CreateGiveRide(ctx context.Context, input schemas.GiveRideR
 	// If start_time is not provided, the ride is immediate
 	var startTime time.Time
 	if input.StartTime != "" {
-		// Parse the start time to UTC time
-		startTime, err = time.Parse("2006-01-02T15:04:05.999999", input.StartTime)
+		// Parse the start time as GMT+7
+		location, err := time.LoadLocation("Asia/Bangkok") // GMT+7
+		if err != nil {
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to load location: %w", err)
+		}
+
+		// Parse the time in the GMT+7 location
+		startTime, err = time.ParseInLocation("2006-01-02T15:04:05.999999", input.StartTime, location)
 		if err != nil {
 			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to parse start time: %w", err)
 		}
+
+		// Convert to UTC
 		startTime = startTime.UTC()
 	} else {
 		startTime = time.Now().UTC()
@@ -367,13 +381,23 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 
 	// Check start_time from input and set the ride request status accordingly
 	// If start_time is not provided, the ride is immediate
+	// Check start_time from input and set the ride request status accordingly
+	// If start_time is not provided, the ride is immediate
 	var startTime time.Time
 	if input.StartTime != "" {
-		// Parse the start time to UTC time
-		startTime, err = time.Parse("2006-01-02T15:04:05.999999", input.StartTime)
+		// Parse the start time as GMT+7
+		location, err := time.LoadLocation("Asia/Bangkok") // GMT+7
+		if err != nil {
+			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to load location: %w", err)
+		}
+
+		// Parse the time in the GMT+7 location
+		startTime, err = time.ParseInLocation("2006-01-02T15:04:05.999999", input.StartTime, location)
 		if err != nil {
 			return schemas.GoongDirectionsResponse{}, uuid.Nil, fmt.Errorf("failed to parse start time: %w", err)
 		}
+
+		// Convert to UTC
 		startTime = startTime.UTC()
 	} else {
 		startTime = time.Now().UTC()
@@ -463,7 +487,10 @@ func (s *MapService) GetGeoCode(ctx context.Context, point schemas.Point, curren
 	}
 
 	for i := range optimizedResults.Results {
-		optimizedResults.Results[i].Distance = float64(distanceMatrix.Rows[0].Elements[i].Distance.Value) / 1000 // Convert to km
+		// Convert to km and round to 2 decimal places
+		distanceKm := float64(distanceMatrix.Rows[0].Elements[i].Distance.Value) / 1000
+		roundedDistance := math.Round(distanceKm*100) / 100
+		optimizedResults.Results[i].Distance = roundedDistance
 	}
 
 	return optimizedResults, nil

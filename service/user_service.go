@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"mime/multipart"
+	"time"
+
 	"shareway/infra/bucket"
 	"shareway/infra/db/migration"
 	"shareway/infra/fpt"
@@ -10,7 +12,6 @@ import (
 	"shareway/schemas"
 	"shareway/util"
 	"shareway/util/token"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -37,6 +38,7 @@ type IUsersService interface {
 	DeleteUser(phoneNumber string) error
 	UpdateUserProfile(userID uuid.UUID, fullName string, email string, gender string) error
 	UpdateAvatar(ctx context.Context, userID uuid.UUID, avatarImage *multipart.FileHeader) (string, error)
+	GetTotalTransactionsForUser(userID uuid.UUID) (int64, error)
 }
 
 // UsersService implements IUsersService and handles user-related business logic
@@ -202,6 +204,11 @@ func (s *UsersService) UpdateAvatar(ctx context.Context, userID uuid.UUID, avata
 	}
 
 	return avatarURL, nil
+}
+
+// GetTotalTransactionsForUser retrieves the total number of transactions for the given user ID
+func (s *UsersService) GetTotalTransactionsForUser(userID uuid.UUID) (int64, error) {
+	return s.repo.GetTotalTransactionsForUser(userID)
 }
 
 // Ensure UsersService implements IUsersService

@@ -23,12 +23,19 @@ type IRideService interface {
 	GetRideRequestByID(rideRequestID uuid.UUID) (migration.RideRequest, error)
 	GetTransactionByRideID(rideID uuid.UUID) (migration.Transaction, error)
 	AcceptRideRequest(rideOfferID, rideRequestID, vehicleID uuid.UUID) (migration.Ride, error)
-	CreateRideTransaction(rideID uuid.UUID, Fare float64, paymentMethod string, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error)
+	CreateRideTransaction(rideID uuid.UUID, Fare int64, paymentMethod string, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error)
 	StartRide(req schemas.StartRideRequest, userID uuid.UUID) (migration.Ride, error)
 	EndRide(req schemas.EndRideRequest, userID uuid.UUID) (migration.Ride, error)
 	UpdateRideLocation(req schemas.UpdateRideLocationRequest, userID uuid.UUID) (migration.Ride, error)
 	CancelRide(req schemas.CancelRideRequest, userID uuid.UUID) (migration.Ride, error)
 	GetAllPendingRide(userID uuid.UUID) ([]migration.RideOffer, []migration.RideRequest, error)
+	GetRideByID(rideID uuid.UUID) (migration.Ride, error)
+	RatingRideHitcher(req schemas.RatingRideHitcherRequest, userID uuid.UUID) error
+	RatingRideDriver(req schemas.RatingRideDriverRequest, userID uuid.UUID) error
+	GetRideHistory(userID uuid.UUID) ([]migration.Ride, error)
+	GetTotalRidesForUser(userID uuid.UUID) (int64, error)
+	GetTotalRidesForVehicle(vehicleID uuid.UUID) (int64, error)
+	GetScheduledAndOngoingRide(userID uuid.UUID) ([]migration.Ride, error)
 }
 
 func NewRideService(repo repository.IRideRepository, hub *ws.Hub, cfg util.Config) IRideService {
@@ -60,7 +67,7 @@ func (s *RideService) AcceptRideRequest(rideOfferID, rideRequestID, vehicleID uu
 }
 
 // CreateRideTransaction creates a transaction for a ride
-func (s *RideService) CreateRideTransaction(rideID uuid.UUID, Fare float64, paymentMethod string, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error) {
+func (s *RideService) CreateRideTransaction(rideID uuid.UUID, Fare int64, paymentMethod string, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error) {
 	return s.repo.CreateRideTransaction(rideID, Fare, paymentMethod, payerID, receiverID)
 }
 
@@ -95,6 +102,34 @@ func (s *RideService) GetChatRoomByUserIDs(userID1, userID2 uuid.UUID) (migratio
 
 func (s *RideService) GetAllPendingRide(userID uuid.UUID) ([]migration.RideOffer, []migration.RideRequest, error) {
 	return s.repo.GetAllPendingRide(userID)
+}
+
+func (s *RideService) GetRideByID(rideID uuid.UUID) (migration.Ride, error) {
+	return s.repo.GetRideByID(rideID)
+}
+
+func (s *RideService) RatingRideHitcher(req schemas.RatingRideHitcherRequest, userID uuid.UUID) error {
+	return s.repo.RatingRideHitcher(req, userID)
+}
+
+func (s *RideService) RatingRideDriver(req schemas.RatingRideDriverRequest, userID uuid.UUID) error {
+	return s.repo.RatingRideDriver(req, userID)
+}
+
+func (s *RideService) GetRideHistory(userID uuid.UUID) ([]migration.Ride, error) {
+	return s.repo.GetRideHistory(userID)
+}
+
+func (s *RideService) GetTotalRidesForUser(userID uuid.UUID) (int64, error) {
+	return s.repo.GetTotalRidesForUser(userID)
+}
+
+func (s *RideService) GetTotalRidesForVehicle(vehicleID uuid.UUID) (int64, error) {
+	return s.repo.GetTotalRidesForVehicle(vehicleID)
+}
+
+func (s *RideService) GetScheduledAndOngoingRide(userID uuid.UUID) ([]migration.Ride, error) {
+	return s.repo.GetScheduledAndOngoingRide(userID)
 }
 
 // Make sure the RideService implements the IRideService interface
