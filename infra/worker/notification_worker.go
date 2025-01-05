@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"time"
+
 	"shareway/infra/fcm"
 	"shareway/infra/rabbitmq"
 	"shareway/schemas"
 	"shareway/util"
-	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )

@@ -1,9 +1,10 @@
 package migration
 
 import (
+	"time"
+
 	"shareway/util/jsonb"
 	"shareway/util/polyline"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -27,16 +28,20 @@ type User struct {
 	DeviceToken string // FCM token for push notification
 
 	// MoMo Wallet fields
-	MomoFirstRequestID uuid.UUID `gorm:"type:uuid"`          // First request ID to link MoMo wallet (and use for get recurringToken so must store)
-	MoMoCallbackToken  string    `gorm:"type:text"`          // Token to verify callback from MoMo and get recurring token for later use
-	MoMoRecurringToken string    `gorm:"uniqueIndex"`        // Recurring token to use for later transactions
+	MomoFirstRequestID uuid.UUID `gorm:"type:uuid"` // First request ID to link MoMo wallet (and use for get recurringToken so must store)
+	MoMoCallbackToken  string    `gorm:"type:text"` // Token to verify callback from MoMo and get recurring token for later use
+	MoMoRecurringToken string    // Recurring token to use for later transactions
 	MoMoStatus         string    `gorm:"default:'inactive'"` // active, inactive
 	MoMoLastLinkedAt   time.Time
 	IsMomoLinked       bool   `gorm:"default:false"` // Check if user has linked MoMo wallet
-	MomoWalletID       string `gorm:"uniqueIndex"`   // MoMo wallet ID (phone number that is registered with MoMo wallet)
+	MomoWalletID       string // MoMo wallet ID (phone number that is registered with MoMo wallet)
 
 	// New field for storing money received in app
-	BalanceInApp float64 `gorm:"default:0"` // Store balance in cents/smallest currency unit
+	BalanceInApp int64 `gorm:"default:0"` // Store balance in vnđ currency unit
+
+	// Ratings and reviews
+	AverageRating float64 `gorm:"default:5"` // Average rating of the user (default 5 because new user has no rating)
+	TotalRatings  int64   `gorm:"default:0"` // Total number of ratings received for calculating average rating
 
 	Vehicles          []Vehicle          // One-to-many relationship with Vehicle
 	RatingsReceived   []Rating           `gorm:"foreignKey:RateeID"` // One-to-many relationship with Rating (received)
@@ -60,7 +65,6 @@ type Admin struct {
 	FullName string
 	Role     string         `gorm:"default:'admin'"`
 	Tokens   []SanctumToken `gorm:"foreignKey:AdminID"` // Add reverse relation
-
 }
 
 // SanctumToken represents a Sanctum token for user authentication (for admin)
@@ -113,9 +117,9 @@ type Transaction struct {
 	Payer         User      `gorm:"foreignKey:PayerID"`
 	ReceiverID    uuid.UUID `gorm:"type:uuid"`
 	Receiver      User      `gorm:"foreignKey:ReceiverID"`
-	Amount        float64
+	Amount        int64     // in vnđ so cannot have decimal and 1000 is the smallest currency unit
 	PaymentMethod string    `gorm:"default:'cash'"`    // cash, momo
-	Status        string    `gorm:"default:'pending'"` // pending, completed, failed, refunded
+	Status        string    `gorm:"default:'pending'"` // pending, completed, refunded
 	RideID        uuid.UUID `gorm:"type:uuid"`
 	Ride          Ride      `gorm:"foreignKey:RideID"`
 }
@@ -159,7 +163,7 @@ type RideOffer struct {
 	Rides                  []Ride  `gorm:"foreignKey:RideOfferID"`
 	StartTime              time.Time
 	EndTime                time.Time  // Time to end the ride (end time = start time + duration)
-	Fare                   float64    // Total price of the ride offer (to show to the hitchhiker)
+	Fare                   int64      // Total price of the ride offer (to show to the hitchhiker)
 	Waypoints              []Waypoint `gorm:"foreignKey:RideOfferID"`
 }
 
@@ -213,7 +217,7 @@ type Ride struct {
 	Status          string      `gorm:"default:'scheduled'"` // scheduled, ongoing, completed, cancelled
 	StartTime       time.Time
 	EndTime         time.Time
-	Fare            float64
+	Fare            int64             // Total price of the ride (to show to the hitchhiker, vnđ so cannot use float)
 	StartAddress    string            `gorm:"type:text"`
 	EndAddress      string            `gorm:"type:text"`
 	EncodedPolyline polyline.Polyline `gorm:"type:text"`
