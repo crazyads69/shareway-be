@@ -4,6 +4,7 @@ package ws
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 )
 
 // Hub maintains the set of active clients and broadcasts messages
@@ -80,6 +81,7 @@ func (h *Hub) SendToUser(userID string, messageType string, data interface{}) er
 	default:
 		close(client.send)
 		delete(h.clients, userID)
+		log.Printf("Failed to send message to client %s: send buffer full", userID)
 		return fmt.Errorf("client send buffer full")
 	}
 }

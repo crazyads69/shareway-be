@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
 	"shareway/helper"
 
 	"github.com/gin-gonic/gin"
@@ -22,13 +23,13 @@ var upgrader = websocket.Upgrader{
 }
 
 // ServeWs handles WebSocket requests from the peer
-func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request, userID string) {
+func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request, userID string, wsURL string) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256), userID: userID}
+	client := NewClient(hub, conn, userID, wsURL)
 	client.hub.register <- client
 
 	// Start goroutines for pumping messages
@@ -55,8 +56,11 @@ func WebSocketHandler(ctx *gin.Context, hub *Hub) {
 		)
 	}
 
+	// Get the WebSocket URL
+	wsURL := "ws://" + ctx.Request.Host + ctx.Request.URL.Path + "?" + ctx.Request.URL.RawQuery
+
 	// Serve WebSocket connection
-	ServeWs(hub, ctx.Writer, ctx.Request, userID)
+	ServeWs(hub, ctx.Writer, ctx.Request, userID, wsURL)
 }
 
 type Message struct {

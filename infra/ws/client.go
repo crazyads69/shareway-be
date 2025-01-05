@@ -29,9 +29,10 @@ type Client struct {
 	isConnected    bool
 	reconnectDelay time.Duration
 	done           chan struct{}
+	wsURL          string
 }
 
-func NewClient(hub *Hub, conn *websocket.Conn, userID string) *Client {
+func NewClient(hub *Hub, conn *websocket.Conn, userID string, wsURL string) *Client {
 	return &Client{
 		hub:            hub,
 		conn:           conn,
@@ -40,6 +41,7 @@ func NewClient(hub *Hub, conn *websocket.Conn, userID string) *Client {
 		isConnected:    true,
 		reconnectDelay: initialReconnectDelay,
 		done:           make(chan struct{}),
+		wsURL:          wsURL,
 	}
 }
 
@@ -68,6 +70,9 @@ func (c *Client) reconnect(url string) {
 			c.reconnectDelay = initialReconnectDelay
 			c.mu.Unlock()
 
+			// Re-register the client with the Hub
+			c.hub.register <- c
+
 			go c.readPump()
 			go c.writePump()
 			return
@@ -82,6 +87,9 @@ func (c *Client) readPump() {
 		c.conn.Close()
 		c.isConnected = false
 		c.mu.Unlock()
+
+		// Trigger reconnection
+		// go c.reconnect(c.wsURL)
 	}()
 
 	c.conn.SetReadLimit(maxMessageSize)
