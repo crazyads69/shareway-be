@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
 	"shareway/helper"
 	"shareway/infra/agora"
 	"shareway/infra/task"
@@ -69,6 +70,18 @@ func (cc *ChatController) SendMessage(ctx *gin.Context) {
 			fmt.Errorf("failed to convert payload"),
 			"Failed to convert payload",
 			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get details of the sender user
+	sender, err := cc.UserService.GetUserByID(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get sender details",
+			"Không thể lấy thông tin người gửi",
 		)
 		helper.GinResponse(ctx, 500, response)
 		return
@@ -168,7 +181,7 @@ func (cc *ChatController) SendMessage(ctx *gin.Context) {
 
 	notification := schemas.Notification{
 		Title: "Tin nhắn mới",
-		Body:  fmt.Sprintf("Bạn có tin nhắn mới từ %s", receiver.FullName),
+		Body:  fmt.Sprintf("Bạn có tin nhắn mới từ %s", sender.FullName),
 		Data:  notificationPayloadMap,
 		Token: receiver.DeviceToken,
 	}
@@ -223,6 +236,18 @@ func (cc *ChatController) SendImage(ctx *gin.Context) {
 			fmt.Errorf("failed to convert payload"),
 			"Failed to convert payload",
 			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get details of the sender user
+	sender, err := cc.UserService.GetUserByID(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get sender details",
+			"Không thể lấy thông tin người gửi",
 		)
 		helper.GinResponse(ctx, 500, response)
 		return
@@ -356,7 +381,7 @@ func (cc *ChatController) SendImage(ctx *gin.Context) {
 
 	notification := schemas.Notification{
 		Title: "Tin nhắn mới",
-		Body:  fmt.Sprintf("Bạn có tin nhắn mới từ %s", receiver.FullName),
+		Body:  fmt.Sprintf("Bạn có tin nhắn mới từ %s", sender.FullName),
 		Data:  notificationPayloadMap,
 		Token: receiver.DeviceToken,
 	}
@@ -414,47 +439,14 @@ func (cc *ChatController) GetAllChatRooms(ctx *gin.Context) {
 		return
 	}
 
-	// Get all chat rooms
 	chatRooms, err := cc.ChatService.GetAllChatRooms(data.UserID)
 	if err != nil {
-		response := helper.ErrorResponseWithMessage(
+		helper.GinResponse(ctx, 500, helper.ErrorResponseWithMessage(
 			err,
 			"Failed to get chat rooms",
 			"Không thể lấy danh sách chat rooms",
-		)
-		helper.GinResponse(ctx, 500, response)
+		))
 		return
-	}
-
-	userInfos := make([]schemas.UserInfo, len(chatRooms))
-	for i, room := range chatRooms {
-		// Get receiver info
-		// Check who is the receiver
-		var receiverID uuid.UUID
-		if room.User1ID == data.UserID {
-			receiverID = room.User2ID
-		} else {
-			receiverID = room.User1ID
-		}
-		receiver, err := cc.UserService.GetUserByID(receiverID) // Make sure to get the receiver info
-		if err != nil {
-			response := helper.ErrorResponseWithMessage(
-				err,
-				"Failed to get receiver info",
-				"Không thể lấy thông tin người nhận",
-			)
-			helper.GinResponse(ctx, 500, response)
-			return
-		}
-
-		userInfos[i] = schemas.UserInfo{
-			ID:           receiver.ID,
-			FullName:     receiver.FullName,
-			PhoneNumber:  receiver.PhoneNumber,
-			Gender:       receiver.Gender,
-			AvatarURL:    receiver.AvatarURL,
-			IsMomoLinked: receiver.IsMomoLinked,
-		}
 	}
 
 	res := schemas.GetAllChatRoomsResponse{
@@ -462,21 +454,44 @@ func (cc *ChatController) GetAllChatRooms(ctx *gin.Context) {
 	}
 
 	for i, room := range chatRooms {
+		receiverID := room.User2ID
+		if room.User1ID != data.UserID {
+			receiverID = room.User1ID
+		}
+
+		receiver, err := cc.UserService.GetUserByID(receiverID)
+		if err != nil {
+			helper.GinResponse(ctx, 500, helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get receiver info",
+				"Không thể lấy thông tin người nhận",
+			))
+			return
+		}
+
 		res.ChatRooms[i] = schemas.ChatRoomResponse{
-			ID:            room.ID,
-			ReceiverInfo:  userInfos[i],
+			ID: room.ID,
+			ReceiverInfo: schemas.UserInfo{
+				ID:            receiver.ID,
+				FullName:      receiver.FullName,
+				PhoneNumber:   receiver.PhoneNumber,
+				Gender:        receiver.Gender,
+				AvatarURL:     receiver.AvatarURL,
+				IsMomoLinked:  receiver.IsMomoLinked,
+				BalanceInApp:  receiver.BalanceInApp,
+				AverageRating: receiver.AverageRating,
+			},
 			LastMessage:   room.LastMessageText,
 			LastMessageAt: room.LastMessageAt,
 			LastMessageID: room.LastMessageID,
 		}
 	}
 
-	response := helper.SuccessResponse(
+	helper.GinResponse(ctx, 200, helper.SuccessResponse(
 		res,
 		"Chat rooms fetched successfully",
 		"Danh sách chat rooms đã được lấy thành công",
-	)
-	helper.GinResponse(ctx, 200, response)
+	))
 }
 
 // GetChatMessages gets all messages of a chat room
@@ -594,6 +609,18 @@ func (cc *ChatController) InitiateCall(ctx *gin.Context) {
 			fmt.Errorf("failed to convert payload"),
 			"Failed to convert payload",
 			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get details of the caller
+	caller, err := cc.UserService.GetUserByID(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get caller details",
+			"Không thể lấy thông tin người gọi",
 		)
 		helper.GinResponse(ctx, 500, response)
 		return
@@ -733,7 +760,7 @@ func (cc *ChatController) InitiateCall(ctx *gin.Context) {
 
 	notification := schemas.Notification{
 		Title: "Cuộc gọi mới",
-		Body:  fmt.Sprintf("Bạn có cuộc gọi mới từ %s", receiver.FullName),
+		Body:  fmt.Sprintf("Bạn có cuộc gọi mới từ %s", caller.FullName),
 		Data:  notificationPayloadMap,
 		Token: receiver.DeviceToken,
 	}
@@ -792,6 +819,18 @@ func (cc *ChatController) UpdateCallStatus(ctx *gin.Context) {
 		return
 	}
 
+	// Get details of the caller
+	caller, err := cc.UserService.GetUserByID(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get caller details",
+			"Không thể lấy thông tin người gọi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	var req schemas.UpdateCallStatusRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		response := helper.ErrorResponseWithMessage(
@@ -826,7 +865,20 @@ func (cc *ChatController) UpdateCallStatus(ctx *gin.Context) {
 		return
 	}
 
+	// Get chatroomid from message
+	chatRoom, err := cc.ChatService.GetChatRoomByID(req.ReceiverID, data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get chat room",
+			"Không thể lấy chat room",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	res := schemas.UpdateCallStatusResponse{
+		ChatRoomID:  chatRoom.ID,
 		MessageID:   message.ID,
 		Message:     message.Message,
 		ReceiverID:  message.ReceiverID,
@@ -854,8 +906,27 @@ func (cc *ChatController) UpdateCallStatus(ctx *gin.Context) {
 		Payload: res,
 	}
 
+	// Prepare second websocket message for the caller
+	wsMessageCaller := schemas.WebSocketMessage{
+		Type:    "update-call-status",
+		UserID:  data.UserID.String(),
+		Payload: res,
+	}
+
 	// Prepare notification message
 	resMap, err := helper.ConvertToStringMap(res)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert response to map",
+			"Không thể chuyển đổi response thành map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Prepare second notification message for the caller
+	resMapCaller, err := helper.ConvertToStringMap(res)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -882,11 +953,35 @@ func (cc *ChatController) UpdateCallStatus(ctx *gin.Context) {
 		return
 	}
 
+	// Second notification message for the caller
+	notificationPayloadCaller := schemas.NotificationPayload{
+		Type: "update-call-status",
+		Data: resMapCaller,
+	}
+	notificationPayloadMapCaller, err := helper.ConvertToStringMap(notificationPayloadCaller)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert notification payload to map",
+			"Không thể chuyển đổi notification payload thành map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	notification := schemas.Notification{
 		Title: "Trạng thái cuộc gọi",
-		Body:  fmt.Sprintf("Trạng thái cuộc gọi từ %s", receiver.FullName),
+		Body:  fmt.Sprintf("Trạng thái cuộc gọi từ %s", caller.FullName),
 		Data:  notificationPayloadMap,
 		Token: receiver.DeviceToken,
+	}
+
+	// Second notification message for the caller
+	notificationCaller := schemas.Notification{
+		Title: "Trạng thái cuộc gọi",
+		Body:  fmt.Sprintf("Trạng thái cuộc gọi từ %s", receiver.FullName),
+		Data:  notificationPayloadMapCaller,
+		Token: caller.DeviceToken,
 	}
 
 	go func() {
@@ -894,12 +989,28 @@ func (cc *ChatController) UpdateCallStatus(ctx *gin.Context) {
 		if err != nil {
 			log.Printf("failed to send notification: %v", err)
 		}
+		// Check if the message is missed call
+		if message.MessageType == "missed_call" {
+			// Send notification to the caller
+			err := cc.asyncClient.EnqueueFCMNotification(notificationCaller)
+			if err != nil {
+				log.Printf("failed to send notification: %v", err)
+			}
+		}
 	}()
 
 	go func() {
 		err := cc.asyncClient.EnqueueWebsocketMessage(wsMessage)
 		if err != nil {
 			log.Printf("failed to send websocket message: %v", err)
+		}
+
+		// Send websocket message to the caller
+		if message.MessageType == "missed_call" {
+			err := cc.asyncClient.EnqueueWebsocketMessage(wsMessageCaller)
+			if err != nil {
+				log.Printf("failed to send websocket message: %v", err)
+			}
 		}
 	}()
 
@@ -909,4 +1020,79 @@ func (cc *ChatController) UpdateCallStatus(ctx *gin.Context) {
 		"Trạng thái cuộc gọi đã được cập nhật thành công",
 	)
 	helper.GinResponse(ctx, 200, response)
+}
+
+// SearchUsers searches for users by full name (case-insensitive) that have matched with user
+// SearchUsers godoc
+// @Summary Search for users by full name (case-insensitive) that have matched with user
+// @Description Search for users by full name (case-insensitive) that have matched with user
+// @Tags chat
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body schemas.SearchUsersRequest true "Search users request"
+// @Success 200 {object} helper.Response{data=schemas.SearchUsersResponse} "Users fetched successfully"
+// @Failure 400 {object} helper.Response "Invalid request"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /chat/search-users [post]
+func (cc *ChatController) SearchUsers(ctx *gin.Context) {
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+	data, err := helper.ConvertToPayload(payload)
+	if err != nil {
+		helper.GinResponse(ctx, 500, helper.ErrorResponseWithMessage(err, "Failed to convert payload", "Không thể chuyển đổi payload"))
+		return
+	}
+
+	var req schemas.SearchUsersRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		helper.GinResponse(ctx, 400, helper.ErrorResponseWithMessage(err, "Failed to bind JSON", "Không thể bind JSON"))
+		return
+	}
+
+	if err := cc.validate.Struct(req); err != nil {
+		helper.GinResponse(ctx, 400, helper.ErrorResponseWithMessage(err, "Failed to validate request", "Không thể validate request"))
+		return
+	}
+
+	chatrooms, err := cc.ChatService.SearchUsers(req, data.UserID)
+	if err != nil {
+		helper.GinResponse(ctx, 500, helper.ErrorResponseWithMessage(err, "Failed to search users", "Không thể tìm kiếm người dùng"))
+		return
+	}
+
+	res := schemas.SearchUsersResponse{
+		ChatRooms: make([]schemas.ChatRoomResponse, len(chatrooms)),
+	}
+
+	for i, room := range chatrooms {
+		receiverID := room.User2ID
+		if room.User1ID != data.UserID {
+			receiverID = room.User1ID
+		}
+
+		receiver, err := cc.UserService.GetUserByID(receiverID)
+		if err != nil {
+			helper.GinResponse(ctx, 500, helper.ErrorResponseWithMessage(err, "Failed to get receiver info", "Không thể lấy thông tin người nhận"))
+			return
+		}
+
+		res.ChatRooms[i] = schemas.ChatRoomResponse{
+			ID: room.ID,
+			ReceiverInfo: schemas.UserInfo{
+				ID:            receiver.ID,
+				FullName:      receiver.FullName,
+				PhoneNumber:   receiver.PhoneNumber,
+				Gender:        receiver.Gender,
+				AvatarURL:     receiver.AvatarURL,
+				IsMomoLinked:  receiver.IsMomoLinked,
+				BalanceInApp:  receiver.BalanceInApp,
+				AverageRating: receiver.AverageRating,
+			},
+			LastMessage:   room.LastMessageText,
+			LastMessageAt: room.LastMessageAt,
+			LastMessageID: room.LastMessageID,
+		}
+	}
+
+	helper.GinResponse(ctx, 200, helper.SuccessResponse(res, "Users fetched successfully", "Người dùng đã được tìm kiếm thành công"))
 }
