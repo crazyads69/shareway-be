@@ -13,6 +13,12 @@ definitions:
     type: object
   schemas.AcceptGiveRideRequestRequest:
     properties:
+      paymentMethod:
+        description: Payment method (cash or momo)
+        enum:
+        - cash
+        - momo
+        type: string
       receiverID:
         description: The ID of the receiver (the user who received the request) aka
           the hitcher
@@ -28,6 +34,7 @@ definitions:
         description: The ID of the vehicle
         type: string
     required:
+    - paymentMethod
     - receiverID
     - rideOfferID
     - rideRequestID
@@ -83,9 +90,19 @@ definitions:
         $ref: '#/definitions/schemas.UserInfo'
       vehicle:
         $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
     type: object
   schemas.AcceptHitchRideRequestRequest:
     properties:
+      paymentMethod:
+        description: Payment method (cash or momo)
+        enum:
+        - cash
+        - momo
+        type: string
       receiverID:
         description: The ID of the receiver (the user who received the request) aka
           the driver
@@ -101,6 +118,7 @@ definitions:
         description: The ID of the vehicle
         type: string
     required:
+    - paymentMethod
     - receiverID
     - rideOfferID
     - rideRequestID
@@ -156,6 +174,10 @@ definitions:
         $ref: '#/definitions/schemas.UserInfo'
       vehicle:
         $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
     type: object
   schemas.AdminInfo:
     properties:
@@ -244,6 +266,26 @@ definitions:
         $ref: '#/definitions/schemas.UserInfo'
       room_id:
         type: string
+    type: object
+  schemas.CheckoutRideRequest:
+    properties:
+      receiverID:
+        description: The ID of the receiver (the user who received the request) aka
+          the driver
+        type: string
+      rideOfferID:
+        description: The ID of the ride offer (the user who received request is the
+          driver)
+        type: string
+      rideRequestID:
+        description: |-
+          Use for checkout with momo
+          The ID of the ride request (current user is the hitcher)
+        type: string
+    required:
+    - receiverID
+    - rideOfferID
+    - rideRequestID
     type: object
   schemas.CreateNotificationRequest:
     properties:
@@ -339,6 +381,10 @@ definitions:
         $ref: '#/definitions/schemas.UserInfo'
       vehicle:
         $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
     type: object
   schemas.GeoCodeLocation:
     properties:
@@ -381,6 +427,11 @@ definitions:
     - current_location
     - point
     type: object
+  schemas.GetAdminProfileResponse:
+    properties:
+      admin_info:
+        $ref: '#/definitions/schemas.AdminInfo'
+    type: object
   schemas.GetAllChatRoomsRequest:
     properties:
       userID:
@@ -398,6 +449,7 @@ definitions:
   schemas.GetAllPendingRideResponse:
     properties:
       pending_ride_offer:
+        description: The pending ride offer of the user
         items:
           $ref: '#/definitions/schemas.RideOfferDetail'
         type: array
@@ -479,6 +531,10 @@ definitions:
         type: string
       vehicle:
         $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
     type: object
   schemas.GoongAutoCompleteResponse:
     properties:
@@ -672,6 +728,24 @@ definitions:
       token:
         type: string
     type: object
+  schemas.LinkMomoRequest:
+    properties:
+      walletPhoneNumber:
+        description: |-
+          Different from phoneNumber that is used for login
+          This is the phone number that is registered with momo wallet
+        maxLength: 10
+        minLength: 10
+        type: string
+    required:
+    - walletPhoneNumber
+    type: object
+  schemas.LinkMomoWalletResponse:
+    properties:
+      deeplink:
+        description: send this to fe flutter app for open momo and perform linked
+        type: string
+    type: object
   schemas.LoginAdminRequest:
     properties:
       password:
@@ -770,6 +844,39 @@ definitions:
         type: string
       sender_id:
         type: string
+    type: object
+  schemas.MoMoIPN:
+    properties:
+      amount:
+        type: integer
+      callbackToken:
+        type: string
+      extraData:
+        type: string
+      message:
+        type: string
+      orderId:
+        type: string
+      orderInfo:
+        type: string
+      orderType:
+        type: string
+      partnerClientId:
+        type: string
+      partnerCode:
+        type: string
+      payType:
+        type: string
+      requestId:
+        type: string
+      responseTime:
+        type: integer
+      resultCode:
+        type: integer
+      signature:
+        type: string
+      transId:
+        type: integer
     type: object
   schemas.PlusCode:
     properties:
@@ -936,6 +1043,10 @@ definitions:
         $ref: '#/definitions/schemas.UserInfo'
       vehicle:
         $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
     type: object
   schemas.RideRequestDetail:
     properties:
@@ -1124,6 +1235,10 @@ definitions:
         $ref: '#/definitions/schemas.UserInfo'
       vehicle:
         $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
     type: object
   schemas.StructuredFormatting:
     properties:
@@ -1179,6 +1294,13 @@ definitions:
         type: string
       transaction_id:
         type: string
+    type: object
+  schemas.UpdateAvatarResponse:
+    properties:
+      user:
+        $ref: '#/definitions/schemas.UserResponse'
+    required:
+    - user
     type: object
   schemas.UpdateCallStatusRequest:
     properties:
@@ -1291,6 +1413,10 @@ definitions:
         $ref: '#/definitions/schemas.UserInfo'
       vehicle:
         $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
     type: object
   schemas.UpdateUserProfileRequest:
     properties:
@@ -1298,15 +1424,17 @@ definitions:
         maxLength: 256
         type: string
       full_name:
-        description: Email is optional
         maxLength: 256
         minLength: 3
         type: string
-      phone_number:
+      gender:
+        enum:
+        - male
+        - female
         type: string
     required:
     - full_name
-    - phone_number
+    - gender
     type: object
   schemas.UpdateUserProfileResponse:
     properties:
@@ -1317,8 +1445,14 @@ definitions:
     type: object
   schemas.UserInfo:
     properties:
+      avatar_url:
+        type: string
       full_name:
         type: string
+      gender:
+        type: string
+      is_momo_linked:
+        type: boolean
       phone_number:
         type: string
       user_id:
@@ -1326,15 +1460,21 @@ definitions:
     type: object
   schemas.UserResponse:
     properties:
+      avatar_url:
+        type: string
       created_at:
         type: string
       email:
         type: string
       full_name:
         type: string
+      gender:
+        type: string
       id:
         type: string
       is_activated:
+        type: boolean
+      is_momo_linked:
         type: boolean
       is_verified:
         type: boolean
@@ -1424,6 +1564,19 @@ definitions:
     - otp
     - phone_number
     type: object
+  schemas.Waypoint:
+    properties:
+      address:
+        type: string
+      lattitude:
+        type: number
+      longitude:
+        type: number
+      order:
+        type: integer
+      waypoint_id:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
@@ -1467,6 +1620,27 @@ paths:
       summary: Login as an admin
       tags:
       - admin/auth
+  /admin/get-profile:
+    get:
+      consumes:
+      - application/json
+      description: Get the profile of the admin
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.GetAdminProfileResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the profile of the admin
+      tags:
+      - admin
   /auth/delete-user:
     post:
       consumes:
@@ -2108,6 +2282,32 @@ paths:
       summary: Update the call status of a chat room (missed, rejected, ended)
       tags:
       - chat
+  /ipn/handle-ipn:
+    post:
+      consumes:
+      - application/json
+      description: Handle IPN from payment gateway
+      parameters:
+      - description: MoMo IPN
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.MoMoIPN'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No content
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      summary: Handle IPN from payment gateway
+      tags:
+      - ipn
   /map/autocomplete:
     get:
       consumes:
@@ -2418,6 +2618,75 @@ paths:
       summary: Create a test websocket
       tags:
       - notification
+  /payment/checkout-ride:
+    post:
+      consumes:
+      - application/json
+      description: Checkout ride with momo
+      parameters:
+      - description: Checkout ride request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CheckoutRideRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Link wallet response
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Checkout ride with momo
+      tags:
+      - payment
+  /payment/link-momo-wallet:
+    post:
+      consumes:
+      - application/json
+      description: Link momo wallet to user account
+      parameters:
+      - description: Link momo wallet request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.LinkMomoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Link momo wallet response
+          schema:
+            $ref: '#/definitions/schemas.LinkMomoWalletResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Link momo wallet to user account
+      tags:
+      - payment
   /protected/test:
     get:
       consumes:
@@ -2866,6 +3135,42 @@ paths:
       security:
       - BearerAuth: []
       summary: Register device token for push notifications
+      tags:
+      - user
+  /user/update-avatar:
+    post:
+      consumes:
+      - application/json
+      description: Update the avatar image of the authenticated user
+      parameters:
+      - description: Avatar image file
+        in: formData
+        name: avatar_image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated avatar
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.UpdateAvatarResponse'
+              type: object
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Update user avatar
       tags:
       - user
   /user/update-profile:

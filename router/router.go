@@ -7,6 +7,7 @@ import (
 	"shareway/middleware"
 	"shareway/service"
 	"shareway/util"
+	"shareway/util/sanctum"
 	"shareway/util/token"
 	"time"
 
@@ -22,18 +23,19 @@ import (
 
 // APIServer represents the API server structure
 type APIServer struct {
-	router      *gin.Engine
-	Maker       *token.PasetoMaker
-	Cfg         util.Config
-	Service     *service.ServiceContainer
-	Validate    *validator.Validate
-	Hub         *ws.Hub
-	AsyncClient *task.AsyncClient
-	Agora       *agora.Agora
+	router       *gin.Engine
+	Maker        *token.PasetoMaker
+	Cfg          util.Config
+	Service      *service.ServiceContainer
+	Validate     *validator.Validate
+	Hub          *ws.Hub
+	AsyncClient  *task.AsyncClient
+	Agora        *agora.Agora
+	SanctumToken *sanctum.SanctumToken
 }
 
 // NewAPIServer creates and initializes a new APIServer instance
-func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.ServiceContainer, Validate *validator.Validate, Hub *ws.Hub, AsyncClient *task.AsyncClient, Agora *agora.Agora) (*APIServer, error) {
+func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.ServiceContainer, Validate *validator.Validate, Hub *ws.Hub, AsyncClient *task.AsyncClient, Agora *agora.Agora, SanctumToken *sanctum.SanctumToken) (*APIServer, error) {
 	r := gin.Default()
 
 	if cfg.GinMode != "release" {
@@ -49,14 +51,15 @@ func NewAPIServer(maker *token.PasetoMaker, cfg util.Config, service *service.Se
 	setupBasicRoutes(r)
 
 	return &APIServer{
-		router:      r,
-		Maker:       maker,
-		Cfg:         cfg,
-		Service:     service,
-		Validate:    Validate,
-		Hub:         Hub,
-		AsyncClient: AsyncClient,
-		Agora:       Agora,
+		router:       r,
+		Maker:        maker,
+		Cfg:          cfg,
+		Service:      service,
+		Validate:     Validate,
+		Hub:          Hub,
+		AsyncClient:  AsyncClient,
+		Agora:        Agora,
+		SanctumToken: SanctumToken,
 	}, nil
 }
 
@@ -102,8 +105,14 @@ func (server *APIServer) SetupRouter() {
 	SetupNotificationRouter(server.router.Group("/notification", middleware.AuthMiddleware(server.Maker)), server)
 	// Chat routes for sending messages
 	SetupChatRouter(server.router.Group("/chat", middleware.AuthMiddleware(server.Maker)), server)
+	// Payment routes for payment management
+	SetupPaymentRouter(server.router.Group("/payment", middleware.AuthMiddleware(server.Maker)), server)
+	// IPN routes for payment gateway IPN handling
+	SetupIPNRouter(server.router.Group("/ipn"), server)
 	// Admin routes for admin management
 	SetupAuthAdminRouter(server.router.Group("/admin/auth"), server)
+	// Admin routes for admin management
+	SetupAdminRouter(server.router.Group("/admin", middleware.AuthAdminMiddleware(server.SanctumToken)), server)
 
 }
 

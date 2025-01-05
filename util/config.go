@@ -62,6 +62,13 @@ type Config struct {
 	AgoraAppID                     string `mapstructure:"AGORA_APP_ID"`
 	AgoraAppCertificate            string `mapstructure:"AGORA_APP_CERTIFICATE"`
 	BcryptCost                     int    `mapstructure:"BCRYPT_COST"`
+	MomoPartnerCode                string `mapstructure:"MOMO_PARTNER_CODE"`
+	MomoAccessKey                  string `mapstructure:"MOMO_ACCESS_KEY"`
+	MomoSecretKey                  string `mapstructure:"MOMO_SECRET_KEY"`
+	MomoPublicKey                  string `mapstructure:"MOMO_PUBLIC_KEY"`
+	MomoPaymentURL                 string `mapstructure:"MOMO_PAYMENT_URL"`
+	MomoPaymentNotifyURL           string `mapstructure:"MOMO_PAYMENT_NOTIFY_URL"`
+	MomoPaymentRedirectURL         string `mapstructure:"MOMO_PAYMENT_REDIRECT_URL"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

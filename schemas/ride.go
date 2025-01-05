@@ -42,6 +42,7 @@ type SendGiveRideRequestResponse struct {
 	Fare                   float64       `json:"fare"`
 	ReceiverID             uuid.UUID     `json:"receiver_id"`
 	RideRequestID          uuid.UUID     `json:"ride_request_id"`
+	Waypoints              []Waypoint    `json:"waypoints"`
 }
 
 // Define SendHitchRideRequestRequest schema
@@ -89,6 +90,8 @@ type AcceptGiveRideRequestRequest struct {
 	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
 	// The ID of the vehicle
 	VehicleID uuid.UUID `json:"vehicleID" binding:"required,uuid" validate:"required,uuid"`
+	// Payment method (cash or momo)
+	PaymentMethod string `json:"paymentMethod" binding:"required" validate:"required,oneof=cash momo"`
 }
 
 type TransactionDetail struct {
@@ -124,6 +127,7 @@ type AcceptGiveRideRequestResponse struct {
 	Vehicle                VehicleDetail     `json:"vehicle"`
 	UserInfo               UserInfo          `json:"user"`
 	ReceiverID             uuid.UUID         `json:"receiver_id"`
+	Waypoints              []Waypoint        `json:"waypoints"`
 }
 
 // Define AcceptHitchRideRequestRequest schema
@@ -136,6 +140,8 @@ type AcceptHitchRideRequestRequest struct {
 	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
 	// The ID of the vehicle
 	VehicleID uuid.UUID `json:"vehicleID" binding:"required,uuid" validate:"required,uuid"`
+	// Payment method (cash or momo)
+	PaymentMethod string `json:"paymentMethod" binding:"required" validate:"required,oneof=cash momo"`
 }
 
 // Define AcceptHitchRideRequestResponse schema
@@ -164,6 +170,7 @@ type AcceptHitchRideRequestResponse struct {
 	DriverCurrentLongitude float64           `json:"driver_current_longitude"`
 	RiderCurrentLatitude   float64           `json:"rider_current_latitude"`
 	RiderCurrentLongitude  float64           `json:"rider_current_longitude"`
+	Waypoints              []Waypoint        `json:"waypoints"`
 }
 
 type CancelGiveRideRequestRequest struct {
@@ -236,6 +243,7 @@ type StartRideResponse struct {
 	DriverCurrentLongitude float64           `json:"driver_current_longitude"`
 	RiderCurrentLatitude   float64           `json:"rider_current_latitude"`
 	RiderCurrentLongitude  float64           `json:"rider_current_longitude"`
+	Waypoints              []Waypoint        `json:"waypoints"`
 }
 
 // Define EndRideRequest schema
@@ -273,6 +281,7 @@ type EndRideResponse struct {
 	DriverCurrentLongitude float64           `json:"driver_current_longitude"`
 	RiderCurrentLatitude   float64           `json:"rider_current_latitude"`
 	RiderCurrentLongitude  float64           `json:"rider_current_longitude"`
+	Waypoints              []Waypoint        `json:"waypoints"`
 }
 
 // Define UpdateRideLocationRequest schema
@@ -310,6 +319,7 @@ type UpdateRideLocationResponse struct {
 	DriverCurrentLongitude float64           `json:"driver_current_longitude"`
 	RiderCurrentLatitude   float64           `json:"rider_current_latitude"`
 	RiderCurrentLongitude  float64           `json:"rider_current_longitude"`
+	Waypoints              []Waypoint        `json:"waypoints"`
 }
 
 type CancelRideRequest struct {
@@ -340,6 +350,5 @@ type GetAllPendingRideResponse struct {
 	// The pending ride request of the user
 	PendingRideRequest []RideRequestDetail `json:"pending_ride_request"`
 	// The pending ride offer of the user
-
 	PendingRideOffer []RideOfferDetail `json:"pending_ride_offer"`
 }

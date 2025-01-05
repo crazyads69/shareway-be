@@ -23,6 +23,8 @@ type ServiceContainer struct {
 	NotificationService INotificationService
 	ChatService         IChatService
 	AdminService        IAdminService
+	PaymentService      IPaymentService
+	IPNService          IIPNService
 }
 
 type ServiceFactory struct {
@@ -72,6 +74,8 @@ func (f *ServiceFactory) CreateServices() *ServiceContainer {
 		NotificationService: f.createNotificationService(),
 		ChatService:         f.createChatService(),
 		AdminService:        f.createAdminService(),
+		PaymentService:      f.createPaymentService(),
+		IPNService:          f.createIPNService(),
 	}
 }
 
@@ -80,7 +84,7 @@ func (f *ServiceFactory) createOTPService() IOTPService {
 }
 
 func (f *ServiceFactory) createUserService() IUsersService {
-	return NewUsersService(f.repos.AuthRepository, f.encryptor, f.fptReader, f.maker, f.cfg)
+	return NewUsersService(f.repos.AuthRepository, f.encryptor, f.fptReader, f.maker, f.cfg, f.cloudinary)
 }
 
 func (f *ServiceFactory) createMapsService() IMapService {
@@ -105,4 +109,12 @@ func (f *ServiceFactory) createChatService() IChatService {
 
 func (f *ServiceFactory) createAdminService() IAdminService {
 	return NewAdminService(f.repos.AdminRepository, f.hub, f.cfg, f.cloudinary, f.sanctumToken)
+}
+
+func (f *ServiceFactory) createPaymentService() IPaymentService {
+	return NewPaymentService(f.repos.PaymentRepository, f.hub, f.cfg)
+}
+
+func (f *ServiceFactory) createIPNService() IIPNService {
+	return NewIPNService(f.repos.IPNRepository, f.hub, f.cfg)
 }

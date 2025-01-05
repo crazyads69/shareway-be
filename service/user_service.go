@@ -1,7 +1,9 @@
 package service
 
 import (
+	"context"
 	"mime/multipart"
+	"shareway/infra/bucket"
 	"shareway/infra/db/migration"
 	"shareway/infra/fpt"
 	"shareway/repository"
@@ -33,26 +35,29 @@ type IUsersService interface {
 	GetUserByID(userID uuid.UUID) (migration.User, error)
 	RegisterDeviceToken(userID uuid.UUID, deviceToken string) error
 	DeleteUser(phoneNumber string) error
-	UpdateUserProfile(userID uuid.UUID, phoneNumber string, fullName string, email string) error
+	UpdateUserProfile(userID uuid.UUID, fullName string, email string, gender string) error
+	UpdateAvatar(ctx context.Context, userID uuid.UUID, avatarImage *multipart.FileHeader) (string, error)
 }
 
 // UsersService implements IUsersService and handles user-related business logic
 type UsersService struct {
-	repo      repository.IAuthRepository
-	encryptor util.IEncryptor
-	fptReader *fpt.FPTReader
-	maker     *token.PasetoMaker
-	cfg       util.Config
+	repo       repository.IAuthRepository
+	encryptor  util.IEncryptor
+	fptReader  *fpt.FPTReader
+	maker      *token.PasetoMaker
+	cfg        util.Config
+	cloudinary *bucket.CloudinaryService
 }
 
 // NewUsersService creates a new instance of UsersService
-func NewUsersService(repo repository.IAuthRepository, encryptor util.IEncryptor, fptReader *fpt.FPTReader, maker *token.PasetoMaker, cfg util.Config) IUsersService {
+func NewUsersService(repo repository.IAuthRepository, encryptor util.IEncryptor, fptReader *fpt.FPTReader, maker *token.PasetoMaker, cfg util.Config, cloudinary *bucket.CloudinaryService) IUsersService {
 	return &UsersService{
-		repo:      repo,
-		encryptor: encryptor,
-		fptReader: fptReader,
-		maker:     maker,
-		cfg:       cfg,
+		repo:       repo,
+		encryptor:  encryptor,
+		fptReader:  fptReader,
+		maker:      maker,
+		cfg:        cfg,
+		cloudinary: cloudinary,
 	}
 }
 
@@ -180,8 +185,23 @@ func (s *UsersService) DeleteUser(phoneNumber string) error {
 }
 
 // UpdateUserProfile updates the user profile with the given user ID
-func (s *UsersService) UpdateUserProfile(userID uuid.UUID, phoneNumber, fullName, email string) error {
-	return s.repo.UpdateUserProfile(userID, phoneNumber, fullName, email)
+func (s *UsersService) UpdateUserProfile(userID uuid.UUID, fullName, email, gender string) error {
+	return s.repo.UpdateUserProfile(userID, fullName, email, gender)
+}
+
+// UpdateAvatar updates the user avatar with the given user ID
+func (s *UsersService) UpdateAvatar(ctx context.Context, userID uuid.UUID, avatarImage *multipart.FileHeader) (string, error) {
+	avatarURL, err := s.cloudinary.UploadChatImage(ctx, avatarImage)
+	if err != nil {
+		return "", err
+	}
+
+	err = s.repo.UpdateAvatar(userID, avatarURL)
+	if err != nil {
+		return "", err
+	}
+
+	return avatarURL, nil
 }
 
 // Ensure UsersService implements IUsersService

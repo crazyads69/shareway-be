@@ -26,3 +26,8 @@ type LoginAdminResponse struct {
 	Token     string    `json:"token"`
 	AdminInfo AdminInfo `json:"admin_info"`
 }
+
+// Define the GetAdminProfileResponse struct
+type GetAdminProfileResponse struct {
+	AdminInfo AdminInfo `json:"admin_info"`
+}

@@ -17,6 +17,8 @@ type RepositoryContainer struct {
 	NotificationRepository INotificationRepository
 	ChatRepository         IChatRepository
 	AdminRepository        IAdminRepository
+	PaymentRepository      IPaymentRepository
+	IPNRepository          IIPNRepository
 	// Add other repositories here as needed
 }
 
@@ -47,6 +49,8 @@ func (f *RepositoryFactory) CreateRepositories() *RepositoryContainer {
 		NotificationRepository: f.createNotificationRepository(),
 		ChatRepository:         f.createChatRepository(),
 		AdminRepository:        f.createAdminRepository(),
+		PaymentRepository:      f.createPaymentRepository(),
+		IPNRepository:          f.createIPNRepository(),
 		// Initialize other repositories here
 	}
 }
@@ -89,6 +93,16 @@ func (f *RepositoryFactory) createChatRepository() IChatRepository {
 // createAdminRepository initializes and returns the Admin repository
 func (f *RepositoryFactory) createAdminRepository() IAdminRepository {
 	return NewAdminRepository(f.db, f.redisClient)
+}
+
+// createPaymentRepository initializes and returns the Payment repository
+func (f *RepositoryFactory) createPaymentRepository() IPaymentRepository {
+	return NewPaymentRepository(f.db, f.redisClient)
+}
+
+// createIPNRepository initializes and returns the IPN repository
+func (f *RepositoryFactory) createIPNRepository() IIPNRepository {
+	return NewIPNRepository(f.db, f.redisClient)
 }
 
 // Add methods for creating other repositories as needed

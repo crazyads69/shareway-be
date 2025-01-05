@@ -20,7 +20,7 @@ type IRideRepository interface {
 	GetRideRequestByID(rideRequestID uuid.UUID) (migration.RideRequest, error)
 	GetTransactionByRideID(rideID uuid.UUID) (migration.Transaction, error)
 	AcceptRideRequest(rideOfferID, rideRequestID, vehicleID uuid.UUID) (migration.Ride, error)
-	CreateRideTransaction(rideID uuid.UUID, Fare float64, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error)
+	CreateRideTransaction(rideID uuid.UUID, Fare float64, paymentMethod string, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error)
 	StartRide(req schemas.StartRideRequest, userID uuid.UUID) (migration.Ride, error)
 	EndRide(req schemas.EndRideRequest, userID uuid.UUID) (migration.Ride, error)
 	UpdateRideLocation(req schemas.UpdateRideLocationRequest, userID uuid.UUID) (migration.Ride, error)
@@ -262,7 +262,7 @@ func (r *RideRepository) AcceptRideRequest(rideOfferID, rideRequestID, vehicleID
 }
 
 // CreateRideTransaction creates a transaction for a ride
-func (r *RideRepository) CreateRideTransaction(rideID uuid.UUID, Fare float64, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error) {
+func (r *RideRepository) CreateRideTransaction(rideID uuid.UUID, Fare float64, paymentMethod string, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error) {
 	var transaction migration.Transaction
 
 	err := r.db.Transaction(func(tx *gorm.DB) error {
@@ -271,7 +271,7 @@ func (r *RideRepository) CreateRideTransaction(rideID uuid.UUID, Fare float64, p
 			RideID:        rideID,
 			Amount:        Fare,
 			Status:        "pending",
-			PaymentMethod: "cash",
+			PaymentMethod: paymentMethod,
 			PayerID:       payerID,
 			ReceiverID:    receiverID,
 		}
@@ -606,18 +606,18 @@ func (r *RideRepository) GetAllPendingRide(userID uuid.UUID) ([]migration.RideOf
 	var rideOffers []migration.RideOffer
 	var rideRequests []migration.RideRequest
 
-	// Get all ride offers that not have status cancelled or completed
+	// Get all ride offers that not have status cancelled or completed and not matched (status = created)
 	err := r.db.Model(&migration.RideOffer{}).
-		Where("user_id = ? AND status NOT IN ('cancelled', 'completed')", userID).
+		Where("user_id = ? AND status = 'created'", userID).
 		Find(&rideOffers).
 		Error
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Get all ride requests that not have status cancelled or completed
+	// Get all ride requests that not have status cancelled or completed and not matched (status = created)
 	err = r.db.Model(&migration.RideRequest{}).
-		Where("user_id = ? AND status NOT IN ('cancelled', 'completed')", userID).
+		Where("user_id = ? AND status = 'created'", userID).
 		Find(&rideRequests).
 		Error
 	if err != nil {

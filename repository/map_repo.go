@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -21,6 +22,7 @@ type IMapsRepository interface {
 	SuggestRideRequests(userID uuid.UUID, rideOfferID uuid.UUID) ([]migration.RideRequest, error)
 	SuggestRideOffers(userID uuid.UUID, rideRequestID uuid.UUID) ([]migration.RideOffer, error)
 	GetRideByID(rideID uuid.UUID) (migration.Ride, error)
+	GetAllWaypoints(rideOfferID uuid.UUID) ([]migration.Waypoint, error)
 }
 
 type MapsRepository struct {
@@ -32,7 +34,16 @@ func NewMapsRepository(db *gorm.DB) IMapsRepository {
 }
 
 func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point, startTime time.Time, vehicleID uuid.UUID) (uuid.UUID, error) {
+	log.Debug().
+		Interface("route", route).
+		Str("userID", userID.String()).
+		Interface("currentLocation", currentLocation).
+		Time("startTime", startTime).
+		Str("vehicleID", vehicleID.String()).
+		Msg("CreateGiveRide function called")
+
 	if len(route.Routes) == 0 || len(route.Routes[0].Legs) == 0 {
+		log.Error().Msg("Invalid route data: empty routes or legs")
 		return uuid.Nil, errors.New("invalid route data")
 	}
 
@@ -47,54 +58,65 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 	}
 	totalDistance /= 1000 // Convert to kilometers
 
+	log.Debug().
+		Int("totalDistance", totalDistance).
+		Int("totalDuration", totalDuration).
+		Msg("Calculated total distance and duration")
+
 	endTime := startTime.Add(time.Duration(totalDuration) * time.Second)
 
 	var rideOfferID uuid.UUID
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		// Check if the vehicle exists and belongs to the user
-		// Check if the vehicle exists and belongs to the user
+		log.Debug().Msg("Starting database transaction")
+
 		var vehicle migration.Vehicle
 		if err := r.db.Preload("VehicleType").Where("id = ? AND user_id = ?", vehicleID, userID).First(&vehicle).Error; err != nil {
+			log.Error().Err(err).Msg("Failed to fetch vehicle")
 			return err
 		}
+		log.Debug().Interface("vehicle", vehicle).Msg("Fetched vehicle")
 
-		// Check for overlapping ride offers
 		var existingRideOfferCount int64
 		err := tx.Model(&migration.RideOffer{}).
 			Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
 				userID, startTime, endTime, startTime, endTime, startTime, endTime).
 			Count(&existingRideOfferCount).Error
 		if err != nil {
+			log.Error().Err(err).Msg("Error checking for existing ride offers")
 			return fmt.Errorf("error checking for existing ride offers: %w", err)
 		}
 		if existingRideOfferCount > 0 {
+			log.Warn().Int64("count", existingRideOfferCount).Msg("Ride offer already exists for the user in that time frame")
 			return errors.New("ride offer already exists for the user in that time frame")
 		}
 
-		// Check for overlapping ride requests
 		var existingRideRequestCount int64
 		err = tx.Model(&migration.RideRequest{}).
 			Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
 				userID, startTime, endTime, startTime, endTime, startTime, endTime).
 			Count(&existingRideRequestCount).Error
 		if err != nil {
+			log.Error().Err(err).Msg("Error checking for existing ride requests")
 			return fmt.Errorf("error checking for existing ride requests: %w", err)
 		}
 		if existingRideRequestCount > 0 {
+			log.Warn().Int64("count", existingRideRequestCount).Msg("Ride request already exists for the user in that time frame")
 			return errors.New("ride request already exists for the user in that time frame")
 		}
 
-		// Fetch fuel price
 		var fuelPrice float64
 		if err := tx.Model(&migration.FuelPrice{}).
 			Select("price").
 			Where("fuel_type = ?", "Xăng RON 95-III").
 			First(&fuelPrice).Error; err != nil {
+			log.Error().Err(err).Msg("Failed to fetch fuel price")
 			return fmt.Errorf("failed to fetch fuel price: %w", err)
 		}
+		log.Debug().Float64("fuelPrice", fuelPrice).Msg("Fetched fuel price")
 
 		fare := (vehicle.FuelConsumed / 100) * fuelPrice * float64(totalDistance)
-		// Decode the polyline and get the list of coordinates
+		log.Debug().Float64("fare", fare).Msg("Calculated fare")
+
 		decodePolyline := helper.DecodePolyline(firstRoute.Overview_polyline.Points)
 		startLocation := schemas.Point{
 			Lat: firstLeg.Start_location.Lat,
@@ -105,29 +127,11 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 			Lng: lastLeg.End_location.Lng,
 		}
 
-		// Get the correct start and end locations on the route
 		newStartLocaton, newEndLocation := helper.FindClosestPoints(decodePolyline, startLocation, endLocation)
-
-		// Create ride offer
-		// rideOffer := migration.RideOffer{
-		// 	UserID:                 userID,
-		// 	StartLatitude:          firstLeg.Start_location.Lat,
-		// 	StartLongitude:         firstLeg.Start_location.Lng,
-		// 	EndLatitude:            lastLeg.End_location.Lat,
-		// 	EndLongitude:           lastLeg.End_location.Lng,
-		// 	EncodedPolyline:        polyline.Polyline(firstRoute.Overview_polyline.Points), // Use gorm.Expr to prevent escaping
-		// 	DriverCurrentLatitude:  currentLocation.Lat,
-		// 	DriverCurrentLongitude: currentLocation.Lng,
-		// 	StartAddress:           firstLeg.Start_address,
-		// 	EndAddress:             lastLeg.End_address,
-		// 	Distance:               float64(totalDistance),
-		// 	Duration:               totalDuration,
-		// 	Status:                 "created",
-		// 	StartTime:              startTime,
-		// 	EndTime:                endTime,
-		// 	VehicleID:              vehicleID,
-		// 	Fare:                   fare,
-		// }
+		log.Debug().
+			Interface("newStartLocation", newStartLocaton).
+			Interface("newEndLocation", newEndLocation).
+			Msg("Found closest points on route")
 
 		rideOffer := migration.RideOffer{
 			UserID:                 userID,
@@ -135,7 +139,7 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 			StartLongitude:         newStartLocaton.Lng,
 			EndLatitude:            newEndLocation.Lat,
 			EndLongitude:           newEndLocation.Lng,
-			EncodedPolyline:        polyline.Polyline(firstRoute.Overview_polyline.Points), // Use gorm.Expr to prevent escaping
+			EncodedPolyline:        polyline.Polyline(firstRoute.Overview_polyline.Points),
 			DriverCurrentLatitude:  currentLocation.Lat,
 			DriverCurrentLongitude: currentLocation.Lng,
 			StartAddress:           firstLeg.Start_address,
@@ -150,22 +154,230 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 		}
 
 		if err := tx.Create(&rideOffer).Error; err != nil {
+			log.Error().Err(err).Msg("Failed to create ride offer")
 			return fmt.Errorf("failed to create ride offer: %w", err)
 		}
+		log.Info().Str("rideOfferID", rideOffer.ID.String()).Msg("Created ride offer")
 
 		rideOfferID = rideOffer.ID
+
+		if len(firstRoute.Legs) < 2 {
+			log.Debug().Msg("No need to create waypoints, only one leg")
+			return nil
+		}
+
+		newWaypoints := make([]migration.Waypoint, 0, len(route.Geocoded_waypoints)-2)
+		for i, leg := range firstRoute.Legs {
+			if i == len(firstRoute.Legs)-1 {
+				break
+			}
+
+			legEnd := leg.End_location
+
+			waypoint := migration.Waypoint{
+				RideOfferID:   rideOfferID,
+				Latitude:      legEnd.Lat,
+				Longitude:     legEnd.Lng,
+				Address:       leg.End_address,
+				WaypointOrder: i,
+			}
+			newWaypoints = append(newWaypoints, waypoint)
+		}
+		if err := tx.Create(&newWaypoints).Error; err != nil {
+			log.Error().Err(err).Msg("Failed to create waypoints")
+			return fmt.Errorf("failed to create waypoints: %w", err)
+		}
+		log.Debug().Int("waypointCount", len(newWaypoints)).Msg("Created waypoints")
+
 		return nil
 	})
 
 	if err != nil {
+		log.Error().Err(err).Msg("Transaction failed")
 		return uuid.Nil, err
 	}
 
+	log.Info().Str("rideOfferID", rideOfferID.String()).Msg("Successfully created ride offer")
 	return rideOfferID, nil
 }
 
+// func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point, startTime time.Time, vehicleID uuid.UUID) (uuid.UUID, error) {
+// 	if len(route.Routes) == 0 || len(route.Routes[0].Legs) == 0 {
+// 		return uuid.Nil, errors.New("invalid route data")
+// 	}
+
+// 	firstRoute := route.Routes[0]
+// 	firstLeg := firstRoute.Legs[0]
+// 	lastLeg := firstRoute.Legs[len(firstRoute.Legs)-1]
+
+// 	totalDistance, totalDuration := 0, 0
+// 	for _, leg := range firstRoute.Legs {
+// 		totalDistance += leg.Distance.Value
+// 		totalDuration += leg.Duration.Value
+// 	}
+// 	totalDistance /= 1000 // Convert to kilometers
+
+// 	endTime := startTime.Add(time.Duration(totalDuration) * time.Second)
+
+// 	var rideOfferID uuid.UUID
+// 	err := r.db.Transaction(func(tx *gorm.DB) error {
+// 		// Check if the vehicle exists and belongs to the user
+// 		// Check if the vehicle exists and belongs to the user
+// 		var vehicle migration.Vehicle
+// 		if err := r.db.Preload("VehicleType").Where("id = ? AND user_id = ?", vehicleID, userID).First(&vehicle).Error; err != nil {
+// 			return err
+// 		}
+
+// 		// Check for overlapping ride offers
+// 		var existingRideOfferCount int64
+// 		err := tx.Model(&migration.RideOffer{}).
+// 			Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
+// 				userID, startTime, endTime, startTime, endTime, startTime, endTime).
+// 			Count(&existingRideOfferCount).Error
+// 		if err != nil {
+// 			return fmt.Errorf("error checking for existing ride offers: %w", err)
+// 		}
+// 		if existingRideOfferCount > 0 {
+// 			return errors.New("ride offer already exists for the user in that time frame")
+// 		}
+
+// 		// Check for overlapping ride requests
+// 		var existingRideRequestCount int64
+// 		err = tx.Model(&migration.RideRequest{}).
+// 			Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
+// 				userID, startTime, endTime, startTime, endTime, startTime, endTime).
+// 			Count(&existingRideRequestCount).Error
+// 		if err != nil {
+// 			return fmt.Errorf("error checking for existing ride requests: %w", err)
+// 		}
+// 		if existingRideRequestCount > 0 {
+// 			return errors.New("ride request already exists for the user in that time frame")
+// 		}
+
+// 		// Fetch fuel price
+// 		var fuelPrice float64
+// 		if err := tx.Model(&migration.FuelPrice{}).
+// 			Select("price").
+// 			Where("fuel_type = ?", "Xăng RON 95-III").
+// 			First(&fuelPrice).Error; err != nil {
+// 			return fmt.Errorf("failed to fetch fuel price: %w", err)
+// 		}
+
+// 		fare := (vehicle.FuelConsumed / 100) * fuelPrice * float64(totalDistance)
+// 		// Decode the polyline and get the list of coordinates
+// 		decodePolyline := helper.DecodePolyline(firstRoute.Overview_polyline.Points)
+// 		startLocation := schemas.Point{
+// 			Lat: firstLeg.Start_location.Lat,
+// 			Lng: firstLeg.Start_location.Lng,
+// 		}
+// 		endLocation := schemas.Point{
+// 			Lat: lastLeg.End_location.Lat,
+// 			Lng: lastLeg.End_location.Lng,
+// 		}
+
+// 		// Get the correct start and end locations on the route
+// 		newStartLocaton, newEndLocation := helper.FindClosestPoints(decodePolyline, startLocation, endLocation)
+
+// 		// Create ride offer
+// 		// rideOffer := migration.RideOffer{
+// 		// 	UserID:                 userID,
+// 		// 	StartLatitude:          firstLeg.Start_location.Lat,
+// 		// 	StartLongitude:         firstLeg.Start_location.Lng,
+// 		// 	EndLatitude:            lastLeg.End_location.Lat,
+// 		// 	EndLongitude:           lastLeg.End_location.Lng,
+// 		// 	EncodedPolyline:        polyline.Polyline(firstRoute.Overview_polyline.Points), // Use gorm.Expr to prevent escaping
+// 		// 	DriverCurrentLatitude:  currentLocation.Lat,
+// 		// 	DriverCurrentLongitude: currentLocation.Lng,
+// 		// 	StartAddress:           firstLeg.Start_address,
+// 		// 	EndAddress:             lastLeg.End_address,
+// 		// 	Distance:               float64(totalDistance),
+// 		// 	Duration:               totalDuration,
+// 		// 	Status:                 "created",
+// 		// 	StartTime:              startTime,
+// 		// 	EndTime:                endTime,
+// 		// 	VehicleID:              vehicleID,
+// 		// 	Fare:                   fare,
+// 		// }
+
+// 		rideOffer := migration.RideOffer{
+// 			UserID:                 userID,
+// 			StartLatitude:          newStartLocaton.Lat,
+// 			StartLongitude:         newStartLocaton.Lng,
+// 			EndLatitude:            newEndLocation.Lat,
+// 			EndLongitude:           newEndLocation.Lng,
+// 			EncodedPolyline:        polyline.Polyline(firstRoute.Overview_polyline.Points), // Use gorm.Expr to prevent escaping
+// 			DriverCurrentLatitude:  currentLocation.Lat,
+// 			DriverCurrentLongitude: currentLocation.Lng,
+// 			StartAddress:           firstLeg.Start_address,
+// 			EndAddress:             lastLeg.End_address,
+// 			Distance:               float64(totalDistance),
+// 			Duration:               totalDuration,
+// 			Status:                 "created",
+// 			StartTime:              startTime,
+// 			EndTime:                endTime,
+// 			VehicleID:              vehicleID,
+// 			Fare:                   fare,
+// 		}
+
+// 		if err := tx.Create(&rideOffer).Error; err != nil {
+// 			return fmt.Errorf("failed to create ride offer: %w", err)
+// 		}
+
+// 		rideOfferID = rideOffer.ID
+
+// 		// Only create waypoints if there are more than 2 legs
+// 		if len(firstRoute.Legs) < 2 {
+// 			// no need to create waypoints if there are only 1
+// 			return nil
+// 		}
+
+// 		// Create waypoints
+// 		newWaypoints := make([]migration.Waypoint, 0, len(route.Geocoded_waypoints)-2) // Exclude the start and end locations
+// 		// TODO: Find closest points on the route for the start and end locations
+// 		// only need to store waypoints that are not the start or end locations
+// 		// And the waypoints is end location of the previous leg and start location of the next leg
+// 		for i, leg := range firstRoute.Legs {
+// 			// Store the end location of the leg as a waypoint
+// 			// only not store the last leg end location
+// 			if i == len(firstRoute.Legs)-1 {
+// 				break
+// 			}
+
+// 			legEnd := leg.End_location
+
+// 			waypoint := migration.Waypoint{
+// 				RideOfferID:   rideOfferID,
+// 				Latitude:      legEnd.Lat,
+// 				Longitude:     legEnd.Lng,
+// 				Address:       leg.End_address, // Store the address of the end location of the leg
+// 				WaypointOrder: i,
+// 			}
+// 			newWaypoints = append(newWaypoints, waypoint)
+// 		}
+// 		if err := tx.Create(&newWaypoints).Error; err != nil {
+// 			return fmt.Errorf("failed to create waypoints: %w", err)
+// 		}
+
+// 		return nil
+// 	})
+
+// 	if err != nil {
+// 		return uuid.Nil, err
+// 	}
+
+// 	return rideOfferID, nil
+// }
+
 func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point, startTime time.Time) (uuid.UUID, error) {
+	log.Debug().
+		Interface("route", route).
+		Str("userID", userID.String()).
+		Interface("currentLocation", currentLocation).
+		Time("startTime", startTime).
+		Msg("CreateHitchRide function called")
+
 	if len(route.Routes) == 0 || len(route.Routes[0].Legs) == 0 {
+		log.Error().Msg("Invalid route data: empty routes or legs")
 		return uuid.Nil, errors.New("invalid route data")
 	}
 
@@ -181,31 +393,41 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 	totalDistance /= 1000 // Convert to kilometers
 	endTime := startTime.Add(time.Duration(totalDuration) * time.Second)
 
+	log.Debug().
+		Int("totalDistance", totalDistance).
+		Int("totalDuration", totalDuration).
+		Time("endTime", endTime).
+		Msg("Calculated total distance, duration, and end time")
+
 	var rideRequestID uuid.UUID
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		// Check if any ride request exists for the user that overlaps with the new time frame
+		log.Debug().Msg("Starting database transaction")
+
 		var existingRideRequestCount int64
 		err := tx.Model(&migration.RideRequest{}).
 			Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
 				userID, startTime, endTime, startTime, endTime, startTime, endTime).
 			Count(&existingRideRequestCount).Error
 		if err != nil {
+			log.Error().Err(err).Msg("Error checking for existing ride requests")
 			return fmt.Errorf("error checking for existing ride requests: %w", err)
 		}
 		if existingRideRequestCount > 0 {
+			log.Warn().Int64("count", existingRideRequestCount).Msg("Ride request already exists for the user in that time frame")
 			return errors.New("ride request already exists for the user in that time frame")
 		}
 
-		// Check if any ride offer exists for the user that overlaps with the new time frame
 		var existingRideOfferCount int64
 		err = tx.Model(&migration.RideOffer{}).
 			Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
 				userID, startTime, endTime, startTime, endTime, startTime, endTime).
 			Count(&existingRideOfferCount).Error
 		if err != nil {
+			log.Error().Err(err).Msg("Error checking for existing ride offers")
 			return fmt.Errorf("error checking for existing ride offers: %w", err)
 		}
 		if existingRideOfferCount > 0 {
+			log.Warn().Int64("count", existingRideOfferCount).Msg("Ride offer already exists for the user in that time frame")
 			return errors.New("ride offer already exists for the user in that time frame")
 		}
 
@@ -219,27 +441,11 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 			Lng: lastLeg.End_location.Lng,
 		}
 
-		// Get the correct start and end locations on the route
 		newStartLocaton, newEndLocation := helper.FindClosestPoints(decodePolyline, startLocation, endLocation)
-
-		// Create ride request
-		// rideRequest := migration.RideRequest{
-		// 	UserID:                userID,
-		// 	StartLatitude:         firstLeg.Start_location.Lat,
-		// 	StartLongitude:        firstLeg.Start_location.Lng,
-		// 	EndLatitude:           lastLeg.End_location.Lat,
-		// 	EndLongitude:          lastLeg.End_location.Lng,
-		// 	RiderCurrentLatitude:  currentLocation.Lat,
-		// 	RiderCurrentLongitude: currentLocation.Lng,
-		// 	StartAddress:          firstLeg.Start_address,
-		// 	EndAddress:            lastLeg.End_address,
-		// 	Status:                "created",
-		// 	EncodedPolyline:       polyline.Polyline(firstRoute.Overview_polyline.Points), // Use gorm.Expr to prevent escaping
-		// 	Distance:              float64(totalDistance),
-		// 	Duration:              totalDuration,
-		// 	StartTime:             startTime,
-		// 	EndTime:               endTime,
-		// }
+		log.Debug().
+			Interface("newStartLocation", newStartLocaton).
+			Interface("newEndLocation", newEndLocation).
+			Msg("Found closest points on route")
 
 		rideRequest := migration.RideRequest{
 			UserID:                userID,
@@ -252,7 +458,7 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 			StartAddress:          firstLeg.Start_address,
 			EndAddress:            lastLeg.End_address,
 			Status:                "created",
-			EncodedPolyline:       polyline.Polyline(firstRoute.Overview_polyline.Points), // Use gorm.Expr to prevent escaping
+			EncodedPolyline:       polyline.Polyline(firstRoute.Overview_polyline.Points),
 			Distance:              float64(totalDistance),
 			Duration:              totalDuration,
 			StartTime:             startTime,
@@ -260,17 +466,131 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 		}
 
 		if err := tx.Create(&rideRequest).Error; err != nil {
+			log.Error().Err(err).Msg("Error creating ride request")
 			return fmt.Errorf("error creating ride request: %w", err)
 		}
 		rideRequestID = rideRequest.ID
+		log.Info().Str("rideRequestID", rideRequestID.String()).Msg("Created ride request")
+
 		return nil
 	})
 
 	if err != nil {
+		log.Error().Err(err).Msg("Transaction failed")
 		return uuid.Nil, err
 	}
+
+	log.Info().Str("rideRequestID", rideRequestID.String()).Msg("Successfully created hitch ride request")
 	return rideRequestID, nil
 }
+
+// func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, userID uuid.UUID, currentLocation schemas.Point, startTime time.Time) (uuid.UUID, error) {
+// 	if len(route.Routes) == 0 || len(route.Routes[0].Legs) == 0 {
+// 		return uuid.Nil, errors.New("invalid route data")
+// 	}
+
+// 	firstRoute := route.Routes[0]
+// 	firstLeg := firstRoute.Legs[0]
+// 	lastLeg := firstRoute.Legs[len(firstRoute.Legs)-1]
+
+// 	totalDistance, totalDuration := 0, 0
+// 	for _, leg := range firstRoute.Legs {
+// 		totalDistance += leg.Distance.Value
+// 		totalDuration += leg.Duration.Value
+// 	}
+// 	totalDistance /= 1000 // Convert to kilometers
+// 	endTime := startTime.Add(time.Duration(totalDuration) * time.Second)
+
+// 	var rideRequestID uuid.UUID
+// 	err := r.db.Transaction(func(tx *gorm.DB) error {
+// 		// Check if any ride request exists for the user that overlaps with the new time frame
+// 		var existingRideRequestCount int64
+// 		err := tx.Model(&migration.RideRequest{}).
+// 			Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
+// 				userID, startTime, endTime, startTime, endTime, startTime, endTime).
+// 			Count(&existingRideRequestCount).Error
+// 		if err != nil {
+// 			return fmt.Errorf("error checking for existing ride requests: %w", err)
+// 		}
+// 		if existingRideRequestCount > 0 {
+// 			return errors.New("ride request already exists for the user in that time frame")
+// 		}
+
+// 		// Check if any ride offer exists for the user that overlaps with the new time frame
+// 		var existingRideOfferCount int64
+// 		err = tx.Model(&migration.RideOffer{}).
+// 			Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
+// 				userID, startTime, endTime, startTime, endTime, startTime, endTime).
+// 			Count(&existingRideOfferCount).Error
+// 		if err != nil {
+// 			return fmt.Errorf("error checking for existing ride offers: %w", err)
+// 		}
+// 		if existingRideOfferCount > 0 {
+// 			return errors.New("ride offer already exists for the user in that time frame")
+// 		}
+
+// 		decodePolyline := helper.DecodePolyline(firstRoute.Overview_polyline.Points)
+// 		startLocation := schemas.Point{
+// 			Lat: firstLeg.Start_location.Lat,
+// 			Lng: firstLeg.Start_location.Lng,
+// 		}
+// 		endLocation := schemas.Point{
+// 			Lat: lastLeg.End_location.Lat,
+// 			Lng: lastLeg.End_location.Lng,
+// 		}
+
+// 		// Get the correct start and end locations on the route
+// 		newStartLocaton, newEndLocation := helper.FindClosestPoints(decodePolyline, startLocation, endLocation)
+
+// 		// Create ride request
+// 		// rideRequest := migration.RideRequest{
+// 		// 	UserID:                userID,
+// 		// 	StartLatitude:         firstLeg.Start_location.Lat,
+// 		// 	StartLongitude:        firstLeg.Start_location.Lng,
+// 		// 	EndLatitude:           lastLeg.End_location.Lat,
+// 		// 	EndLongitude:          lastLeg.End_location.Lng,
+// 		// 	RiderCurrentLatitude:  currentLocation.Lat,
+// 		// 	RiderCurrentLongitude: currentLocation.Lng,
+// 		// 	StartAddress:          firstLeg.Start_address,
+// 		// 	EndAddress:            lastLeg.End_address,
+// 		// 	Status:                "created",
+// 		// 	EncodedPolyline:       polyline.Polyline(firstRoute.Overview_polyline.Points), // Use gorm.Expr to prevent escaping
+// 		// 	Distance:              float64(totalDistance),
+// 		// 	Duration:              totalDuration,
+// 		// 	StartTime:             startTime,
+// 		// 	EndTime:               endTime,
+// 		// }
+
+// 		rideRequest := migration.RideRequest{
+// 			UserID:                userID,
+// 			StartLatitude:         newStartLocaton.Lat,
+// 			StartLongitude:        newStartLocaton.Lng,
+// 			EndLatitude:           newEndLocation.Lat,
+// 			EndLongitude:          newEndLocation.Lng,
+// 			RiderCurrentLatitude:  currentLocation.Lat,
+// 			RiderCurrentLongitude: currentLocation.Lng,
+// 			StartAddress:          firstLeg.Start_address,
+// 			EndAddress:            lastLeg.End_address,
+// 			Status:                "created",
+// 			EncodedPolyline:       polyline.Polyline(firstRoute.Overview_polyline.Points), // Use gorm.Expr to prevent escaping
+// 			Distance:              float64(totalDistance),
+// 			Duration:              totalDuration,
+// 			StartTime:             startTime,
+// 			EndTime:               endTime,
+// 		}
+
+// 		if err := tx.Create(&rideRequest).Error; err != nil {
+// 			return fmt.Errorf("error creating ride request: %w", err)
+// 		}
+// 		rideRequestID = rideRequest.ID
+// 		return nil
+// 	})
+
+// 	if err != nil {
+// 		return uuid.Nil, err
+// 	}
+// 	return rideRequestID, nil
+// }
 
 func (r *MapsRepository) GetRideOfferDetails(rideOfferID uuid.UUID) (migration.RideOffer, error) {
 	rideOffer := migration.RideOffer{}
@@ -353,6 +673,17 @@ func (r *MapsRepository) GetRideByID(rideID uuid.UUID) (migration.Ride, error) {
 		return migration.Ride{}, err
 	}
 	return ride, nil
+}
+
+func (r *MapsRepository) GetAllWaypoints(rideOfferID uuid.UUID) ([]migration.Waypoint, error) {
+	var waypoints []migration.Waypoint
+	err := r.db.Where("ride_offer_id = ?", rideOfferID).Order("waypoint_order").Find(&waypoints).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return waypoints, nil
 }
 
 // Make sure to implement the IMapsRepository interface
