@@ -26,6 +26,7 @@ type IIPNRepository interface {
 	UpdateUserMoMoToken(userID uuid.UUID, token schemas.DecodedToken) error
 	StoreCallbackToken(token string, userID uuid.UUID) error
 	StoreTransID(transID int64, rideRequestID uuid.UUID) error
+	UpdateUserBalance(userID uuid.UUID) error
 }
 
 func (p *IPNRepository) GetUserByPartnerClientID(partnerClientID string) (migration.User, error) {
@@ -76,6 +77,20 @@ func (p *IPNRepository) StoreTransID(transID int64, rideRequestID uuid.UUID) err
 
 	rideRequest.MomoTransID = transID
 	if err := p.db.Save(&rideRequest).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *IPNRepository) UpdateUserBalance(userID uuid.UUID) error {
+	var user migration.User
+	if err := p.db.Where("id = ?", userID).First(&user).Error; err != nil {
+		return err
+	}
+
+	// Update user balance
+	user.BalanceInApp = 0 // Set balance to 0 after successful payment to user
+	if err := p.db.Save(&user).Error; err != nil {
 		return err
 	}
 	return nil

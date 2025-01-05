@@ -3,9 +3,9 @@ package repository
 import (
 	"context"
 	"errors"
+
 	"shareway/infra/db/migration"
 	"shareway/schemas"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -19,6 +19,8 @@ type IVehicleRepository interface {
 	CaVetExists(caVet string) (bool, error)
 	GetVehicleFromID(vehicleID uuid.UUID) (schemas.VehicleDetail, error)
 	GetAllVehiclesFromUserID(userID uuid.UUID) ([]schemas.VehicleDetail, error)
+	GetTotalVehiclesForUser(userID uuid.UUID) (int64, error)
+	GetVehiclesForUser(userID uuid.UUID) ([]schemas.VehicleDetail, error)
 }
 
 type VehicleRepository struct {
@@ -35,16 +37,46 @@ var (
 )
 
 // GetVehicles retrieves all vehicles from the database and converts them to schema format
+// func (r *VehicleRepository) GetVehicles(ctx context.Context, limit int, page int, input string) ([]schemas.Vehicle, error) {
+// 	var vehicles []migration.VehicleType
+// 	input = strings.ToLower(input)
+// 	query := r.db.Model(&migration.VehicleType{}).
+// 		Select("id", "name", "fuel_consumed").
+// 		Limit(limit).
+// 		Offset(page * limit)
+
+// 	if input != "" {
+// 		query = query.Where("LOWER(name) LIKE ?", "%"+input+"%")
+// 	}
+
+// 	err := query.Find(&vehicles).Error
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	schemaVehicles := make([]schemas.Vehicle, len(vehicles))
+// 	for i, vehicle := range vehicles {
+// 		schemaVehicles[i] = schemas.Vehicle{
+// 			VehicleID:    vehicle.ID,
+// 			Name:         vehicle.Name,
+// 			FuelConsumed: vehicle.FuelConsumed,
+// 		}
+// 	}
+
+// 	return schemaVehicles, nil
+// }
+
+// GetVehicles retrieves all vehicles from the database and converts them to schema format
 func (r *VehicleRepository) GetVehicles(ctx context.Context, limit int, page int, input string) ([]schemas.Vehicle, error) {
 	var vehicles []migration.VehicleType
-	input = strings.ToLower(input)
 	query := r.db.Model(&migration.VehicleType{}).
 		Select("id", "name", "fuel_consumed").
 		Limit(limit).
 		Offset(page * limit)
 
 	if input != "" {
-		query = query.Where("LOWER(name) LIKE ?", "%"+input+"%")
+		// Use ILIKE for case-insensitive search in PostgreSQL
+		query = query.Where("name ILIKE ?", "%"+input+"%")
 	}
 
 	err := query.Find(&vehicles).Error
@@ -131,6 +163,37 @@ func (r *VehicleRepository) GetVehicleFromID(vehicleID uuid.UUID) (schemas.Vehic
 
 // GetAllVehiclesFromUserID retrieves all vehicles for a user using the user ID
 func (r *VehicleRepository) GetAllVehiclesFromUserID(userID uuid.UUID) ([]schemas.VehicleDetail, error) {
+	var vehicles []migration.Vehicle
+	err := r.db.Select("id", "name", "fuel_consumed", "license_plate").
+		Where("user_id = ?", userID).
+		Find(&vehicles).Error
+	if err != nil {
+		return nil, err
+	}
+
+	schemaVehicles := make([]schemas.VehicleDetail, len(vehicles))
+	for i, vehicle := range vehicles {
+		schemaVehicles[i] = schemas.VehicleDetail{
+			VehicleID:    vehicle.ID,
+			Name:         vehicle.Name,
+			FuelConsumed: vehicle.FuelConsumed,
+			LicensePlate: vehicle.LicensePlate,
+		}
+	}
+	return schemaVehicles, nil
+}
+
+// GetTotalVehiclesForUser retrieves the total number of vehicles for a user
+func (r *VehicleRepository) GetTotalVehiclesForUser(userID uuid.UUID) (int64, error) {
+	var total int64
+	err := r.db.Model(&migration.Vehicle{}).
+		Where("user_id = ?", userID).
+		Count(&total).Error
+	return total, err
+}
+
+// GetVehiclesForUser retrieves all vehicles for a user using the user ID
+func (r *VehicleRepository) GetVehiclesForUser(userID uuid.UUID) ([]schemas.VehicleDetail, error) {
 	var vehicles []migration.Vehicle
 	err := r.db.Select("id", "name", "fuel_consumed", "license_plate").
 		Where("user_id = ?", userID).

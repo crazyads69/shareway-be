@@ -2,10 +2,11 @@ package repository
 
 import (
 	"errors"
-	"shareway/helper"
+	"math"
+	"time"
+
 	"shareway/infra/db/migration"
 	"shareway/schemas"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -20,12 +21,21 @@ type IRideRepository interface {
 	GetRideRequestByID(rideRequestID uuid.UUID) (migration.RideRequest, error)
 	GetTransactionByRideID(rideID uuid.UUID) (migration.Transaction, error)
 	AcceptRideRequest(rideOfferID, rideRequestID, vehicleID uuid.UUID) (migration.Ride, error)
-	CreateRideTransaction(rideID uuid.UUID, Fare float64, paymentMethod string, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error)
+
+	CreateRideTransaction(rideID uuid.UUID, Fare int64, paymentMethod string, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error)
+
 	StartRide(req schemas.StartRideRequest, userID uuid.UUID) (migration.Ride, error)
 	EndRide(req schemas.EndRideRequest, userID uuid.UUID) (migration.Ride, error)
 	UpdateRideLocation(req schemas.UpdateRideLocationRequest, userID uuid.UUID) (migration.Ride, error)
 	CancelRide(req schemas.CancelRideRequest, userID uuid.UUID) (migration.Ride, error)
 	GetAllPendingRide(userID uuid.UUID) ([]migration.RideOffer, []migration.RideRequest, error)
+	GetRideByID(rideID uuid.UUID) (migration.Ride, error)
+	RatingRideHitcher(req schemas.RatingRideHitcherRequest, userID uuid.UUID) error
+	RatingRideDriver(req schemas.RatingRideDriverRequest, userID uuid.UUID) error
+	GetRideHistory(userID uuid.UUID) ([]migration.Ride, error)
+	GetTotalRidesForUser(userID uuid.UUID) (int64, error)
+	GetTotalRidesForVehicle(vehicleID uuid.UUID) (int64, error)
+	GetScheduledAndOngoingRide(userID uuid.UUID) ([]migration.Ride, error)
 }
 
 type RideRepository struct {
@@ -262,7 +272,8 @@ func (r *RideRepository) AcceptRideRequest(rideOfferID, rideRequestID, vehicleID
 }
 
 // CreateRideTransaction creates a transaction for a ride
-func (r *RideRepository) CreateRideTransaction(rideID uuid.UUID, Fare float64, paymentMethod string, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error) {
+func (r *RideRepository) CreateRideTransaction(rideID uuid.UUID, Fare int64, paymentMethod string, payerID uuid.UUID, receiverID uuid.UUID) (migration.Transaction, error) {
+
 	var transaction migration.Transaction
 
 	err := r.db.Transaction(func(tx *gorm.DB) error {
@@ -339,9 +350,10 @@ func (r *RideRepository) StartRide(req schemas.StartRideRequest, userID uuid.UUI
 		// }
 
 		// Check if the current location of the driver and hitcher is near less than 100 meters
-		if !helper.IsNearby(schemas.Point{Lat: rideOffer.DriverCurrentLatitude, Lng: rideOffer.DriverCurrentLongitude}, schemas.Point{Lat: rideRequest.RiderCurrentLatitude, Lng: rideRequest.RiderCurrentLongitude}, 0.0001) {
-			return errors.New("driver and rider are not nearby") // Make sure cannot fake the location
-		}
+		// TODO: COMMENTED OUT FOR NOW FOR BETTER TESTING AND DEMO PURPOSES
+		// if !helper.IsNearby(schemas.Point{Lat: rideOffer.DriverCurrentLatitude, Lng: rideOffer.DriverCurrentLongitude}, schemas.Point{Lat: rideRequest.RiderCurrentLatitude, Lng: rideRequest.RiderCurrentLongitude}, 0.0001) {
+		// 	return errors.New("driver and rider are not nearby") // Make sure cannot fake the location
+		// }
 
 		// TODO: In the future must check start time and end time of the ride to prevent early start or late start
 
@@ -416,6 +428,15 @@ func (r *RideRepository) EndRide(req schemas.EndRideRequest, userID uuid.UUID) (
 			return err
 		}
 
+		// Get the transaction by ride ID
+		var transaction migration.Transaction
+		err = tx.Model(&migration.Transaction{}).
+			Where("ride_id = ?", req.RideID).
+			First(&transaction).Error
+		if err != nil {
+			return err
+		}
+
 		// TODO: COMMENTED OUT FOR NOW FOR BETTER TESTING
 		// // Check if the ride is already ended
 		// if ride.Status == "completed" {
@@ -446,6 +467,14 @@ func (r *RideRepository) EndRide(req schemas.EndRideRequest, userID uuid.UUID) (
 		// Update the transaction status to completed
 		if err := tx.Model(&migration.Transaction{}).Where("ride_id = ?", req.RideID).Update("status", "completed").Error; err != nil {
 			return err
+		}
+
+		// Only update the balance in app if the payment method is momo else do nothing
+		if transaction.PaymentMethod == "momo" {
+			// Update the driver's current balance in app (add the fare)
+			if err := tx.Model(&migration.User{}).Where("id = ?", rideOffer.UserID).Update("balance_in_app", gorm.Expr("balance_in_app + ?", rideOffer.Fare)).Error; err != nil {
+				return err
+			}
 		}
 
 		// Update the ride status to ended
@@ -586,8 +615,8 @@ func (r *RideRepository) CancelRide(req schemas.CancelRideRequest, userID uuid.U
 			return err
 		}
 
-		// Update the transaction status to cancelled
-		if err := tx.Model(&migration.Transaction{}).Where("ride_id = ?", req.RideID).Update("status", "cancelled").Error; err != nil {
+		// Update the transaction status to refunded
+		if err := tx.Model(&migration.Transaction{}).Where("ride_id = ?", req.RideID).Update("status", "refunded").Error; err != nil {
 			return err
 		}
 
@@ -609,6 +638,7 @@ func (r *RideRepository) GetAllPendingRide(userID uuid.UUID) ([]migration.RideOf
 	// Get all ride offers that not have status cancelled or completed and not matched (status = created)
 	err := r.db.Model(&migration.RideOffer{}).
 		Where("user_id = ? AND status = 'created'", userID).
+		Order("created_at DESC").
 		Find(&rideOffers).
 		Error
 	if err != nil {
@@ -618,6 +648,7 @@ func (r *RideRepository) GetAllPendingRide(userID uuid.UUID) ([]migration.RideOf
 	// Get all ride requests that not have status cancelled or completed and not matched (status = created)
 	err = r.db.Model(&migration.RideRequest{}).
 		Where("user_id = ? AND status = 'created'", userID).
+		Order("created_at DESC").
 		Find(&rideRequests).
 		Error
 	if err != nil {
@@ -625,6 +656,194 @@ func (r *RideRepository) GetAllPendingRide(userID uuid.UUID) ([]migration.RideOf
 	}
 
 	return rideOffers, rideRequests, nil
+}
+
+func (r *RideRepository) GetRideByID(rideID uuid.UUID) (migration.Ride, error) {
+	var ride migration.Ride
+	err := r.db.Model(&migration.Ride{}).
+		Where("id = ?", rideID).
+		First(&ride).
+		Error
+
+	if err != nil {
+		return migration.Ride{}, err
+	}
+
+	return ride, nil
+}
+
+// RatingRideHitcher rates a ride hitcher
+func (r *RideRepository) RatingRideHitcher(req schemas.RatingRideHitcherRequest, userID uuid.UUID) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Get the ride by ID
+		var ride migration.Ride
+		if err := tx.First(&ride, req.RideID).Error; err != nil {
+			return err
+		}
+
+		// Check if the ride is completed
+		if ride.Status != "completed" {
+			return errors.New("can only rate completed rides")
+		}
+
+		// Check if the ride is already rated by this user
+		var existingRating migration.Rating
+		err := tx.Where("rater_id = ? AND ride_id = ?", userID, req.RideID).First(&existingRating).Error
+		if err == nil {
+			return errors.New("you have already rated this ride")
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		// Create a new rating
+		rating := migration.Rating{
+			RideID:  req.RideID,
+			RaterID: userID,
+			RateeID: req.ReceiverID,
+			Rating:  req.Rating,
+			Comment: req.Review,
+		}
+		if err := tx.Create(&rating).Error; err != nil {
+			return err
+		}
+
+		// Update the receiver's rating average and total rating count
+		var ratee migration.User
+		if err := tx.First(&ratee, req.ReceiverID).Error; err != nil {
+			return err
+		}
+
+		newTotalRatings := ratee.TotalRatings + 1
+		newAverageRating := math.Round((ratee.AverageRating*float64(ratee.TotalRatings)+req.Rating)/float64(newTotalRatings)*10) / 10
+
+		if err := tx.Model(&ratee).Updates(map[string]interface{}{
+			"average_rating": newAverageRating,
+			"total_ratings":  newTotalRatings,
+		}).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (r *RideRepository) RatingRideDriver(req schemas.RatingRideDriverRequest, userID uuid.UUID) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Get the ride by ID
+		var ride migration.Ride
+		if err := tx.First(&ride, req.RideID).Error; err != nil {
+			return err
+		}
+
+		// Check if the ride is completed
+		if ride.Status != "completed" {
+			return errors.New("can only rate completed rides")
+		}
+
+		// Check if the ride is already rated by this user
+		var existingRating migration.Rating
+		err := tx.Where("rater_id = ? AND ride_id = ?", userID, req.RideID).First(&existingRating).Error
+		if err == nil {
+			return errors.New("you have already rated this ride")
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		// Create a new rating
+		rating := migration.Rating{
+			RideID:  req.RideID,
+			RaterID: userID,
+			RateeID: req.ReceiverID,
+			Rating:  req.Rating,
+			Comment: req.Review,
+		}
+		if err := tx.Create(&rating).Error; err != nil {
+			return err
+		}
+
+		// Update the receiver's rating average and total rating count
+		var ratee migration.User
+		if err := tx.First(&ratee, req.ReceiverID).Error; err != nil {
+			return err
+		}
+
+		newTotalRatings := ratee.TotalRatings + 1
+		newAverageRating := math.Round((ratee.AverageRating*float64(ratee.TotalRatings)+req.Rating)/float64(newTotalRatings)*10) / 10
+
+		if err := tx.Model(&ratee).Updates(map[string]interface{}{
+			"average_rating": newAverageRating,
+			"total_ratings":  newTotalRatings,
+		}).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (r *RideRepository) GetRideHistory(userID uuid.UUID) ([]migration.Ride, error) {
+	var rides []migration.Ride
+
+	err := r.db.Where("(ride_offer_id IN (SELECT id FROM ride_offers WHERE user_id = ?) OR ride_request_id IN (SELECT id FROM ride_requests WHERE user_id = ?)) AND status IN ('completed', 'cancelled')", userID, userID).
+		Preload("RideOffer").
+		Preload("RideRequest").
+		Preload("Vehicle").
+		Order("end_time DESC").
+		// Order("created_at DESC").
+		Find(&rides).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return rides, nil
+}
+
+func (r *RideRepository) GetTotalRidesForUser(userID uuid.UUID) (int64, error) {
+	var totalRides int64
+	err := r.db.Model(&migration.Ride{}).
+		Where("(ride_offer_id IN (SELECT id FROM ride_offers WHERE user_id = ?) OR ride_request_id IN (SELECT id FROM ride_requests WHERE user_id = ?)) AND status IN ('completed', 'cancelled')", userID, userID).
+		Count(&totalRides).
+		Error
+
+	if err != nil {
+		return 0, err
+	}
+
+	return totalRides, nil
+}
+
+func (r *RideRepository) GetTotalRidesForVehicle(vehicleID uuid.UUID) (int64, error) {
+	var totalRides int64
+
+	// Get rides that have been completed with the vehicle
+	err := r.db.Model(&migration.Ride{}).
+		Where("vehicle_id = ? AND status = 'completed'", vehicleID).
+		Count(&totalRides).
+		Error
+
+	if err != nil {
+		return 0, err
+	}
+
+	return totalRides, nil
+}
+
+func (r *RideRepository) GetScheduledAndOngoingRide(userID uuid.UUID) ([]migration.Ride, error) {
+	var rides []migration.Ride
+
+	err := r.db.Where("(ride_offer_id IN (SELECT id FROM ride_offers WHERE user_id = ?) OR ride_request_id IN (SELECT id FROM ride_requests WHERE user_id = ?)) AND status IN ('scheduled', 'ongoing')", userID, userID).
+		Preload("RideOffer").
+		Preload("RideRequest").
+		Preload("Vehicle").
+		Order("start_time ASC").
+		Find(&rides).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return rides, nil
 }
 
 // Make sure the RideRepository implements the IRideRepository interface

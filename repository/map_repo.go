@@ -3,11 +3,13 @@ package repository
 import (
 	"errors"
 	"fmt"
+	"math"
+	"time"
+
 	"shareway/helper"
 	"shareway/infra/db/migration"
 	"shareway/schemas"
 	"shareway/util/polyline"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -56,7 +58,10 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 		totalDistance += leg.Distance.Value
 		totalDuration += leg.Duration.Value
 	}
-	totalDistance /= 1000 // Convert to kilometers
+
+	// Convert to kilometers and round to 2 decimal places
+	totalDistanceKm := float64(totalDistance) / 1000
+	totalDistance = int(math.Round(totalDistanceKm*100)) / 100
 
 	log.Debug().
 		Int("totalDistance", totalDistance).
@@ -76,10 +81,27 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 		}
 		log.Debug().Interface("vehicle", vehicle).Msg("Fetched vehicle")
 
+		// var existingRideOfferCount int64
+		// err := tx.Model(&migration.RideOffer{}).
+		// 	Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
+		// 		userID, startTime, endTime, startTime, endTime, startTime, endTime).
+		// 	Count(&existingRideOfferCount).Error
+		// if err != nil {
+		// 	log.Error().Err(err).Msg("Error checking for existing ride offers")
+		// 	return fmt.Errorf("error checking for existing ride offers: %w", err)
+		// }
+		// if existingRideOfferCount > 0 {
+		// 	log.Warn().Int64("count", existingRideOfferCount).Msg("Ride offer already exists for the user in that time frame")
+		// 	return errors.New("ride offer already exists for the user in that time frame")
+		// }
+
 		var existingRideOfferCount int64
 		err := tx.Model(&migration.RideOffer{}).
-			Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
-				userID, startTime, endTime, startTime, endTime, startTime, endTime).
+			Where("user_id = ? AND status NOT IN ('completed', 'cancelled') AND "+
+				"((start_time < ? AND end_time > ?) OR "+
+				"(start_time >= ? AND start_time < ?) OR "+
+				"(end_time > ? AND end_time <= ?))",
+				userID, endTime, startTime, startTime, endTime, startTime, endTime).
 			Count(&existingRideOfferCount).Error
 		if err != nil {
 			log.Error().Err(err).Msg("Error checking for existing ride offers")
@@ -92,8 +114,11 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 
 		var existingRideRequestCount int64
 		err = tx.Model(&migration.RideRequest{}).
-			Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
-				userID, startTime, endTime, startTime, endTime, startTime, endTime).
+			Where("user_id = ? AND status NOT IN ('completed', 'cancelled') AND "+
+				"((start_time < ? AND end_time > ?) OR "+
+				"(start_time >= ? AND start_time < ?) OR "+
+				"(end_time > ? AND end_time <= ?))",
+				userID, endTime, startTime, startTime, endTime, startTime, endTime).
 			Count(&existingRideRequestCount).Error
 		if err != nil {
 			log.Error().Err(err).Msg("Error checking for existing ride requests")
@@ -103,6 +128,20 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 			log.Warn().Int64("count", existingRideRequestCount).Msg("Ride request already exists for the user in that time frame")
 			return errors.New("ride request already exists for the user in that time frame")
 		}
+
+		// var existingRideRequestCount int64
+		// err = tx.Model(&migration.RideRequest{}).
+		// 	Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
+		// 		userID, startTime, endTime, startTime, endTime, startTime, endTime).
+		// 	Count(&existingRideRequestCount).Error
+		// if err != nil {
+		// 	log.Error().Err(err).Msg("Error checking for existing ride requests")
+		// 	return fmt.Errorf("error checking for existing ride requests: %w", err)
+		// }
+		// if existingRideRequestCount > 0 {
+		// 	log.Warn().Int64("count", existingRideRequestCount).Msg("Ride request already exists for the user in that time frame")
+		// 	return errors.New("ride request already exists for the user in that time frame")
+		// }
 
 		var fuelPrice float64
 		if err := tx.Model(&migration.FuelPrice{}).
@@ -114,8 +153,22 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 		}
 		log.Debug().Float64("fuelPrice", fuelPrice).Msg("Fetched fuel price")
 
+		// Calculate the initial fare as a float64 for precision
 		fare := (vehicle.FuelConsumed / 100) * fuelPrice * float64(totalDistance)
-		log.Debug().Float64("fare", fare).Msg("Calculated fare")
+		log.Debug().Float64("fare", fare).Msg("Calculated initial fare")
+
+		// Round the fare to the nearest 1000 VND
+		roundedFare := math.Round(fare/1000) * 1000
+		log.Debug().Float64("roundedFare", roundedFare).Msg("Rounded fare to nearest 1000 VND")
+
+		// Ensure the minimum fare is 1000 VND
+		if roundedFare < 1000 {
+			roundedFare = 1000
+		}
+
+		// Convert the rounded fare to int64
+		realFare := int64(roundedFare)
+		log.Debug().Int64("realFare", realFare).Msg("Final fare as int64")
 
 		decodePolyline := helper.DecodePolyline(firstRoute.Overview_polyline.Points)
 		startLocation := schemas.Point{
@@ -150,7 +203,7 @@ func (r *MapsRepository) CreateGiveRide(route schemas.GoongDirectionsResponse, u
 			StartTime:              startTime,
 			EndTime:                endTime,
 			VehicleID:              vehicleID,
-			Fare:                   fare,
+			Fare:                   realFare,
 		}
 
 		if err := tx.Create(&rideOffer).Error; err != nil {
@@ -390,7 +443,10 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 		totalDistance += leg.Distance.Value
 		totalDuration += leg.Duration.Value
 	}
-	totalDistance /= 1000 // Convert to kilometers
+	// Convert to kilometers and round to 2 decimal places
+	totalDistanceKm := float64(totalDistance) / 1000
+	totalDistance = int(math.Round(totalDistanceKm*100)) / 100
+
 	endTime := startTime.Add(time.Duration(totalDuration) * time.Second)
 
 	log.Debug().
@@ -403,10 +459,27 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		log.Debug().Msg("Starting database transaction")
 
+		// var existingRideRequestCount int64
+		// err := tx.Model(&migration.RideRequest{}).
+		// 	Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
+		// 		userID, startTime, endTime, startTime, endTime, startTime, endTime).
+		// 	Count(&existingRideRequestCount).Error
+		// if err != nil {
+		// 	log.Error().Err(err).Msg("Error checking for existing ride requests")
+		// 	return fmt.Errorf("error checking for existing ride requests: %w", err)
+		// }
+		// if existingRideRequestCount > 0 {
+		// 	log.Warn().Int64("count", existingRideRequestCount).Msg("Ride request already exists for the user in that time frame")
+		// 	return errors.New("ride request already exists for the user in that time frame")
+		// }
+
 		var existingRideRequestCount int64
 		err := tx.Model(&migration.RideRequest{}).
-			Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
-				userID, startTime, endTime, startTime, endTime, startTime, endTime).
+			Where("user_id = ? AND status NOT IN ('completed', 'cancelled') AND "+
+				"((start_time < ? AND end_time > ?) OR "+
+				"(start_time >= ? AND start_time < ?) OR "+
+				"(end_time > ? AND end_time <= ?))",
+				userID, endTime, startTime, startTime, endTime, startTime, endTime).
 			Count(&existingRideRequestCount).Error
 		if err != nil {
 			log.Error().Err(err).Msg("Error checking for existing ride requests")
@@ -417,10 +490,27 @@ func (r *MapsRepository) CreateHitchRide(route schemas.GoongDirectionsResponse, 
 			return errors.New("ride request already exists for the user in that time frame")
 		}
 
+		// var existingRideOfferCount int64
+		// err = tx.Model(&migration.RideOffer{}).
+		// 	Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
+		// 		userID, startTime, endTime, startTime, endTime, startTime, endTime).
+		// 	Count(&existingRideOfferCount).Error
+		// if err != nil {
+		// 	log.Error().Err(err).Msg("Error checking for existing ride offers")
+		// 	return fmt.Errorf("error checking for existing ride offers: %w", err)
+		// }
+		// if existingRideOfferCount > 0 {
+		// 	log.Warn().Int64("count", existingRideOfferCount).Msg("Ride offer already exists for the user in that time frame")
+		// 	return errors.New("ride offer already exists for the user in that time frame")
+		// }
+
 		var existingRideOfferCount int64
 		err = tx.Model(&migration.RideOffer{}).
-			Where("user_id = ? AND ((start_time BETWEEN ? AND ?) OR (end_time BETWEEN ? AND ?) OR (start_time <= ? AND end_time >= ?))",
-				userID, startTime, endTime, startTime, endTime, startTime, endTime).
+			Where("user_id = ? AND status NOT IN ('completed', 'cancelled') AND "+
+				"((start_time < ? AND end_time > ?) OR "+
+				"(start_time >= ? AND start_time < ?) OR "+
+				"(end_time > ? AND end_time <= ?))",
+				userID, endTime, startTime, startTime, endTime, startTime, endTime).
 			Count(&existingRideOfferCount).Error
 		if err != nil {
 			log.Error().Err(err).Msg("Error checking for existing ride offers")

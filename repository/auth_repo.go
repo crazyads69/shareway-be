@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"fmt"
+
 	"shareway/infra/db/migration"
 
 	"github.com/google/uuid"
@@ -28,6 +29,7 @@ type IAuthRepository interface {
 	DeleteUser(phoneNumber string) error
 	UpdateUserProfile(userID uuid.UUID, fullName string, email string, gender string) error
 	UpdateAvatar(userID uuid.UUID, avatarURL string) error
+	GetTotalTransactionsForUser(userID uuid.UUID) (int64, error)
 }
 
 // AuthRepository implements IAuthRepository
@@ -184,12 +186,14 @@ func (r *AuthRepository) CreateUser(phoneNumber, fullName, email string) (uuid.U
 		return uuid.Nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	// Update user avatar
-	avatarURL := fmt.Sprintf("https://api.multiavatar.com/%s.png", user.ID)
-	if err := tx.Model(&migration.User{}).Where("id = ?", user.ID).Update("avatar_url", avatarURL).Error; err != nil {
-		tx.Rollback()
-		return uuid.Nil, fmt.Errorf("failed to update user avatar: %w", err)
-	}
+	// // Update user avatar
+	// avatarURL := fmt.Sprintf("https://api.multiavatar.com/%s.png", user.ID)
+	// if err := tx.Model(&migration.User{}).Where("id = ?", user.ID).Update("avatar_url", avatarURL).Error; err != nil {
+	// 	tx.Rollback()
+	// 	return uuid.Nil, fmt.Errorf("failed to update user avatar: %w", err)
+	// }
+
+	// By default frontend handle the default avatar in the frontend
 
 	if err := tx.Commit().Error; err != nil {
 		return uuid.Nil, fmt.Errorf("failed to commit transaction: %w", err)
@@ -352,89 +356,88 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 		return err
 	}
 
-	// Delete related records in paseto_tokens table
-	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.PasetoToken{}).Error; err != nil {
+	// Delete related records in order to avoid foreign key violations
+
+	// PasetoTokens
+	if err := tx.Unscoped().Where("user_id = ?", user.ID).Delete(&migration.PasetoToken{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Delete related records in other tables
-	// OTP
-	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.OTP{}).Error; err != nil {
+	// OTPs
+	if err := tx.Unscoped().Where("user_id = ?", user.ID).Delete(&migration.OTP{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Delete Rides associated with user's RideOffers and RideRequests
-	var rideOffers []migration.RideOffer
-	var rideRequests []migration.RideRequest
-	if err := tx.Where("user_id = ?", user.ID).Find(&rideOffers).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-	if err := tx.Where("user_id = ?", user.ID).Find(&rideRequests).Error; err != nil {
+	// Chats
+	if err := tx.Unscoped().Where("sender_id = ? OR receiver_id = ?", user.ID, user.ID).Delete(&migration.Chat{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	var rideOfferIDs []uuid.UUID
-	var rideRequestIDs []uuid.UUID
-	for _, offer := range rideOffers {
-		rideOfferIDs = append(rideOfferIDs, offer.ID)
-	}
-	for _, request := range rideRequests {
-		rideRequestIDs = append(rideRequestIDs, request.ID)
-	}
-
-	if err := tx.Where("ride_offer_id IN ? OR ride_request_id IN ?", rideOfferIDs, rideRequestIDs).Delete(&migration.Ride{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// RideRequests
-	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.RideRequest{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// RideOffers
-	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.RideOffer{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// Vehicles (now safe to delete after RideOffers are deleted)
-	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.Vehicle{}).Error; err != nil {
+	// Rooms
+	if err := tx.Unscoped().Where("user1_id = ? OR user2_id = ?", user.ID, user.ID).Delete(&migration.Room{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// Notifications
-	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.Notification{}).Error; err != nil {
+	if err := tx.Unscoped().Where("user_id = ?", user.ID).Delete(&migration.Notification{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// FavoriteLocations
-	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.FavoriteLocation{}).Error; err != nil {
+	if err := tx.Unscoped().Where("user_id = ?", user.ID).Delete(&migration.FavoriteLocation{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Chats (both sent and received)
-	if err := tx.Where("sender_id = ? OR receiver_id = ?", user.ID, user.ID).Delete(&migration.Chat{}).Error; err != nil {
+	// Ratings
+	if err := tx.Unscoped().Where("rater_id = ? OR ratee_id = ?", user.ID, user.ID).Delete(&migration.Rating{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Ratings (both given and received)
-	if err := tx.Where("rater_id = ? OR ratee_id = ?", user.ID, user.ID).Delete(&migration.Rating{}).Error; err != nil {
+	// Transactions
+	if err := tx.Unscoped().Where("payer_id = ? OR receiver_id = ?", user.ID, user.ID).Delete(&migration.Transaction{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Rides
+	if err := tx.Unscoped().Where("ride_offer_id IN (SELECT id FROM ride_offers WHERE user_id = ?) OR ride_request_id IN (SELECT id FROM ride_requests WHERE user_id = ?)", user.ID, user.ID).Delete(&migration.Ride{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Waypoints
+	if err := tx.Unscoped().Where("ride_offer_id IN (SELECT id FROM ride_offers WHERE user_id = ?)", user.ID).Delete(&migration.Waypoint{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// RideRequests
+	if err := tx.Unscoped().Where("user_id = ?", user.ID).Delete(&migration.RideRequest{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// RideOffers
+	if err := tx.Unscoped().Where("user_id = ?", user.ID).Delete(&migration.RideOffer{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Vehicles
+	if err := tx.Unscoped().Where("user_id = ?", user.ID).Delete(&migration.Vehicle{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// Finally, delete the user
-	if err := tx.Delete(&user).Error; err != nil {
+	if err := tx.Unscoped().Delete(&user).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -504,6 +507,16 @@ func (r *AuthRepository) UpdateAvatar(userID uuid.UUID, avatarURL string) error 
 	}
 
 	return tx.Commit().Error
+}
+
+// GetTotalTransactionsForUser fetches the total number of transactions for the given user ID
+func (r *AuthRepository) GetTotalTransactionsForUser(userID uuid.UUID) (int64, error) {
+	var totalTransactions int64
+	err := r.db.Model(&migration.Transaction{}).
+		Where("payer_id = ? OR receiver_id = ?", userID, userID).
+		Count(&totalTransactions).
+		Error
+	return totalTransactions, err
 }
 
 // Ensure AuthRepository implements IAuthRepository
