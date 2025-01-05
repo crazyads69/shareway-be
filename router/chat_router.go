@@ -24,4 +24,5 @@ func SetupChatRouter(group *gin.RouterGroup, server *APIServer) {
 	group.POST("/get-chat-messages", chatController.GetChatMessages)
 	group.GET("/initiate-call", chatController.InitiateCall)
 	group.POST("/update-call-status", chatController.UpdateCallStatus)
+	group.POST("/search-users", chatController.SearchUsers)
 }
