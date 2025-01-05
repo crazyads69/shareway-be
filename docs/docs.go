@@ -79,6 +79,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/get-profile": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the profile of the admin",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the profile of the admin",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.GetAdminProfileResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/delete-user": {
             "post": {
                 "description": "Delete the user from the provided phone number in the database (only available in dev environment)",
@@ -1125,6 +1159,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/ipn/handle-ipn": {
+            "post": {
+                "description": "Handle IPN from payment gateway",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ipn"
+                ],
+                "summary": "Handle IPN from payment gateway",
+                "parameters": [
+                    {
+                        "description": "MoMo IPN",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.MoMoIPN"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/map/autocomplete": {
             "get": {
                 "security": [
@@ -1620,6 +1694,120 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/checkout-ride": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Checkout ride with momo",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payment"
+                ],
+                "summary": "Checkout ride with momo",
+                "parameters": [
+                    {
+                        "description": "Checkout ride request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.CheckoutRideRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Link wallet response",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/link-momo-wallet": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Link momo wallet to user account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payment"
+                ],
+                "summary": "Link momo wallet to user account",
+                "parameters": [
+                    {
+                        "description": "Link momo wallet request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.LinkMomoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Link momo wallet response",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.LinkMomoWalletResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
                         "schema": {
                             "$ref": "#/definitions/helper.Response"
                         }
@@ -2372,6 +2560,67 @@ const docTemplate = `{
                 }
             }
         },
+        "/user/update-avatar": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update the avatar image of the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Update user avatar",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Avatar image file",
+                        "name": "avatar_image",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully updated avatar",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.UpdateAvatarResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/user/update-profile": {
             "post": {
                 "security": [
@@ -2623,12 +2872,21 @@ const docTemplate = `{
         "schemas.AcceptGiveRideRequestRequest": {
             "type": "object",
             "required": [
+                "paymentMethod",
                 "receiverID",
                 "rideOfferID",
                 "rideRequestID",
                 "vehicleID"
             ],
             "properties": {
+                "paymentMethod": {
+                    "description": "Payment method (cash or momo)",
+                    "type": "string",
+                    "enum": [
+                        "cash",
+                        "momo"
+                    ]
+                },
                 "receiverID": {
                     "description": "The ID of the receiver (the user who received the request) aka the hitcher",
                     "type": "string"
@@ -2721,18 +2979,33 @@ const docTemplate = `{
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
                 }
             }
         },
         "schemas.AcceptHitchRideRequestRequest": {
             "type": "object",
             "required": [
+                "paymentMethod",
                 "receiverID",
                 "rideOfferID",
                 "rideRequestID",
                 "vehicleID"
             ],
             "properties": {
+                "paymentMethod": {
+                    "description": "Payment method (cash or momo)",
+                    "type": "string",
+                    "enum": [
+                        "cash",
+                        "momo"
+                    ]
+                },
                 "receiverID": {
                     "description": "The ID of the receiver (the user who received the request) aka the driver",
                     "type": "string"
@@ -2825,6 +3098,12 @@ const docTemplate = `{
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
                 }
             }
         },
@@ -2953,6 +3232,28 @@ const docTemplate = `{
                     "$ref": "#/definitions/schemas.UserInfo"
                 },
                 "room_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.CheckoutRideRequest": {
+            "type": "object",
+            "required": [
+                "receiverID",
+                "rideOfferID",
+                "rideRequestID"
+            ],
+            "properties": {
+                "receiverID": {
+                    "description": "The ID of the receiver (the user who received the request) aka the driver",
+                    "type": "string"
+                },
+                "rideOfferID": {
+                    "description": "The ID of the ride offer (the user who received request is the driver)",
+                    "type": "string"
+                },
+                "rideRequestID": {
+                    "description": "Use for checkout with momo\nThe ID of the ride request (current user is the hitcher)",
                     "type": "string"
                 }
             }
@@ -3099,6 +3400,12 @@ const docTemplate = `{
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
                 }
             }
         },
@@ -3166,6 +3473,14 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.GetAdminProfileResponse": {
+            "type": "object",
+            "properties": {
+                "admin_info": {
+                    "$ref": "#/definitions/schemas.AdminInfo"
+                }
+            }
+        },
         "schemas.GetAllChatRoomsRequest": {
             "type": "object",
             "required": [
@@ -3192,6 +3507,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "pending_ride_offer": {
+                    "description": "The pending ride offer of the user",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/schemas.RideOfferDetail"
@@ -3312,6 +3628,12 @@ const docTemplate = `{
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
                 }
             }
         },
@@ -3609,6 +3931,29 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.LinkMomoRequest": {
+            "type": "object",
+            "required": [
+                "walletPhoneNumber"
+            ],
+            "properties": {
+                "walletPhoneNumber": {
+                    "description": "Different from phoneNumber that is used for login\nThis is the phone number that is registered with momo wallet",
+                    "type": "string",
+                    "maxLength": 10,
+                    "minLength": 10
+                }
+            }
+        },
+        "schemas.LinkMomoWalletResponse": {
+            "type": "object",
+            "properties": {
+                "deeplink": {
+                    "description": "send this to fe flutter app for open momo and perform linked",
+                    "type": "string"
+                }
+            }
+        },
         "schemas.LoginAdminRequest": {
             "type": "object",
             "required": [
@@ -3749,6 +4094,56 @@ const docTemplate = `{
                 },
                 "sender_id": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.MoMoIPN": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "integer"
+                },
+                "callbackToken": {
+                    "type": "string"
+                },
+                "extraData": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "orderId": {
+                    "type": "string"
+                },
+                "orderInfo": {
+                    "type": "string"
+                },
+                "orderType": {
+                    "type": "string"
+                },
+                "partnerClientId": {
+                    "type": "string"
+                },
+                "partnerCode": {
+                    "type": "string"
+                },
+                "payType": {
+                    "type": "string"
+                },
+                "requestId": {
+                    "type": "string"
+                },
+                "responseTime": {
+                    "type": "integer"
+                },
+                "resultCode": {
+                    "type": "integer"
+                },
+                "signature": {
+                    "type": "string"
+                },
+                "transId": {
+                    "type": "integer"
                 }
             }
         },
@@ -3992,6 +4387,12 @@ const docTemplate = `{
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
                 }
             }
         },
@@ -4265,6 +4666,12 @@ const docTemplate = `{
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
                 }
             }
         },
@@ -4350,6 +4757,17 @@ const docTemplate = `{
                 },
                 "transaction_id": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.UpdateAvatarResponse": {
+            "type": "object",
+            "required": [
+                "user"
+            ],
+            "properties": {
+                "user": {
+                    "$ref": "#/definitions/schemas.UserResponse"
                 }
             }
         },
@@ -4514,6 +4932,12 @@ const docTemplate = `{
                 },
                 "vehicle": {
                     "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
                 }
             }
         },
@@ -4521,7 +4945,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "full_name",
-                "phone_number"
+                "gender"
             ],
             "properties": {
                 "email": {
@@ -4529,13 +4953,16 @@ const docTemplate = `{
                     "maxLength": 256
                 },
                 "full_name": {
-                    "description": "Email is optional",
                     "type": "string",
                     "maxLength": 256,
                     "minLength": 3
                 },
-                "phone_number": {
-                    "type": "string"
+                "gender": {
+                    "type": "string",
+                    "enum": [
+                        "male",
+                        "female"
+                    ]
                 }
             }
         },
@@ -4553,8 +4980,17 @@ const docTemplate = `{
         "schemas.UserInfo": {
             "type": "object",
             "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
                 "full_name": {
                     "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "is_momo_linked": {
+                    "type": "boolean"
                 },
                 "phone_number": {
                     "type": "string"
@@ -4570,6 +5006,9 @@ const docTemplate = `{
                 "id"
             ],
             "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -4579,10 +5018,16 @@ const docTemplate = `{
                 "full_name": {
                     "type": "string"
                 },
+                "gender": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
                 "is_activated": {
+                    "type": "boolean"
+                },
+                "is_momo_linked": {
                     "type": "boolean"
                 },
                 "is_verified": {
@@ -4708,6 +5153,26 @@ const docTemplate = `{
                     "minLength": 6
                 },
                 "phone_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.Waypoint": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "lattitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "order": {
+                    "type": "integer"
+                },
+                "waypoint_id": {
                     "type": "string"
                 }
             }
