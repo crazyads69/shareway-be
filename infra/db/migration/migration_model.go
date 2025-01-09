@@ -183,6 +183,7 @@ type RideRequest struct {
 	UpdatedAt             time.Time `gorm:"autoUpdateTime"`
 	UserID                uuid.UUID `gorm:"type:uuid"` // user who requested the ride
 	User                  User      `gorm:"foreignKey:UserID"`
+	Weight                int64     // Handle the weight of the hitchhiker for the driver to consider whom will be the best to pick up
 	StartLatitude         float64
 	StartLongitude        float64
 	EndLatitude           float64

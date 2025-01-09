@@ -3841,7 +3841,8 @@ const docTemplate = `{
         "schemas.HitchRideRequest": {
             "type": "object",
             "required": [
-                "place_list"
+                "place_list",
+                "weight"
             ],
             "properties": {
                 "place_list": {
@@ -3854,6 +3855,10 @@ const docTemplate = `{
                 "start_time": {
                     "description": "Start time of the ride (if not provided, the ride is immediate)",
                     "type": "string"
+                },
+                "weight": {
+                    "description": "Weight of the rider to consider",
+                    "type": "integer"
                 }
             }
         },
@@ -4446,6 +4451,9 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "weight": {
+                    "type": "integer"
                 }
             }
         },

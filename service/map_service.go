@@ -379,7 +379,7 @@ func (s *MapService) CreateHitchRide(ctx context.Context, input schemas.HitchRid
 		startTime = time.Now().UTC()
 	}
 
-	rideRequestID, err := s.repo.CreateHitchRide(response, userID, currentLocation, startTime)
+	rideRequestID, err := s.repo.CreateHitchRide(response, userID, currentLocation, startTime, input.Weight)
 	if err != nil {
 		return schemas.GoongDirectionsResponse{}, uuid.Nil, err
 	}

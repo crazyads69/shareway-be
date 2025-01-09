@@ -157,6 +157,7 @@ type HitchRideRequest struct {
 	// Points []Point `json:"points" binding:"required"` // List of points for the route
 	PlaceList []string `json:"place_list" binding:"required"` // List of places for the route (place_id) from goong api
 	StartTime string   `json:"start_time,omitempty"`          // Start time of the ride (if not provided, the ride is immediate)
+	Weight    int64    `json:"weight" binding:"required"`     // Weight of the rider to consider
 }
 
 // Define HitchRideResponse struct
@@ -291,6 +292,7 @@ type RideRequestDetail struct {
 	Duration              int       `json:"duration"`
 	StartTime             time.Time `json:"start_time"`
 	EndTime               time.Time `json:"end_time"`
+	Weight                int64     `json:"weight"`
 }
 
 // Define SuggestRideOfferRequest struct

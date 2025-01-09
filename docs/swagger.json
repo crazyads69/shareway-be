@@ -3830,7 +3830,8 @@
         "schemas.HitchRideRequest": {
             "type": "object",
             "required": [
-                "place_list"
+                "place_list",
+                "weight"
             ],
             "properties": {
                 "place_list": {
@@ -3843,6 +3844,10 @@
                 "start_time": {
                     "description": "Start time of the ride (if not provided, the ride is immediate)",
                     "type": "string"
+                },
+                "weight": {
+                    "description": "Weight of the rider to consider",
+                    "type": "integer"
                 }
             }
         },
@@ -4435,6 +4440,9 @@
                 },
                 "user": {
                     "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "weight": {
+                    "type": "integer"
                 }
             }
         },

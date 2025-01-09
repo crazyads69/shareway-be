@@ -464,6 +464,7 @@ func (ctrl *MapController) SuggestHitchRides(ctx *gin.Context) {
 			EndAddress:            rideRequest.EndAddress,
 			RiderCurrentLatitude:  rideRequest.RiderCurrentLatitude,
 			RiderCurrentLongitude: rideRequest.RiderCurrentLongitude,
+			Weight:                rideRequest.Weight,
 		}
 		rideRequestDetails = append(rideRequestDetails, rideRequestDetail)
 	}
