@@ -1,52 +1,61 @@
-# Golang Template
+# ShareWay Backend
 
-## Quick start
+## Prerequisites
 
-Prerequisite:
+- Go >= 1.21.3 ([Installation Guide](https://go.dev/doc/install))
+- Node.js >= v20.6.1 ([Download](https://nodejs.org/en/download/))
+- GNU Make >= 3.81 ([Documentation](https://www.gnu.org/software/make/))
 
-- [Golang](https://golang.org/doc/install) (>= 1.21.3)
-- [NodeJs](https://nodejs.org/en/download/) (>= v20.6.1)
-- [Make](https://www.gnu.org/software/make/) (>= 3.81)
+## Development Setup
 
-Install nodemon to auto refresh the server when code changed:
+1. Install nodemon globally for auto-refresh functionality:
+	```bash
+	   # Install nodemon globally
+	   npm install -g nodemon
+	   
+	   # Verify installation
+	   nodemon --version
 
-```bash
-npx install -g nodemon
+	```
 
-# Verify installation version
-nodemon --version
-```
+2.  Clone and setup the repository:
 
-Clone this repo and install dependencies:
+     ```bash
+	    # Clone the repository
+	    git clone https://github.com/crazyads69/shareway-be.git
+    
+		# Navigate to project directory
+		cd shareway-be
+    
+		# Install Go dependencies
+		go mod download
+	  ```
+    
+4.  Configure the environment:
+    
+    -   Create `app.env` file in the project root
+    -   Add required environment variables
 
-1. Clone this repo
-
+5.  Start the development server:
     ```bash
-    git clone https://github.com/khiemledev/golang_template.git
+    
+	    make dev_server
+    
     ```
+    
+6.  Verify the server is running:
+    
+    -   Visit [http://127.0.0.1:8080](http://127.0.0.1:8080) in your browser
+    -   Or use cURL:
+	 ```bash
+        
+        curl http://127.0.0.1:8080
+        
+	```
+        
 
-2. Change directory into `golang_template`
+## Additional Information
 
-    ```bash
-    cd golang_template
-    ```
-
-3. Install dependencies Go dependencies
-
-    ```bash
-    go mod download
-    ```
-
-4. Start dev server
-
-    ```bash
-    make dev_server
-    ```
-
-5. Now you can vist [http://127.0.0.1:8080](http://127.0.0.1:8080) to check the server is running
-    or using cURL
-
-    ```bash
-    curl http://127.0.0.1:8080
-    ```
-
+-   The server will automatically refresh when code changes are detected thanks to nodemon
+-   Default server port is `8080`
+-   Make sure all prerequisites are properly installed and accessible from your `PATH`

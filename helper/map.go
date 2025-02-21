@@ -2,11 +2,12 @@ package helper
 
 import (
 	"math"
-	"shareway/infra/db/migration"
-	"shareway/schemas"
 	"strconv"
 	"strings"
 	"time"
+
+	"shareway/infra/db/migration"
+	"shareway/schemas"
 
 	"github.com/twpayne/go-polyline"
 )

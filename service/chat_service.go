@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+
 	"shareway/infra/bucket"
 	"shareway/infra/db/migration"
 	"shareway/infra/ws"
@@ -35,6 +36,8 @@ type IChatService interface {
 	GetChatMessages(req schemas.GetChatMessagesRequest, userID uuid.UUID) ([]migration.Chat, error)
 	UpdateCallStatus(req schemas.UpdateCallStatusRequest, userID uuid.UUID) (migration.Chat, error)
 	InitiateCall(req schemas.InitiateCallRequest, userID uuid.UUID) (migration.Chat, error)
+	SearchUsers(req schemas.SearchUsersRequest, userID uuid.UUID) ([]migration.Room, error)
+	GetChatRoomByID(receiverID uuid.UUID, userID uuid.UUID) (migration.Room, error)
 }
 
 // SendMessage sends a message to a chat room
@@ -77,6 +80,16 @@ func (s *ChatService) UpdateCallStatus(req schemas.UpdateCallStatusRequest, user
 // InitiateCall initiates a call in a chat room
 func (s *ChatService) InitiateCall(req schemas.InitiateCallRequest, userID uuid.UUID) (migration.Chat, error) {
 	return s.repo.InitiateCall(req, userID)
+}
+
+// SearchUsers searches for users to chat with
+func (s *ChatService) SearchUsers(req schemas.SearchUsersRequest, userID uuid.UUID) ([]migration.Room, error) {
+	return s.repo.SearchUsers(req, userID)
+}
+
+// GetChatRoomByID fetches a chat room by ID
+func (s *ChatService) GetChatRoomByID(receiverID uuid.UUID, userID uuid.UUID) (migration.Room, error) {
+	return s.repo.GetChatRoomByID(receiverID, userID)
 }
 
 // Ensure ChatService implements IChatService

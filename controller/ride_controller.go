@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"log"
+
 	"shareway/helper"
 	"shareway/infra/task"
 	"shareway/infra/ws"
@@ -21,11 +22,12 @@ type RideController struct {
 	MapsService    service.IMapService
 	UserService    service.IUsersService
 	VehicleService service.IVehicleService
+	PaymentService service.IPaymentService
 	asyncClient    *task.AsyncClient
 }
 
 func NewRideController(validate *validator.Validate, hub *ws.Hub, rideService service.IRideService,
-	mapService service.IMapService, userService service.IUsersService, vehicleService service.IVehicleService,
+	mapService service.IMapService, userService service.IUsersService, vehicleService service.IVehicleService, paymentService service.IPaymentService,
 	asyncClient *task.AsyncClient) *RideController {
 	return &RideController{
 		validate:       validate,
@@ -34,6 +36,7 @@ func NewRideController(validate *validator.Validate, hub *ws.Hub, rideService se
 		MapsService:    mapService,
 		UserService:    userService,
 		VehicleService: vehicleService,
+		PaymentService: paymentService,
 		asyncClient:    asyncClient,
 	}
 }
@@ -156,12 +159,14 @@ func (ctrl *RideController) SendGiveRideRequest(ctx *gin.Context) {
 	res := schemas.SendGiveRideRequestResponse{
 		ID: rideOffer.ID,
 		User: schemas.UserInfo{
-			ID:           user.ID,
-			FullName:     user.FullName,
-			PhoneNumber:  user.PhoneNumber,
-			AvatarURL:    user.AvatarURL,
-			Gender:       user.Gender,
-			IsMomoLinked: user.IsMomoLinked,
+			ID:            user.ID,
+			FullName:      user.FullName,
+			PhoneNumber:   user.PhoneNumber,
+			AvatarURL:     user.AvatarURL,
+			Gender:        user.Gender,
+			IsMomoLinked:  user.IsMomoLinked,
+			BalanceInApp:  user.BalanceInApp,
+			AverageRating: user.AverageRating,
 		},
 		Vehicle:                vehicle,
 		StartLatitude:          rideOffer.StartLatitude,
@@ -373,12 +378,14 @@ func (ctrl *RideController) SendHitchRideRequest(ctx *gin.Context) {
 	res := schemas.SendHitchRideRequestResponse{
 		ID: rideRequest.ID,
 		User: schemas.UserInfo{
-			ID:           user.ID,
-			FullName:     user.FullName,
-			PhoneNumber:  user.PhoneNumber,
-			AvatarURL:    user.AvatarURL,
-			Gender:       user.Gender,
-			IsMomoLinked: user.IsMomoLinked,
+			ID:            user.ID,
+			FullName:      user.FullName,
+			PhoneNumber:   user.PhoneNumber,
+			AvatarURL:     user.AvatarURL,
+			Gender:        user.Gender,
+			IsMomoLinked:  user.IsMomoLinked,
+			BalanceInApp:  user.BalanceInApp,
+			AverageRating: user.AverageRating,
 		},
 		StartLatitude:         rideRequest.StartLatitude,
 		StartLongitude:        rideRequest.StartLongitude,
@@ -596,7 +603,7 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 	}
 
 	// Create a transaction to store fare details
-	transaction, err := ctrl.RideService.CreateRideTransaction(ride.ID, ride.Fare, req.PaymentMethod, req.ReceiverID, data.UserID)
+	transaction, err := ctrl.RideService.CreateRideTransaction(ride.ID, ride.Fare, "cash", data.UserID, req.ReceiverID)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -659,12 +666,14 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 		Vehicle:                vehicle,
 		ReceiverID:             req.ReceiverID,
 		UserInfo: schemas.UserInfo{
-			ID:           receiver.ID,
-			PhoneNumber:  receiver.PhoneNumber,
-			FullName:     receiver.FullName,
-			AvatarURL:    receiver.AvatarURL,
-			Gender:       receiver.Gender,
-			IsMomoLinked: receiver.IsMomoLinked,
+			ID:            receiver.ID,
+			PhoneNumber:   receiver.PhoneNumber,
+			FullName:      receiver.FullName,
+			AvatarURL:     receiver.AvatarURL,
+			Gender:        receiver.Gender,
+			IsMomoLinked:  receiver.IsMomoLinked,
+			BalanceInApp:  receiver.BalanceInApp,
+			AverageRating: receiver.AverageRating,
 		},
 		RideRequestID: req.RideRequestID,
 		Waypoints:     waypointDetails,
@@ -673,15 +682,69 @@ func (ctrl *RideController) AcceptGiveRideRequest(ctx *gin.Context) {
 	// Send the accepted ride offer to the driver (match the ride successfully)
 	// ctrl.hub.SendToUser(req.ReceiverID.String(), "accept-give-ride-request", res)
 
+	// Get accepter user details from user_id
+	accepter, err := ctrl.UserService.GetUserByID(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get accepter details",
+			"Không thể lấy thông tin người chấp nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	wsRes := schemas.AcceptGiveRideRequestResponse{
+		ID:          ride.ID,
+		RideOfferID: ride.RideOfferID,
+		Transaction: schemas.TransactionDetail{
+			ID:            transaction.ID,
+			Amount:        transaction.Amount,
+			Status:        transaction.Status,
+			PaymentMethod: transaction.PaymentMethod,
+		},
+		DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+		DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+		RiderCurrentLatitude:   rideRequest.RiderCurrentLatitude,
+		RiderCurrentLongitude:  rideRequest.RiderCurrentLongitude,
+		Status:                 ride.Status,
+		StartTime:              ride.StartTime,
+		EndTime:                ride.EndTime,
+		StartAddress:           ride.StartAddress,
+		EndAddress:             ride.EndAddress,
+		Fare:                   ride.Fare,
+		EncodedPolyline:        string(ride.EncodedPolyline),
+		Distance:               ride.Distance,
+		Duration:               ride.Duration,
+		StartLatitude:          ride.StartLatitude,
+		StartLongitude:         ride.StartLongitude,
+		EndLatitude:            ride.EndLatitude,
+		EndLongitude:           ride.EndLongitude,
+		Vehicle:                vehicle,
+		ReceiverID:             req.ReceiverID,
+		UserInfo: schemas.UserInfo{
+			ID:            accepter.ID,
+			PhoneNumber:   accepter.PhoneNumber,
+			FullName:      accepter.FullName,
+			AvatarURL:     accepter.AvatarURL,
+			Gender:        accepter.Gender,
+			IsMomoLinked:  accepter.IsMomoLinked,
+			BalanceInApp:  accepter.BalanceInApp,
+			AverageRating: accepter.AverageRating,
+		},
+		RideRequestID: req.RideRequestID,
+		Waypoints:     waypointDetails,
+	}
+
 	// Prepare the WebSocket message
 	wsMessage := schemas.WebSocketMessage{
 		UserID:  req.ReceiverID.String(),
 		Type:    "accept-give-ride-request",
-		Payload: res,
+		Payload: wsRes,
 	}
 
 	// Convert res to map[string]string
-	resMap, err := helper.ConvertToStringMap(res)
+	resMap, err := helper.ConvertToStringMap(wsRes)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -854,7 +917,7 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 	}
 
 	// Create a transaction to store fare details
-	transaction, err := ctrl.RideService.CreateRideTransaction(ride.ID, ride.Fare, req.PaymentMethod, data.UserID, req.ReceiverID)
+	transaction, err := ctrl.RideService.CreateRideTransaction(ride.ID, ride.Fare, "cash", data.UserID, req.ReceiverID)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -917,12 +980,14 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 		EndLongitude:           ride.EndLongitude,
 		ReceiverID:             req.ReceiverID,
 		UserInfo: schemas.UserInfo{
-			ID:           receiver.ID,
-			PhoneNumber:  receiver.PhoneNumber,
-			FullName:     receiver.FullName,
-			AvatarURL:    receiver.AvatarURL,
-			Gender:       receiver.Gender,
-			IsMomoLinked: receiver.IsMomoLinked,
+			ID:            receiver.ID,
+			PhoneNumber:   receiver.PhoneNumber,
+			FullName:      receiver.FullName,
+			AvatarURL:     receiver.AvatarURL,
+			Gender:        receiver.Gender,
+			IsMomoLinked:  receiver.IsMomoLinked,
+			BalanceInApp:  receiver.BalanceInApp,
+			AverageRating: receiver.AverageRating,
 		},
 		Vehicle:   vehicle,
 		Waypoints: waypointDetails,
@@ -931,15 +996,69 @@ func (ctrl *RideController) AcceptHitchRideRequest(ctx *gin.Context) {
 	// Send the accepted ride request to the hitcher (match the ride successfully)
 	// ctrl.hub.SendToUser(req.ReceiverID.String(), "accept-hitch-ride-request", res)
 
+	// Get accepter user details from user_id
+	accepter, err := ctrl.UserService.GetUserByID(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get accepter details",
+			"Không thể lấy thông tin người chấp nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	wsRes := schemas.AcceptHitchRideRequestResponse{
+		ID:            ride.ID,
+		RideRequestID: ride.RideRequestID,
+		Transaction: schemas.TransactionDetail{
+			ID:            transaction.ID,
+			Amount:        transaction.Amount,
+			Status:        transaction.Status,
+			PaymentMethod: transaction.PaymentMethod,
+		},
+		Status:                 ride.Status,
+		StartTime:              ride.StartTime,
+		RideOfferID:            ride.RideOfferID,
+		DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+		DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+		RiderCurrentLatitude:   rideRequest.RiderCurrentLatitude,
+		RiderCurrentLongitude:  rideRequest.RiderCurrentLongitude,
+		EndTime:                ride.EndTime,
+		StartAddress:           ride.StartAddress,
+		EndAddress:             ride.EndAddress,
+		Fare:                   ride.Fare,
+		EncodedPolyline:        string(ride.EncodedPolyline),
+		Distance:               ride.Distance,
+		Duration:               ride.Duration,
+		StartLatitude:          ride.StartLatitude,
+		StartLongitude:         ride.StartLongitude,
+		EndLatitude:            ride.EndLatitude,
+		EndLongitude:           ride.EndLongitude,
+		ReceiverID:             req.ReceiverID,
+		UserInfo: schemas.UserInfo{
+			ID:            accepter.ID,
+			PhoneNumber:   accepter.PhoneNumber,
+			FullName:      accepter.FullName,
+			AvatarURL:     accepter.AvatarURL,
+			Gender:        accepter.Gender,
+			IsMomoLinked:  accepter.IsMomoLinked,
+			BalanceInApp:  accepter.BalanceInApp,
+			AverageRating: accepter.AverageRating,
+		},
+		Vehicle:   vehicle,
+		Waypoints: waypointDetails,
+	}
+
 	// Prepare the WebSocket message
 	wsMessage := schemas.WebSocketMessage{
 		UserID:  req.ReceiverID.String(),
 		Type:    "accept-hitch-ride-request",
-		Payload: res,
+		Payload: wsRes,
 	}
 
 	// Convert res to map[string]string
-	resMap, err := helper.ConvertToStringMap(res)
+	resMap, err := helper.ConvertToStringMap(wsRes)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -1439,12 +1558,14 @@ func (ctrl *RideController) StartRide(ctx *gin.Context) {
 			PaymentMethod: transaction.PaymentMethod,
 		},
 		User: schemas.UserInfo{
-			ID:           driver.ID,
-			FullName:     driver.FullName,
-			PhoneNumber:  driver.PhoneNumber,
-			AvatarURL:    driver.AvatarURL,
-			Gender:       driver.Gender,
-			IsMomoLinked: driver.IsMomoLinked,
+			ID:            driver.ID,
+			FullName:      driver.FullName,
+			PhoneNumber:   driver.PhoneNumber,
+			AvatarURL:     driver.AvatarURL,
+			Gender:        driver.Gender,
+			IsMomoLinked:  driver.IsMomoLinked,
+			BalanceInApp:  driver.BalanceInApp,
+			AverageRating: driver.AverageRating,
 		},
 		Status:                 ride.Status,
 		StartTime:              ride.StartTime,
@@ -1697,6 +1818,18 @@ func (ctrl *RideController) EndRide(ctx *gin.Context) {
 		return
 	}
 
+	// Get receiver device token to send notification
+	receiver, err := ctrl.UserService.GetUserByID(rideRequest.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get receiver details",
+			"Không thể lấy thông tin người nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
 	res := schemas.EndRideResponse{
 		ID:            ride.ID,
 		RideOfferID:   ride.RideOfferID,
@@ -1708,12 +1841,14 @@ func (ctrl *RideController) EndRide(ctx *gin.Context) {
 			PaymentMethod: transaction.PaymentMethod,
 		},
 		User: schemas.UserInfo{
-			ID:           driver.ID,
-			FullName:     driver.FullName,
-			PhoneNumber:  driver.PhoneNumber,
-			AvatarURL:    driver.AvatarURL,
-			Gender:       driver.Gender,
-			IsMomoLinked: driver.IsMomoLinked,
+			ID:            receiver.ID,
+			FullName:      receiver.FullName,
+			PhoneNumber:   receiver.PhoneNumber,
+			AvatarURL:     receiver.AvatarURL,
+			Gender:        receiver.Gender,
+			IsMomoLinked:  receiver.IsMomoLinked,
+			BalanceInApp:  receiver.BalanceInApp,
+			AverageRating: receiver.AverageRating,
 		},
 		Status:                 ride.Status,
 		StartTime:              ride.StartTime,
@@ -1737,27 +1872,57 @@ func (ctrl *RideController) EndRide(ctx *gin.Context) {
 		Waypoints:              waypointDetails,
 	}
 
-	// Get receiver device token to send notification
-	receiver, err := ctrl.UserService.GetUserByID(rideRequest.UserID)
-	if err != nil {
-		response := helper.ErrorResponseWithMessage(
-			err,
-			"Failed to get receiver details",
-			"Không thể lấy thông tin người nhận",
-		)
-		helper.GinResponse(ctx, 500, response)
-		return
+	wsRes := schemas.EndRideResponse{
+		ID:            ride.ID,
+		RideOfferID:   ride.RideOfferID,
+		RideRequestID: ride.RideRequestID,
+		Transaction: schemas.TransactionDetail{
+			ID:            transaction.ID,
+			Amount:        transaction.Amount,
+			Status:        transaction.Status,
+			PaymentMethod: transaction.PaymentMethod,
+		},
+		User: schemas.UserInfo{
+			ID:            driver.ID,
+			FullName:      driver.FullName,
+			PhoneNumber:   driver.PhoneNumber,
+			AvatarURL:     driver.AvatarURL,
+			Gender:        driver.Gender,
+			IsMomoLinked:  driver.IsMomoLinked,
+			BalanceInApp:  driver.BalanceInApp,
+			AverageRating: driver.AverageRating,
+		},
+		Status:                 ride.Status,
+		StartTime:              ride.StartTime,
+		DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+		DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+		RiderCurrentLatitude:   rideRequest.RiderCurrentLatitude,
+		RiderCurrentLongitude:  rideRequest.RiderCurrentLongitude,
+		EndTime:                ride.EndTime,
+		StartAddress:           ride.StartAddress,
+		EndAddress:             ride.EndAddress,
+		Fare:                   ride.Fare,
+		EncodedPolyline:        string(ride.EncodedPolyline),
+		Distance:               ride.Distance,
+		Duration:               ride.Duration,
+		StartLatitude:          ride.StartLatitude,
+		StartLongitude:         ride.StartLongitude,
+		EndLatitude:            ride.EndLatitude,
+		EndLongitude:           ride.EndLongitude,
+		Vehicle:                vehicle,
+		ReceiverID:             rideRequest.UserID, // ReceiverID is the hitcher's user_id
+		Waypoints:              waypointDetails,
 	}
 
 	// Prepare the WebSocket message
 	wsMessage := schemas.WebSocketMessage{
 		UserID:  rideRequest.UserID.String(),
 		Type:    "end-ride",
-		Payload: res,
+		Payload: wsRes,
 	}
 
 	// Convert res to map[string]string
-	resMap, err := helper.ConvertToStringMap(res)
+	resMap, err := helper.ConvertToStringMap(wsRes)
 	if err != nil {
 		response := helper.ErrorResponseWithMessage(
 			err,
@@ -1975,12 +2140,14 @@ func (ctrl *RideController) UpdateRideLocation(ctx *gin.Context) {
 			PaymentMethod: transaction.PaymentMethod,
 		},
 		User: schemas.UserInfo{
-			ID:           driver.ID,
-			FullName:     driver.FullName,
-			PhoneNumber:  driver.PhoneNumber,
-			AvatarURL:    driver.AvatarURL,
-			Gender:       driver.Gender,
-			IsMomoLinked: driver.IsMomoLinked,
+			ID:            driver.ID,
+			FullName:      driver.FullName,
+			PhoneNumber:   driver.PhoneNumber,
+			AvatarURL:     driver.AvatarURL,
+			Gender:        driver.Gender,
+			IsMomoLinked:  driver.IsMomoLinked,
+			BalanceInApp:  driver.BalanceInApp,
+			AverageRating: driver.AverageRating,
 		},
 		Status:                 ride.Status,
 		StartTime:              ride.StartTime,
@@ -2136,6 +2303,91 @@ func (ctrl *RideController) CancelRide(ctx *gin.Context) {
 		return
 	}
 
+	// Check if payment method is momo to refund the hitcher
+	transaction, err := ctrl.RideService.GetTransactionByRideID(req.RideID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get transaction details",
+			"Không thể lấy thông tin giao dịch",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get the device token of the hitcher to send notification
+	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get receiver details",
+			"Không thể lấy thông tin người nhận",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get the ride details
+	rideDetail, err := ctrl.RideService.GetRideByID(req.RideID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get ride details",
+			"Không thể lấy thông tin chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Check if the payment method is momo to refund the hitcher
+	if transaction.PaymentMethod == "momo" {
+		err := ctrl.PaymentService.RefundRide(
+			req.ReceiverID, schemas.RefundMomoRequest{
+				RideRequestID: rideDetail.RideRequestID,
+				RideOfferID:   rideDetail.RideOfferID,
+			},
+		)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to refund the hitcher",
+				"Không thể hoàn tiền cho người nhận",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Send notification and WebSocket message to the hitcher
+		notification := schemas.Notification{
+			Title: "Chuyến đi của bạn đã bị hủy",
+			Body:  "Chuyến đi của bạn đã bị hủy, bạn đã được hoàn tiền",
+			Token: receiver.DeviceToken,
+			Data:  nil,
+		}
+
+		wsMessage := schemas.WebSocketMessage{
+			UserID:  req.ReceiverID.String(),
+			Type:    "refund-success",
+			Payload: nil,
+		}
+
+		// Send the WebSocket message using the async client
+		go func() {
+			err := ctrl.asyncClient.EnqueueWebsocketMessage(wsMessage)
+			if err != nil {
+				log.Printf("Failed to enqueue websocket message: %v", err)
+			}
+		}()
+
+		// Send the notification message using the async client
+		go func() {
+			err = ctrl.asyncClient.EnqueueFCMNotification(notification)
+			if err != nil {
+				log.Printf("Failed to enqueue FCM notification: %v", err)
+			}
+		}()
+	}
+
 	// Cancel the ride by the driver
 	ride, err := ctrl.RideService.CancelRide(req, data.UserID)
 	if err != nil {
@@ -2179,18 +2431,6 @@ func (ctrl *RideController) CancelRide(ctx *gin.Context) {
 	// 	return
 	// }
 
-	// Get the device token of the hitcher to send notification
-	receiver, err := ctrl.UserService.GetUserByID(req.ReceiverID)
-	if err != nil {
-		response := helper.ErrorResponseWithMessage(
-			err,
-			"Failed to get receiver details",
-			"Không thể lấy thông tin người nhận",
-		)
-		helper.GinResponse(ctx, 500, response)
-		return
-	}
-
 	// Prepare the WebSocket message
 	wsMessage := schemas.WebSocketMessage{
 		UserID:  req.ReceiverID.String(),
@@ -2200,6 +2440,15 @@ func (ctrl *RideController) CancelRide(ctx *gin.Context) {
 
 	// Convert ride to map[string]string
 	resMap, err := helper.ConvertToStringMap(res)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to convert struct to map",
+			"Không thể chuyển đổi struct sang map",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
 
 	// Prepare the notification payload
 	notificationPayload := schemas.NotificationPayload{
@@ -2429,7 +2678,7 @@ func (ctrl *RideController) CancelRide(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} schemas.GetAllPendingRideResponse "Successfully got all pending ride"
+// @Success 200 {object} helper.Response{data=schemas.GetAllPendingRideResponse} "Successfully get all pending ride"
 // @Failure 500 {object} helper.Response "Internal server error"
 // @Router /ride/get-all-pending-ride [get]
 func (ctrl *RideController) GetAllPendingRide(ctx *gin.Context) {
@@ -2512,12 +2761,14 @@ func (ctrl *RideController) GetAllPendingRide(ctx *gin.Context) {
 			ID:      rideOffer.ID,
 			Vehicle: vehicle,
 			User: schemas.UserInfo{
-				ID:           driver.ID,
-				FullName:     driver.FullName,
-				PhoneNumber:  driver.PhoneNumber,
-				Gender:       driver.Gender,
-				AvatarURL:    driver.AvatarURL,
-				IsMomoLinked: driver.IsMomoLinked,
+				ID:            driver.ID,
+				FullName:      driver.FullName,
+				PhoneNumber:   driver.PhoneNumber,
+				Gender:        driver.Gender,
+				AvatarURL:     driver.AvatarURL,
+				IsMomoLinked:  driver.IsMomoLinked,
+				BalanceInApp:  driver.BalanceInApp,
+				AverageRating: driver.AverageRating,
 			},
 			StartTime:              rideOffer.StartTime,
 			StartLatitude:          rideOffer.StartLatitude,
@@ -2553,12 +2804,14 @@ func (ctrl *RideController) GetAllPendingRide(ctx *gin.Context) {
 		pendingRideRequestDetails = append(pendingRideRequestDetails, schemas.RideRequestDetail{
 			ID: rideRequest.ID,
 			User: schemas.UserInfo{
-				ID:           rider.ID,
-				FullName:     rider.FullName,
-				PhoneNumber:  rider.PhoneNumber,
-				AvatarURL:    rider.AvatarURL,
-				Gender:       rider.Gender,
-				IsMomoLinked: rider.IsMomoLinked,
+				ID:            rider.ID,
+				FullName:      rider.FullName,
+				PhoneNumber:   rider.PhoneNumber,
+				AvatarURL:     rider.AvatarURL,
+				Gender:        rider.Gender,
+				IsMomoLinked:  rider.IsMomoLinked,
+				BalanceInApp:  rider.BalanceInApp,
+				AverageRating: rider.AverageRating,
 			},
 			StartTime:             rideRequest.StartTime,
 			StartLatitude:         rideRequest.StartLatitude,
@@ -2589,4 +2842,562 @@ func (ctrl *RideController) GetAllPendingRide(ctx *gin.Context) {
 	)
 	helper.GinResponse(ctx, 200, response)
 
+}
+
+// RatingRideHitcherRequest is the request to rate the hitcher after the ride by the driver
+// RatingRideHitcherRequest godoc
+// @Summary Rate the hitcher after the ride by the driver
+// @Description Rate the hitcher after the ride by the driver
+// @Tags ride
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body schemas.RatingRideHitcherRequest true "Rating ride hitcher request"
+// @Success 200 {object} helper.Response "Successfully rated the hitcher"
+// @Failure 400 {object} helper.Response "Invalid request"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /ride/rating-ride-hitcher [post]
+func (ctrl *RideController) RatingRideHitcher(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	var req schemas.RatingRideHitcherRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind JSON",
+			"Không thể bind JSON",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	if err := ctrl.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Rate the hitcher after the ride by the driver
+	err = ctrl.RideService.RatingRideHitcher(req, data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to rate the hitcher",
+			"Không thể đánh giá người đi nhờ",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Return success response
+	response := helper.SuccessResponse(
+		nil,
+		"Successfully rated the hitcher",
+		"Đã đánh giá người đi nhờ thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
+}
+
+// RatingRideDriverRequest is the request to rate the driver after the ride by the hitcher
+// RatingRideDriverRequest godoc
+// @Summary Rate the driver after the ride by the hitcher
+// @Description Rate the driver after the ride by the hitcher
+// @Tags ride
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body schemas.RatingRideDriverRequest true "Rating ride driver request"
+// @Success 200 {object} helper.Response "Successfully rated the driver"
+// @Failure 400 {object} helper.Response "Invalid request"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /ride/rating-ride-driver [post]
+func (ctrl *RideController) RatingRideDriver(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	var req schemas.RatingRideDriverRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to bind JSON",
+			"Không thể bind JSON",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	if err := ctrl.validate.Struct(req); err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to validate request",
+			"Không thể validate request",
+		)
+		helper.GinResponse(ctx, 400, response)
+		return
+	}
+
+	// Rate the driver after the ride by the hitcher
+	err = ctrl.RideService.RatingRideDriver(req, data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to rate the driver",
+			"Không thể đánh giá tài xế",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Return success response
+	response := helper.SuccessResponse(
+		nil,
+		"Successfully rated the driver",
+		"Đã đánh giá tài xế thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
+}
+
+// GetRideHistory gets the ride history of the user (both as driver and hitcher) included cancelled rides and completed rides
+// GetRideHistory godoc
+// @Summary Get ride history of the user
+// @Description Get ride history of the user (both as driver and hitcher) included cancelled rides and completed rides
+// @Tags ride
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} helper.Response{data=schemas.GetRideHistoryResponse} "Successfully got ride history"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /ride/get-ride-history [get]
+func (ctrl *RideController) GetRideHistory(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get ride history of the user
+	rideHistory, err := ctrl.RideService.GetRideHistory(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get ride history",
+			"Không thể lấy lịch sử chuyến đi",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	rideHistoryDetails := make([]schemas.RideHistoryDetail, 0, len(rideHistory))
+	for _, ride := range rideHistory {
+		// Get the driver id from ride_offer_id
+		rideOffer, err := ctrl.RideService.GetRideOfferByID(ride.RideOfferID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get driver id",
+				"Không thể lấy id tài xế",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the driver details from the driver id
+		driver, err := ctrl.UserService.GetUserByID(rideOffer.UserID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get driver details",
+				"Không thể lấy thông tin tài xế",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the hitcher id from ride_request_id
+		rideRequest, err := ctrl.RideService.GetRideRequestByID(ride.RideRequestID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get hitcher id",
+				"Không thể lấy id người đi nhờ",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the hitcher details from the hitcher id
+		hitcher, err := ctrl.UserService.GetUserByID(rideRequest.UserID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get hitcher details",
+				"Không thể lấy thông tin người đi nhờ",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the vehicle details from the vehicle id
+		vehicle, err := ctrl.VehicleService.GetVehicleFromID(rideOffer.VehicleID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get vehicle details",
+				"Không thể lấy thông tin phương tiện",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the transaction details from the ride id
+		transaction, err := ctrl.RideService.GetTransactionByRideID(ride.ID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get transaction details",
+				"Không thể lấy thông tin giao dịch",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the waypoints of the ride
+		waypoints, err := ctrl.MapsService.GetAllWaypoints(rideOffer.ID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get waypoints",
+				"Không thể lấy thông tin waypoints",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		var waypointDetails []schemas.Waypoint
+		if waypoints != nil {
+			waypointDetails = make([]schemas.Waypoint, 0, len(waypoints))
+			for _, waypoint := range waypoints {
+				waypointDetails = append(waypointDetails, schemas.Waypoint{
+					Latitude:  waypoint.Latitude,
+					Longitude: waypoint.Longitude,
+					Address:   waypoint.Address,
+					ID:        waypoint.ID,
+					Order:     waypoint.WaypointOrder,
+				})
+			}
+		}
+
+		rideHistoryDetails = append(rideHistoryDetails, schemas.RideHistoryDetail{
+			Driver: schemas.UserInfo{
+				ID:            driver.ID,
+				FullName:      driver.FullName,
+				PhoneNumber:   driver.PhoneNumber,
+				AvatarURL:     driver.AvatarURL,
+				Gender:        driver.Gender,
+				IsMomoLinked:  driver.IsMomoLinked,
+				BalanceInApp:  driver.BalanceInApp,
+				AverageRating: driver.AverageRating,
+			},
+			Hitcher: schemas.UserInfo{
+				ID:            hitcher.ID,
+				FullName:      hitcher.FullName,
+				PhoneNumber:   hitcher.PhoneNumber,
+				AvatarURL:     hitcher.AvatarURL,
+				Gender:        hitcher.Gender,
+				IsMomoLinked:  hitcher.IsMomoLinked,
+				BalanceInApp:  hitcher.BalanceInApp,
+				AverageRating: hitcher.AverageRating,
+			},
+			ID:            ride.ID,
+			RideOfferID:   ride.RideOfferID,
+			RideRequestID: ride.RideRequestID,
+			Transaction: schemas.TransactionDetail{
+				ID:            transaction.ID,
+				Amount:        transaction.Amount,
+				Status:        transaction.Status,
+				PaymentMethod: transaction.PaymentMethod,
+			},
+			Status:                 ride.Status,
+			StartTime:              ride.StartTime,
+			DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+			DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+			RiderCurrentLatitude:   rideRequest.RiderCurrentLatitude,
+			RiderCurrentLongitude:  rideRequest.RiderCurrentLongitude,
+			EndTime:                ride.EndTime,
+			StartAddress:           ride.StartAddress,
+			EndAddress:             ride.EndAddress,
+			Fare:                   ride.Fare,
+			EncodedPolyline:        string(ride.EncodedPolyline),
+			Distance:               ride.Distance,
+			Duration:               ride.Duration,
+			StartLatitude:          ride.StartLatitude,
+			StartLongitude:         ride.StartLongitude,
+			EndLatitude:            ride.EndLatitude,
+			EndLongitude:           ride.EndLongitude,
+			Vehicle:                vehicle,
+			Waypoints:              waypointDetails,
+		})
+	}
+
+	res := schemas.GetRideHistoryResponse{
+		RideHistory: rideHistoryDetails,
+	}
+
+	// Return success response
+	response := helper.SuccessResponse(
+		res,
+		"Successfully got ride history",
+		"Đã lấy lịch sử chuyến đi thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
+}
+
+// GetScheduledAndOngoingRide gets the scheduled and ongoing ride of the user (both as driver and hitcher)
+// GetScheduledAndOngoingRide godoc
+// @Summary Get scheduled and ongoing ride of the user
+// @Description Get scheduled and ongoing ride of the user (both as driver and hitcher)
+// @Tags ride
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} helper.Response{data=schemas.GetScheduledAndOngoingRideResponse} "Successfully got scheduled and ongoing ride"
+// @Failure 500 {object} helper.Response "Internal server error"
+// @Router /ride/get-scheduled-and-ongoing-ride [get]
+func (ctrl *RideController) GetScheduledAndOngoingRide(ctx *gin.Context) {
+	// Get payload from context
+	payload := ctx.MustGet((middleware.AuthorizationPayloadKey))
+
+	// Convert payload to map
+	data, err := helper.ConvertToPayload(payload)
+
+	// If error occurs, return error response
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			fmt.Errorf("failed to convert payload"),
+			"Failed to convert payload",
+			"Không thể chuyển đổi payload",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	// Get scheduled and ongoing ride of the user (has been matched or has been started)
+	validRide, err := ctrl.RideService.GetScheduledAndOngoingRide(data.UserID)
+	if err != nil {
+		response := helper.ErrorResponseWithMessage(
+			err,
+			"Failed to get scheduled and ongoing ride",
+			"Không thể lấy chuyến đi đang chờ và đang diễn ra",
+		)
+		helper.GinResponse(ctx, 500, response)
+		return
+	}
+
+	validRideDetails := make([]schemas.ValidRideDetail, 0, len(validRide))
+	for _, ride := range validRide {
+		// Get the driver id from ride_offer_id
+		rideOffer, err := ctrl.RideService.GetRideOfferByID(ride.RideOfferID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get driver id",
+				"Không thể lấy id tài xế",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the driver details from the driver id
+		driver, err := ctrl.UserService.GetUserByID(rideOffer.UserID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get driver details",
+				"Không thể lấy thông tin tài xế",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the hitcher id from ride_request_id
+		rideRequest, err := ctrl.RideService.GetRideRequestByID(ride.RideRequestID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get hitcher id",
+				"Không thể lấy id người đi nhờ",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the hitcher details from the hitcher id
+		hitcher, err := ctrl.UserService.GetUserByID(rideRequest.UserID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get hitcher details",
+				"Không thể lấy thông tin người đi nhờ",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the vehicle details from the vehicle id
+		vehicle, err := ctrl.VehicleService.GetVehicleFromID(rideOffer.VehicleID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get vehicle details",
+				"Không thể lấy thông tin phương tiện",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the transaction details from the ride id
+		transaction, err := ctrl.RideService.GetTransactionByRideID(ride.ID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get transaction details",
+				"Không thể lấy thông tin giao dịch",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		// Get the waypoints of the ride
+		waypoints, err := ctrl.MapsService.GetAllWaypoints(rideOffer.ID)
+		if err != nil {
+			response := helper.ErrorResponseWithMessage(
+				err,
+				"Failed to get waypoints",
+				"Không thể lấy thông tin waypoints",
+			)
+			helper.GinResponse(ctx, 500, response)
+			return
+		}
+
+		var waypointDetails []schemas.Waypoint
+		if waypoints != nil {
+			waypointDetails = make([]schemas.Waypoint, 0, len(waypoints))
+			for _, waypoint := range waypoints {
+				waypointDetails = append(waypointDetails, schemas.Waypoint{
+					Latitude:  waypoint.Latitude,
+					Longitude: waypoint.Longitude,
+					Address:   waypoint.Address,
+					ID:        waypoint.ID,
+					Order:     waypoint.WaypointOrder,
+				})
+			}
+		}
+
+		validRideDetails = append(validRideDetails, schemas.ValidRideDetail{
+			Driver: schemas.UserInfo{
+				ID:            driver.ID,
+				FullName:      driver.FullName,
+				PhoneNumber:   driver.PhoneNumber,
+				AvatarURL:     driver.AvatarURL,
+				Gender:        driver.Gender,
+				IsMomoLinked:  driver.IsMomoLinked,
+				BalanceInApp:  driver.BalanceInApp,
+				AverageRating: driver.AverageRating,
+			},
+			Hitcher: schemas.UserInfo{
+				ID:            hitcher.ID,
+				FullName:      hitcher.FullName,
+				PhoneNumber:   hitcher.PhoneNumber,
+				AvatarURL:     hitcher.AvatarURL,
+				Gender:        hitcher.Gender,
+				IsMomoLinked:  hitcher.IsMomoLinked,
+				BalanceInApp:  hitcher.BalanceInApp,
+				AverageRating: hitcher.AverageRating,
+			},
+			ID:            ride.ID,
+			RideOfferID:   ride.RideOfferID,
+			RideRequestID: ride.RideRequestID,
+			Transaction: schemas.TransactionDetail{
+				ID:            transaction.ID,
+				Amount:        transaction.Amount,
+				Status:        transaction.Status,
+				PaymentMethod: transaction.PaymentMethod,
+			},
+			Status:                 ride.Status,
+			StartTime:              ride.StartTime,
+			DriverCurrentLatitude:  rideOffer.DriverCurrentLatitude,
+			DriverCurrentLongitude: rideOffer.DriverCurrentLongitude,
+			RiderCurrentLatitude:   rideRequest.RiderCurrentLatitude,
+			RiderCurrentLongitude:  rideRequest.RiderCurrentLongitude,
+			EndTime:                ride.EndTime,
+			StartAddress:           ride.StartAddress,
+			EndAddress:             ride.EndAddress,
+			Fare:                   ride.Fare,
+			EncodedPolyline:        string(ride.EncodedPolyline),
+			Distance:               ride.Distance,
+			Duration:               ride.Duration,
+			StartLatitude:          ride.StartLatitude,
+			StartLongitude:         ride.StartLongitude,
+			EndLatitude:            ride.EndLatitude,
+			EndLongitude:           ride.EndLongitude,
+			Vehicle:                vehicle,
+			Waypoints:              waypointDetails,
+		})
+	}
+
+	res := schemas.GetScheduledAndOngoingRideResponse{
+		ValidRide: validRideDetails,
+	}
+
+	// Return success response
+	response := helper.SuccessResponse(
+		res,
+		"Successfully got scheduled and ongoing ride",
+		"Đã lấy chuyến đi đang chờ và đang diễn ra thành công",
+	)
+	helper.GinResponse(ctx, 200, response)
 }

@@ -2,8 +2,9 @@ package schemas
 
 import (
 	"mime/multipart"
-	"shareway/infra/fpt"
 	"time"
+
+	"shareway/infra/fpt"
 
 	"github.com/google/uuid"
 )

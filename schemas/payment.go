@@ -46,6 +46,7 @@ type LinkMomoWalletResponse struct {
 type ExtraData struct {
 	Type          string    `json:"type"`
 	RideRequestID uuid.UUID `json:"rideRequestID"`
+	UserID        uuid.UUID `json:"userID"`
 	// Thêm các trường khác nếu cần
 }
 
@@ -98,3 +99,103 @@ type CheckoutRideRequest struct {
 
 // type CheckoutRideResponse struct {
 // }
+
+// Define RefundMomoRequest
+type RefundMomoRequest struct {
+	// The ID of the ride request (current user is the hitcher)
+	// The ride request contains then transaction ID from momo so could use for refund when needed (ride canceled, cannot create ride, etc)
+	RideRequestID uuid.UUID `json:"rideRequestID" binding:"required,uuid" validate:"required,uuid"`
+	RideOfferID   uuid.UUID `json:"rideOfferID" binding:"required,uuid" validate:"required,uuid"`
+}
+
+type MomoRefundRequest struct {
+	PartnerCode string `json:"partnerCode"`
+	OrderID     string `json:"orderId"`
+	RequestID   string `json:"requestId"`
+	Amount      int64  `json:"amount"`
+	TransID     int64  `json:"transId"`
+	Lang        string `json:"lang"`
+	Description string `json:"description"`
+	Signature   string `json:"signature"`
+}
+
+type MomoRefundResponse struct {
+	PartnerCode  string `json:"partnerCode"`
+	OrderID      string `json:"orderId"`
+	RequestID    string `json:"requestId"`
+	Amount       int64  `json:"amount"`
+	TransID      int64  `json:"transId"`
+	ResultCode   int    `json:"resultCode"`
+	Message      string `json:"message"`
+	ResponseTime int64  `json:"responseTime"`
+}
+
+type DisbursementMethodData struct {
+	WalletId string `json:"walletId"`
+	// WalletName string `json:"walletName"`
+	// PersonalId string `json:"personalId"`
+}
+
+type CheckWalletRequest struct {
+	PartnerCode        string `json:"partnerCode"`
+	OrderID            string `json:"orderId"`
+	RequestID          string `json:"requestId"`
+	RequestType        string `json:"requestType"`
+	DisbursementMethod string `json:"disbursementMethod"`
+	Lang               string `json:"lang"`
+	Signature          string `json:"signature"`
+}
+
+type CheckWalletResponse struct {
+	PartnerCode  string `json:"partnerCode"`
+	OrderID      string `json:"orderId"`
+	RequestID    string `json:"requestId"`
+	ResponseTime int64  `json:"responseTime"`
+	ResultCode   int    `json:"resultCode"`
+	Message      string `json:"message"`
+}
+
+type CheckBalanceRequest struct {
+	PartnerCode string `json:"partnerCode"`
+	OrderID     string `json:"orderId"`
+	RequestID   string `json:"requestId"`
+	Lang        string `json:"lang"`
+	Signature   string `json:"signature"`
+}
+
+type CheckBalanceResponse struct {
+	PartnerCode  string `json:"partnerCode"`
+	OrderID      string `json:"orderId"`
+	RequestID    string `json:"requestId"`
+	ResponseTime int64  `json:"responseTime"`
+	ResultCode   int    `json:"resultCode"`
+	Message      string `json:"message"`
+	Amount       int64  `json:"amount"`
+	Currency     string `json:"currency"`
+}
+
+type DisbursementRequest struct {
+	PartnerCode        string `json:"partnerCode"`
+	OrderID            string `json:"orderId"`
+	RequestID          string `json:"requestId"`
+	Amount             int64  `json:"amount"`
+	IpnURL             string `json:"ipnUrl"`
+	RequestType        string `json:"requestType"`
+	DisbursementMethod string `json:"disbursementMethod"`
+	OrderInfo          string `json:"orderInfo"`
+	Lang               string `json:"lang"`
+	ExtraData          string `json:"extraData"`
+	Signature          string `json:"signature"`
+}
+
+type DisbursementResponse struct {
+	PartnerCode  string `json:"partnerCode"`
+	OrderID      string `json:"orderId"`
+	RequestID    string `json:"requestId"`
+	Amount       int64  `json:"amount"`
+	ResponseTime int64  `json:"responseTime"`
+	ResultCode   int    `json:"resultCode"`
+	Message      string `json:"message"`
+	TransID      int64  `json:"transId"`
+	Balance      int64  `json:"balance"`
+}

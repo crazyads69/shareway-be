@@ -19,6 +19,7 @@ import (
 	"shareway/util/token"
 	"syscall"
 	"time"
+	_ "time/tzdata"
 
 	"github.com/go-co-op/gocron/v2"
 

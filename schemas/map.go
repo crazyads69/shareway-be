@@ -147,7 +147,7 @@ type GiveRideResponse struct {
 	Duration    int                     `json:"duration"`
 	StartTime   time.Time               `json:"start_time"`
 	EndTime     time.Time               `json:"end_time"`
-	Fare        float64                 `json:"fare"`
+	Fare        int64                   `json:"fare"`
 	Vehicle     VehicleDetail           `json:"vehicle"`
 	Waypoints   []Waypoint              `json:"waypoints"`
 }
@@ -158,6 +158,7 @@ type HitchRideRequest struct {
 	PlaceList []string `json:"place_list" binding:"required"` // List of places for the route (place_id) from goong api
 	StartTime string   `json:"start_time,omitempty"`          // Start time of the ride (if not provided, the ride is immediate)
 	Weight    int64    `json:"weight" binding:"required"`     // Weight of the rider to consider
+
 }
 
 // Define HitchRideResponse struct
@@ -266,12 +267,14 @@ type SuggestRideRequestResponse struct {
 
 // Define UserInfo struct
 type UserInfo struct {
-	ID           uuid.UUID `json:"user_id"`
-	PhoneNumber  string    `json:"phone_number"`
-	FullName     string    `json:"full_name"`
-	AvatarURL    string    `json:"avatar_url"`
-	Gender       string    `json:"gender"`
-	IsMomoLinked bool      `json:"is_momo_linked"`
+	ID            uuid.UUID `json:"user_id"`
+	PhoneNumber   string    `json:"phone_number"`
+	FullName      string    `json:"full_name"`
+	AvatarURL     string    `json:"avatar_url"`
+	AverageRating float64   `json:"average_rating"`
+	Gender        string    `json:"gender"`
+	IsMomoLinked  bool      `json:"is_momo_linked"`
+	BalanceInApp  int64     `json:"balance_in_app"`
 }
 
 // Define RideRequestDetail struct
@@ -293,6 +296,7 @@ type RideRequestDetail struct {
 	StartTime             time.Time `json:"start_time"`
 	EndTime               time.Time `json:"end_time"`
 	Weight                int64     `json:"weight"`
+
 }
 
 // Define SuggestRideOfferRequest struct
@@ -333,6 +337,6 @@ type RideOfferDetail struct {
 	StartTime              time.Time     `json:"start_time"`
 	EndTime                time.Time     `json:"end_time"`
 	Status                 string        `json:"status"`
-	Fare                   float64       `json:"fare"`
+	Fare                   int64         `json:"fare"`
 	Waypoints              []Waypoint    `json:"waypoints"`
 }

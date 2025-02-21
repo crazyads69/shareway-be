@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+
 	"shareway/helper"
 	"shareway/middleware"
 	"shareway/schemas"
@@ -444,12 +445,14 @@ func (ctrl *MapController) SuggestHitchRides(ctx *gin.Context) {
 		rideRequestDetail := schemas.RideRequestDetail{
 			ID: rideRequest.ID,
 			User: schemas.UserInfo{
-				ID:           user.ID,
-				FullName:     user.FullName,
-				PhoneNumber:  user.PhoneNumber,
-				AvatarURL:    user.AvatarURL,
-				Gender:       user.Gender,
-				IsMomoLinked: user.IsMomoLinked,
+				ID:            user.ID,
+				FullName:      user.FullName,
+				PhoneNumber:   user.PhoneNumber,
+				AvatarURL:     user.AvatarURL,
+				Gender:        user.Gender,
+				BalanceInApp:  user.BalanceInApp,
+				IsMomoLinked:  user.IsMomoLinked,
+				AverageRating: user.AverageRating,
 			},
 			EncodedPolyline:       string(rideRequest.EncodedPolyline),
 			Distance:              rideRequest.Distance,
@@ -599,12 +602,14 @@ func (ctrl *MapController) SuggestGiveRides(ctx *gin.Context) {
 		rideOfferDetail := schemas.RideOfferDetail{
 			ID: rideOffer.ID,
 			User: schemas.UserInfo{
-				ID:           user.ID,
-				FullName:     user.FullName,
-				PhoneNumber:  user.PhoneNumber,
-				AvatarURL:    user.AvatarURL,
-				Gender:       user.Gender,
-				IsMomoLinked: user.IsMomoLinked,
+				ID:            user.ID,
+				FullName:      user.FullName,
+				PhoneNumber:   user.PhoneNumber,
+				AvatarURL:     user.AvatarURL,
+				Gender:        user.Gender,
+				IsMomoLinked:  user.IsMomoLinked,
+				BalanceInApp:  user.BalanceInApp,
+				AverageRating: user.AverageRating,
 			},
 			Vehicle:                vehicle,
 			EncodedPolyline:        string(rideOffer.EncodedPolyline),

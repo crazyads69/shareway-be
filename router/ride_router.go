@@ -14,6 +14,7 @@ func SetupRideRouter(group *gin.RouterGroup, server *APIServer) {
 		server.Service.MapService,
 		server.Service.UserService,
 		server.Service.VehicleService,
+		server.Service.PaymentService,
 		server.AsyncClient,
 	)
 	group.POST("/give-ride-request", rideController.SendGiveRideRequest)
@@ -27,4 +28,8 @@ func SetupRideRouter(group *gin.RouterGroup, server *APIServer) {
 	group.POST("/update-ride-location", rideController.UpdateRideLocation)
 	group.POST("/cancel-ride", rideController.CancelRide)
 	group.GET("/get-all-pending-ride", rideController.GetAllPendingRide)
+	group.POST("/rating-ride-hitcher", rideController.RatingRideHitcher)
+	group.POST("/rating-ride-driver", rideController.RatingRideDriver)
+	group.GET("/get-ride-history", rideController.GetRideHistory)
+	group.GET("/get-scheduled-and-ongoing-ride", rideController.GetScheduledAndOngoingRide)
 }

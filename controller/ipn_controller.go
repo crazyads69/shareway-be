@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
 	"shareway/helper"
 	"shareway/infra/task"
 	"shareway/infra/ws"
@@ -133,7 +134,19 @@ func (i *IPNController) HandleIPN(ctx *gin.Context) {
 			wsMessage = schemas.WebSocketMessage{UserID: newPartnerClientID.String(), Type: "payment-success"}
 			notification = schemas.Notification{Title: "Thanh toán thành công", Body: "Thanh toán thành công", Token: receiver.DeviceToken}
 		}
-
+	case "withdraw":
+		if req.ResultCode != 0 {
+			wsMessage = schemas.WebSocketMessage{UserID: extraData.UserID.String(), Type: "withdraw-failed"}
+			notification = schemas.Notification{Title: "Rút tiền thất bại", Body: "Rút tiền thất bại, vui lòng thử lại", Token: receiver.DeviceToken}
+		} else {
+			if err := i.IPNService.HandleWithdrawIPN(req); err != nil {
+				logger.Error().Err(err).Msg("Failed to handle withdraw IPN")
+				helper.GinResponse(ctx, http.StatusInternalServerError, helper.ErrorResponseWithMessage(err, "Failed to handle withdraw IPN", "Không thể xử lý IPN rút tiền"))
+				return
+			}
+			wsMessage = schemas.WebSocketMessage{UserID: extraData.UserID.String(), Type: "withdraw-success"}
+			notification = schemas.Notification{Title: "Rút tiền thành công", Body: "Rút tiền thành công", Token: receiver.DeviceToken}
+		}
 	default:
 		logger.Error().Str("type", extraData.Type).Msg("Unknown extra data type")
 		helper.GinResponse(ctx, http.StatusBadRequest, helper.ErrorResponseWithMessage(fmt.Errorf("unknown extra data type"), "Unknown extra data type", "Loại dữ liệu thêm không xác định"))

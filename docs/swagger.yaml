@@ -13,12 +13,6 @@ definitions:
     type: object
   schemas.AcceptGiveRideRequestRequest:
     properties:
-      paymentMethod:
-        description: Payment method (cash or momo)
-        enum:
-        - cash
-        - momo
-        type: string
       receiverID:
         description: The ID of the receiver (the user who received the request) aka
           the hitcher
@@ -34,7 +28,6 @@ definitions:
         description: The ID of the vehicle
         type: string
     required:
-    - paymentMethod
     - receiverID
     - rideOfferID
     - rideRequestID
@@ -61,7 +54,7 @@ definitions:
       end_time:
         type: string
       fare:
-        type: number
+        type: integer
       receiver_id:
         type: string
       ride_id:
@@ -97,12 +90,6 @@ definitions:
     type: object
   schemas.AcceptHitchRideRequestRequest:
     properties:
-      paymentMethod:
-        description: Payment method (cash or momo)
-        enum:
-        - cash
-        - momo
-        type: string
       receiverID:
         description: The ID of the receiver (the user who received the request) aka
           the driver
@@ -118,7 +105,6 @@ definitions:
         description: The ID of the vehicle
         type: string
     required:
-    - paymentMethod
     - receiverID
     - rideOfferID
     - rideRequestID
@@ -145,7 +131,7 @@ definitions:
       end_time:
         type: string
       fare:
-        type: number
+        type: integer
       receiver_id:
         type: string
       ride_id:
@@ -309,6 +295,25 @@ definitions:
     required:
     - message
     type: object
+  schemas.DashboardGeneralDataResponse:
+    properties:
+      ride_change:
+        type: number
+      total_rides:
+        type: integer
+      total_transactions:
+        type: integer
+      total_users:
+        type: integer
+      total_vehicles:
+        type: integer
+      transaction_change:
+        type: number
+      user_change:
+        type: number
+      vehicle_change:
+        type: number
+    type: object
   schemas.DeleteUserRequest:
     properties:
       phone_number:
@@ -352,7 +357,7 @@ definitions:
       end_time:
         type: string
       fare:
-        type: number
+        type: integer
       receiver_id:
         type: string
       ride_id:
@@ -473,6 +478,21 @@ definitions:
           $ref: '#/definitions/schemas.MessageResponse'
         type: array
     type: object
+  schemas.GetRideHistoryResponse:
+    properties:
+      ride_history:
+        description: The cancel ride request of the user
+        items:
+          $ref: '#/definitions/schemas.RideHistoryDetail'
+        type: array
+    type: object
+  schemas.GetScheduledAndOngoingRideResponse:
+    properties:
+      valid_ride:
+        items:
+          $ref: '#/definitions/schemas.ValidRideDetail'
+        type: array
+    type: object
   schemas.GetUserProfileResponse:
     properties:
       user:
@@ -522,7 +542,7 @@ definitions:
       end_time:
         type: string
       fare:
-        type: number
+        type: integer
       ride_offer_id:
         type: string
       route:
@@ -676,12 +696,8 @@ definitions:
       start_time:
         description: Start time of the ride (if not provided, the ride is immediate)
         type: string
-      weight:
-        description: Weight of the rider to consider
-        type: integer
     required:
     - place_list
-    - weight
     type: object
   schemas.HitchRideResponse:
     properties:
@@ -743,12 +759,6 @@ definitions:
         type: string
     required:
     - walletPhoneNumber
-    type: object
-  schemas.LinkMomoWalletResponse:
-    properties:
-      deeplink:
-        description: send this to fe flutter app for open momo and perform linked
-        type: string
     type: object
   schemas.LoginAdminRequest:
     properties:
@@ -929,6 +939,48 @@ definitions:
           $ref: '#/definitions/schemas.Term'
         type: array
     type: object
+  schemas.RatingRideDriverRequest:
+    properties:
+      rating:
+        description: The rating of the driver
+        maximum: 5
+        minimum: 1
+        type: number
+      receiver_id:
+        description: The receiver id (the driver) who received the rating
+        type: string
+      review:
+        description: The review of the driver
+        type: string
+      ride_id:
+        description: The ID of the ride
+        type: string
+    required:
+    - rating
+    - receiver_id
+    - ride_id
+    type: object
+  schemas.RatingRideHitcherRequest:
+    properties:
+      rating:
+        description: The rating of the driver
+        maximum: 5
+        minimum: 1
+        type: number
+      receiverID:
+        description: The receiver id (the hitcher) who received the rating
+        type: string
+      review:
+        description: The review of the driver
+        type: string
+      rideID:
+        description: The ID of the ride to rate
+        type: string
+    required:
+    - rating
+    - receiverID
+    - rideID
+    type: object
   schemas.RefreshTokenResponse:
     properties:
       access_token:
@@ -941,6 +993,19 @@ definitions:
     - access_token
     - refresh_token
     - user_id
+    type: object
+  schemas.RefundMomoRequest:
+    properties:
+      rideOfferID:
+        type: string
+      rideRequestID:
+        description: |-
+          The ID of the ride request (current user is the hitcher)
+          The ride request contains then transaction ID from momo so could use for refund when needed (ride canceled, cannot create ride, etc)
+        type: string
+    required:
+    - rideOfferID
+    - rideRequestID
     type: object
   schemas.RegisterDeviceTokenRequest:
     properties:
@@ -1009,6 +1074,138 @@ definitions:
     required:
     - phone_number
     type: object
+  schemas.RideDashboardDataResponse:
+    properties:
+      ride_stats:
+        items:
+          $ref: '#/definitions/schemas.StatPoint'
+        type: array
+    type: object
+  schemas.RideDetail:
+    properties:
+      distance:
+        type: number
+      driver:
+        $ref: '#/definitions/schemas.UserInfo'
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
+      duration:
+        type: integer
+      encoded_polyline:
+        type: string
+      end_address:
+        type: string
+      end_latitude:
+        type: number
+      end_longitude:
+        type: number
+      end_time:
+        type: string
+      fare:
+        type: integer
+      hitcher:
+        $ref: '#/definitions/schemas.UserInfo'
+      ride_id:
+        type: string
+      ride_offer_id:
+        type: string
+      ride_request_id:
+        type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
+      start_address:
+        type: string
+      start_latitude:
+        type: number
+      start_longitude:
+        type: number
+      start_time:
+        type: string
+      status:
+        type: string
+      transaction:
+        $ref: '#/definitions/schemas.TransactionDetail'
+      vehicle:
+        $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
+    type: object
+  schemas.RideHistoryDetail:
+    properties:
+      distance:
+        type: number
+      driver:
+        $ref: '#/definitions/schemas.UserInfo'
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
+      duration:
+        type: integer
+      encoded_polyline:
+        type: string
+      end_address:
+        type: string
+      end_latitude:
+        type: number
+      end_longitude:
+        type: number
+      end_time:
+        type: string
+      fare:
+        type: integer
+      hitcher:
+        $ref: '#/definitions/schemas.UserInfo'
+      ride_id:
+        type: string
+      ride_offer_id:
+        type: string
+      ride_request_id:
+        type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
+      start_address:
+        type: string
+      start_latitude:
+        type: number
+      start_longitude:
+        type: number
+      start_time:
+        type: string
+      status:
+        type: string
+      transaction:
+        $ref: '#/definitions/schemas.TransactionDetail'
+      vehicle:
+        $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
+    type: object
+  schemas.RideListResponse:
+    properties:
+      current_page:
+        type: integer
+      limit:
+        type: integer
+      rides:
+        items:
+          $ref: '#/definitions/schemas.RideDetail'
+        type: array
+      total_pages:
+        type: integer
+      total_rides:
+        type: integer
+    type: object
   schemas.RideOfferDetail:
     properties:
       distance:
@@ -1030,7 +1227,7 @@ definitions:
       end_time:
         type: string
       fare:
-        type: number
+        type: integer
       ride_offer_id:
         type: string
       start_address:
@@ -1086,8 +1283,22 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/schemas.UserInfo'
-      weight:
-        type: integer
+    type: object
+  schemas.SearchUsersRequest:
+    properties:
+      search_input:
+        description: Search input can be username or phonenuber
+        type: string
+    required:
+    - search_input
+    type: object
+  schemas.SearchUsersResponse:
+    properties:
+      chatRooms:
+        description: Return chat rooms with the searched user
+        items:
+          $ref: '#/definitions/schemas.ChatRoomResponse'
+        type: array
     type: object
   schemas.SendGiveRideRequestRequest:
     properties:
@@ -1212,7 +1423,7 @@ definitions:
       end_time:
         type: string
       fare:
-        type: number
+        type: integer
       receiver_id:
         type: string
       ride_id:
@@ -1245,6 +1456,16 @@ definitions:
         items:
           $ref: '#/definitions/schemas.Waypoint'
         type: array
+    type: object
+  schemas.StatPoint:
+    properties:
+      count:
+        type: integer
+      date:
+        type: string
+      total:
+        description: For transaction total amount
+        type: integer
     type: object
   schemas.StructuredFormatting:
     properties:
@@ -1290,16 +1511,55 @@ definitions:
       value:
         type: string
     type: object
+  schemas.TransactionDashboardDataResponse:
+    properties:
+      transaction_stats:
+        items:
+          $ref: '#/definitions/schemas.StatPoint'
+        type: array
+    type: object
   schemas.TransactionDetail:
     properties:
       amount:
-        type: number
+        type: integer
       payment_method:
         type: string
       status:
         type: string
       transaction_id:
         type: string
+    type: object
+  schemas.TransactionListDetail:
+    properties:
+      amount:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: string
+      payment_method:
+        type: string
+      payment_status:
+        type: string
+      receiver:
+        $ref: '#/definitions/schemas.UserInfo'
+      sender:
+        $ref: '#/definitions/schemas.UserInfo'
+    type: object
+  schemas.TransactionListResponse:
+    properties:
+      current_page:
+        type: integer
+      limit:
+        type: integer
+      total_pages:
+        type: integer
+      total_transactions:
+        type: integer
+      transactions:
+        items:
+          $ref: '#/definitions/schemas.TransactionListDetail'
+        type: array
     type: object
   schemas.UpdateAvatarResponse:
     properties:
@@ -1390,7 +1650,7 @@ definitions:
       end_time:
         type: string
       fare:
-        type: number
+        type: integer
       receiver_id:
         type: string
       ride_id:
@@ -1449,10 +1709,68 @@ definitions:
     required:
     - user
     type: object
+  schemas.UserDashboardDataResponse:
+    properties:
+      user_stats:
+        items:
+          $ref: '#/definitions/schemas.StatPoint'
+        type: array
+    type: object
+  schemas.UserDetail:
+    properties:
+      avatar_url:
+        type: string
+      average_rating:
+        type: number
+      balance_in_app:
+        type: integer
+      cccd_number:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      gender:
+        type: string
+      id:
+        type: string
+      is_activated:
+        type: boolean
+      is_momo_linked:
+        type: boolean
+      is_verified:
+        type: boolean
+      phone_number:
+        type: string
+      role:
+        type: string
+      total_ratings:
+        type: integer
+      total_rides:
+        type: integer
+      total_transactions:
+        type: integer
+      total_vehicles:
+        type: integer
+      updated_at:
+        type: string
+      vehicles:
+        items:
+          $ref: '#/definitions/schemas.VehicleDetail'
+        type: array
+    required:
+    - id
+    type: object
   schemas.UserInfo:
     properties:
       avatar_url:
         type: string
+      average_rating:
+        type: number
+      balance_in_app:
+        type: integer
       full_name:
         type: string
       gender:
@@ -1464,10 +1782,30 @@ definitions:
       user_id:
         type: string
     type: object
+  schemas.UserListResponse:
+    properties:
+      current_page:
+        type: integer
+      limit:
+        type: integer
+      total_pages:
+        type: integer
+      total_users:
+        type: integer
+      users:
+        description: The detail user response
+        items:
+          $ref: '#/definitions/schemas.UserDetail'
+        type: array
+    type: object
   schemas.UserResponse:
     properties:
       avatar_url:
         type: string
+      average_rating:
+        type: number
+      balance_in_app:
+        type: integer
       created_at:
         type: string
       email:
@@ -1493,6 +1831,61 @@ definitions:
     required:
     - id
     type: object
+  schemas.ValidRideDetail:
+    properties:
+      distance:
+        type: number
+      driver:
+        $ref: '#/definitions/schemas.UserInfo'
+      driver_current_latitude:
+        type: number
+      driver_current_longitude:
+        type: number
+      duration:
+        type: integer
+      encoded_polyline:
+        type: string
+      end_address:
+        type: string
+      end_latitude:
+        type: number
+      end_longitude:
+        type: number
+      end_time:
+        type: string
+      fare:
+        type: integer
+      hitcher:
+        $ref: '#/definitions/schemas.UserInfo'
+      ride_id:
+        type: string
+      ride_offer_id:
+        type: string
+      ride_request_id:
+        type: string
+      rider_current_latitude:
+        type: number
+      rider_current_longitude:
+        type: number
+      start_address:
+        type: string
+      start_latitude:
+        type: number
+      start_longitude:
+        type: number
+      start_time:
+        type: string
+      status:
+        type: string
+      transaction:
+        $ref: '#/definitions/schemas.TransactionDetail'
+      vehicle:
+        $ref: '#/definitions/schemas.VehicleDetail'
+      waypoints:
+        items:
+          $ref: '#/definitions/schemas.Waypoint'
+        type: array
+    type: object
   schemas.Vehicle:
     properties:
       fuel_consumed:
@@ -1503,6 +1896,13 @@ definitions:
         type: string
     required:
     - vehicle_id
+    type: object
+  schemas.VehicleDashboardDataResponse:
+    properties:
+      vehicle_stats:
+        items:
+          $ref: '#/definitions/schemas.StatPoint'
+        type: array
     type: object
   schemas.VehicleDetail:
     properties:
@@ -1516,6 +1916,45 @@ definitions:
         type: string
     required:
     - vehicle_id
+    type: object
+  schemas.VehicleListDetail:
+    properties:
+      cavet:
+        description: Certificate of vehicle registration each vehicle has a unique
+          number
+        type: string
+      created_at:
+        type: string
+      fuel_consumed:
+        type: number
+      id:
+        type: string
+      license_plate:
+        type: string
+      owner:
+        allOf:
+        - $ref: '#/definitions/schemas.UserInfo'
+        description: Owner info of the vehicle
+      total_rides:
+        description: Total rides of the vehicle that have been taken
+        type: integer
+      vehicle_name:
+        type: string
+    type: object
+  schemas.VehicleListResponse:
+    properties:
+      current_page:
+        type: integer
+      limit:
+        type: integer
+      total_pages:
+        type: integer
+      total_vehicles:
+        type: integer
+      vehicles:
+        items:
+          $ref: '#/definitions/schemas.VehicleListDetail'
+        type: array
     type: object
   schemas.VerifyCCCDResponse:
     properties:
@@ -1626,6 +2065,32 @@ paths:
       summary: Login as an admin
       tags:
       - admin/auth
+  /admin/get-dashboard-general-data:
+    get:
+      consumes:
+      - application/json
+      description: Get the general data of the dashboard
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Dashboard general data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.DashboardGeneralDataResponse'
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the general data of the dashboard
+      tags:
+      - admin
   /admin/get-profile:
     get:
       consumes:
@@ -1635,9 +2100,14 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Admin profile
           schema:
-            $ref: '#/definitions/schemas.GetAdminProfileResponse'
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GetAdminProfileResponse'
+              type: object
         "500":
           description: Internal server error
           schema:
@@ -1645,6 +2115,519 @@ paths:
       security:
       - BearerAuth: []
       summary: Get the profile of the admin
+      tags:
+      - admin
+  /admin/get-report-details:
+    get:
+      consumes:
+      - application/json
+      description: Get the ZIP file of the report details, including an Excel report
+        and PDF analysis
+      parameters:
+      - description: Start date for custom filter (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date for custom filter (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/zip
+      responses:
+        "200":
+          description: ZIP file containing Excel and PDF reports
+          schema:
+            type: file
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the ZIP file of the report details
+      tags:
+      - admin
+  /admin/get-ride-dashboard-data:
+    get:
+      consumes:
+      - application/json
+      description: Get the data of the dashboard for the ride
+      parameters:
+      - description: Filter for the data (all_time, last_week, last_month, last_year,
+          custom)
+        in: query
+        name: filter
+        required: true
+        type: string
+      - description: Start date for custom filter (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date for custom filter (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Ride dashboard data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.RideDashboardDataResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the data of the dashboard for the ride
+      tags:
+      - admin
+  /admin/get-ride-list:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of rides with pagination and filters
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: Limit number for pagination (max 100)
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: Start date for custom filter (YYYY-MM-DD)
+        in: query
+        name: start_date_time
+        type: string
+      - description: End date for custom filter (YYYY-MM-DD)
+        in: query
+        name: end_date_time
+        type: string
+      - description: Optional filter for driver
+        in: query
+        name: search_driver
+        type: string
+      - description: Optional filter for hitcher
+        in: query
+        name: search_hitcher
+        type: string
+      - description: Optional filter for route
+        in: query
+        name: search_route
+        type: string
+      - description: Optional filter for vehicle
+        in: query
+        name: search_vehicle
+        type: string
+      - collectionFormat: csv
+        description: Optional filter for ride status
+        in: query
+        items:
+          type: string
+        name: ride_status
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Ride list
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.RideListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the list of rides with pagination and filters
+      tags:
+      - admin
+  /admin/get-transaction-dashboard-data:
+    get:
+      consumes:
+      - application/json
+      description: Get the data of the dashboard for the transaction
+      parameters:
+      - description: Filter for the data (all_time, last_week, last_month, last_year,
+          custom)
+        in: query
+        name: filter
+        required: true
+        type: string
+      - description: Start date for custom filter (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date for custom filter (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transaction dashboard data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.TransactionDashboardDataResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the data of the dashboard for the transaction
+      tags:
+      - admin
+  /admin/get-transaction-list:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of transactions with pagination and filters
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: Limit number for pagination (max 100)
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: Start date for custom filter (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date for custom filter (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      - description: Optional filter for sender
+        in: query
+        name: search_sender
+        type: string
+      - description: Optional filter for receiver
+        in: query
+        name: search_receiver
+        type: string
+      - collectionFormat: csv
+        description: Optional filter for payment method
+        in: query
+        items:
+          type: string
+        name: payment_method
+        type: array
+      - collectionFormat: csv
+        description: Optional filter for payment status
+        in: query
+        items:
+          type: string
+        name: payment_status
+        type: array
+      - description: Optional filter for minimum amount
+        in: query
+        name: min_amount
+        type: integer
+      - description: Optional filter for maximum amount
+        in: query
+        name: max_amount
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Transaction list
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.TransactionListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the list of transactions with pagination and filters
+      tags:
+      - admin
+  /admin/get-user-dashboard-data:
+    get:
+      consumes:
+      - application/json
+      description: Get the data of the dashboard for the user
+      parameters:
+      - description: Filter for the data (all_time, last_week, last_month, last_year,
+          custom)
+        in: query
+        name: filter
+        required: true
+        type: string
+      - description: Start date for custom filter (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date for custom filter (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User dashboard data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.UserDashboardDataResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the data of the dashboard for the user
+      tags:
+      - admin
+  /admin/get-user-list:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of users with pagination and filters
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: Limit number for pagination (max 100)
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: Start date for custom filter (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date for custom filter (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      - description: Optional filter for is_activated
+        in: query
+        name: is_activated
+        type: boolean
+      - description: Optional filter for is_verified
+        in: query
+        name: is_verified
+        type: boolean
+      - description: Optional filter for full name
+        in: query
+        name: search_full_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User list
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.UserListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the list of users with pagination and filters
+      tags:
+      - admin
+  /admin/get-vehicle-dashboard-data:
+    get:
+      consumes:
+      - application/json
+      description: Get the data of the dashboard for the vehicle
+      parameters:
+      - description: Filter for the data (all_time, last_week, last_month, last_year,
+          custom)
+        in: query
+        name: filter
+        required: true
+        type: string
+      - description: Start date for custom filter (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date for custom filter (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Vehicle dashboard data
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.VehicleDashboardDataResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the data of the dashboard for the vehicle
+      tags:
+      - admin
+  /admin/get-vehicle-list:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of vehicles with pagination and filters
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: Limit number for pagination (max 100)
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: Start date for custom filter (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date for custom filter (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      - description: Optional filter for owner
+        in: query
+        name: search_owner
+        type: string
+      - description: Optional filter for plate
+        in: query
+        name: search_plate
+        type: string
+      - description: Optional filter for vehicle name
+        in: query
+        name: search_vehicle_name
+        type: string
+      - description: Optional filter for cavet
+        in: query
+        name: search_cavet
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Vehicle list
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.VehicleListResponse'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get the list of vehicles with pagination and filters
+      tags:
+      - admin
+  /admin/logout:
+    post:
+      consumes:
+      - application/json
+      description: Log out the admin user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Admin logged out successfully
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Log out the admin user
       tags:
       - admin
   /auth/delete-user:
@@ -2168,6 +3151,45 @@ paths:
       summary: Initiate a call with a user (from user to user 1:1) using Agora RTC
       tags:
       - chat
+  /chat/search-users:
+    post:
+      consumes:
+      - application/json
+      description: Search for users by full name (case-insensitive) that have matched
+        with user
+      parameters:
+      - description: Search users request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.SearchUsersRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Users fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.SearchUsersResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Search for users by full name (case-insensitive) that have matched
+        with user
+      tags:
+      - chat
   /chat/send-image:
     post:
       consumes:
@@ -2677,9 +3699,14 @@ paths:
       - application/json
       responses:
         "200":
-          description: Link momo wallet response
+          description: Link wallet response
           schema:
-            $ref: '#/definitions/schemas.LinkMomoWalletResponse'
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
         "400":
           description: Bad request
           schema:
@@ -2691,6 +3718,69 @@ paths:
       security:
       - BearerAuth: []
       summary: Link momo wallet to user account
+      tags:
+      - payment
+  /payment/refund-ride:
+    post:
+      consumes:
+      - application/json
+      description: Refund ride with momo wallet
+      parameters:
+      - description: Refund ride request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.RefundMomoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Refund ride response
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Refund ride with momo wallet
+      tags:
+      - payment
+  /payment/withdraw-momo-wallet:
+    post:
+      consumes:
+      - application/json
+      description: Withdraw money from our system to user's momo wallet
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Withdraw momo response
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Withdraw money from our system to user's momo wallet
       tags:
       - payment
   /protected/test:
@@ -2939,9 +4029,14 @@ paths:
       - application/json
       responses:
         "200":
-          description: Successfully got all pending ride
+          description: Successfully get all pending ride
           schema:
-            $ref: '#/definitions/schemas.GetAllPendingRideResponse'
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GetAllPendingRideResponse'
+              type: object
         "500":
           description: Internal server error
           schema:
@@ -2949,6 +4044,60 @@ paths:
       security:
       - BearerAuth: []
       summary: Get all pending ride
+      tags:
+      - ride
+  /ride/get-ride-history:
+    get:
+      consumes:
+      - application/json
+      description: Get ride history of the user (both as driver and hitcher) included
+        cancelled rides and completed rides
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully got ride history
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GetRideHistoryResponse'
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get ride history of the user
+      tags:
+      - ride
+  /ride/get-scheduled-and-ongoing-ride:
+    get:
+      consumes:
+      - application/json
+      description: Get scheduled and ongoing ride of the user (both as driver and
+        hitcher)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully got scheduled and ongoing ride
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GetScheduledAndOngoingRideResponse'
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Get scheduled and ongoing ride of the user
       tags:
       - ride
   /ride/give-ride-request:
@@ -3013,6 +4162,70 @@ paths:
       security:
       - BearerAuth: []
       summary: Send a ride request from the hitcher to the driver
+      tags:
+      - ride
+  /ride/rating-ride-driver:
+    post:
+      consumes:
+      - application/json
+      description: Rate the driver after the ride by the hitcher
+      parameters:
+      - description: Rating ride driver request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.RatingRideDriverRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully rated the driver
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Rate the driver after the ride by the hitcher
+      tags:
+      - ride
+  /ride/rating-ride-hitcher:
+    post:
+      consumes:
+      - application/json
+      description: Rate the hitcher after the ride by the driver
+      parameters:
+      - description: Rating ride hitcher request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.RatingRideHitcherRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully rated the hitcher
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Rate the hitcher after the ride by the driver
       tags:
       - ride
   /ride/start-ride:
@@ -3098,9 +4311,14 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Successfully authenticated
           schema:
-            $ref: '#/definitions/schemas.GetUserProfileResponse'
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/schemas.GetUserProfileResponse'
+              type: object
         "500":
           description: Internal server error
           schema:

@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"fmt"
+
 	"shareway/infra/db/migration"
 
 	"github.com/google/uuid"
@@ -28,6 +29,7 @@ type IAuthRepository interface {
 	DeleteUser(phoneNumber string) error
 	UpdateUserProfile(userID uuid.UUID, fullName string, email string, gender string) error
 	UpdateAvatar(userID uuid.UUID, avatarURL string) error
+	GetTotalTransactionsForUser(userID uuid.UUID) (int64, error)
 }
 
 // AuthRepository implements IAuthRepository
@@ -184,12 +186,14 @@ func (r *AuthRepository) CreateUser(phoneNumber, fullName, email string) (uuid.U
 		return uuid.Nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	// Update user avatar
-	avatarURL := fmt.Sprintf("https://api.multiavatar.com/%s.png", user.ID)
-	if err := tx.Model(&migration.User{}).Where("id = ?", user.ID).Update("avatar_url", avatarURL).Error; err != nil {
-		tx.Rollback()
-		return uuid.Nil, fmt.Errorf("failed to update user avatar: %w", err)
-	}
+	// // Update user avatar
+	// avatarURL := fmt.Sprintf("https://api.multiavatar.com/%s.png", user.ID)
+	// if err := tx.Model(&migration.User{}).Where("id = ?", user.ID).Update("avatar_url", avatarURL).Error; err != nil {
+	// 	tx.Rollback()
+	// 	return uuid.Nil, fmt.Errorf("failed to update user avatar: %w", err)
+	// }
+
+	// By default frontend handle the default avatar in the frontend
 
 	if err := tx.Commit().Error; err != nil {
 		return uuid.Nil, fmt.Errorf("failed to commit transaction: %w", err)
@@ -365,28 +369,20 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 		return err
 	}
 
-	// Delete Rides associated with user's RideOffers and RideRequests
-	var rideOffers []migration.RideOffer
-	var rideRequests []migration.RideRequest
-	if err := tx.Where("user_id = ?", user.ID).Find(&rideOffers).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-	if err := tx.Where("user_id = ?", user.ID).Find(&rideRequests).Error; err != nil {
+	// Delete Transactions associated with user's Rides
+	if err := tx.Where("payer_id = ? OR receiver_id = ?", user.ID, user.ID).Delete(&migration.Transaction{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	var rideOfferIDs []uuid.UUID
-	var rideRequestIDs []uuid.UUID
-	for _, offer := range rideOffers {
-		rideOfferIDs = append(rideOfferIDs, offer.ID)
-	}
-	for _, request := range rideRequests {
-		rideRequestIDs = append(rideRequestIDs, request.ID)
+	// Delete Ratings associated with user's Rides
+	if err := tx.Where("rater_id = ? OR ratee_id = ?", user.ID, user.ID).Delete(&migration.Rating{}).Error; err != nil {
+		tx.Rollback()
+		return err
 	}
 
-	if err := tx.Where("ride_offer_id IN ? OR ride_request_id IN ?", rideOfferIDs, rideRequestIDs).Delete(&migration.Ride{}).Error; err != nil {
+	// Delete Rides
+	if err := tx.Where("ride_offer_id IN (SELECT id FROM ride_offers WHERE user_id = ?) OR ride_request_id IN (SELECT id FROM ride_requests WHERE user_id = ?)", user.ID, user.ID).Delete(&migration.Ride{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -403,7 +399,7 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 		return err
 	}
 
-	// Vehicles (now safe to delete after RideOffers are deleted)
+	// Vehicles
 	if err := tx.Where("user_id = ?", user.ID).Delete(&migration.Vehicle{}).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -427,8 +423,8 @@ func (r *AuthRepository) DeleteUser(phoneNumber string) error {
 		return err
 	}
 
-	// Ratings (both given and received)
-	if err := tx.Where("rater_id = ? OR ratee_id = ?", user.ID, user.ID).Delete(&migration.Rating{}).Error; err != nil {
+	// Delete Rooms associated with the user
+	if err := tx.Where("user1_id = ? OR user2_id = ?", user.ID, user.ID).Delete(&migration.Room{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -504,6 +500,16 @@ func (r *AuthRepository) UpdateAvatar(userID uuid.UUID, avatarURL string) error 
 	}
 
 	return tx.Commit().Error
+}
+
+// GetTotalTransactionsForUser fetches the total number of transactions for the given user ID
+func (r *AuthRepository) GetTotalTransactionsForUser(userID uuid.UUID) (int64, error) {
+	var totalTransactions int64
+	err := r.db.Model(&migration.Transaction{}).
+		Where("payer_id = ? OR receiver_id = ?", userID, userID).
+		Count(&totalTransactions).
+		Error
+	return totalTransactions, err
 }
 
 // Ensure AuthRepository implements IAuthRepository

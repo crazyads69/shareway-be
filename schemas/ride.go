@@ -39,7 +39,7 @@ type SendGiveRideRequestResponse struct {
 	StartTime              time.Time     `json:"start_time"`
 	EndTime                time.Time     `json:"end_time"`
 	Status                 string        `json:"status"`
-	Fare                   float64       `json:"fare"`
+	Fare                   int64         `json:"fare"`
 	ReceiverID             uuid.UUID     `json:"receiver_id"`
 	RideRequestID          uuid.UUID     `json:"ride_request_id"`
 	Waypoints              []Waypoint    `json:"waypoints"`
@@ -91,12 +91,12 @@ type AcceptGiveRideRequestRequest struct {
 	// The ID of the vehicle
 	VehicleID uuid.UUID `json:"vehicleID" binding:"required,uuid" validate:"required,uuid"`
 	// Payment method (cash or momo)
-	PaymentMethod string `json:"paymentMethod" binding:"required" validate:"required,oneof=cash momo"`
+	// PaymentMethod string `json:"paymentMethod" binding:"required" validate:"required,oneof=cash momo"`
 }
 
 type TransactionDetail struct {
 	ID            uuid.UUID `json:"transaction_id"`
-	Amount        float64   `json:"amount"`
+	Amount        int64     `json:"amount"`
 	Status        string    `json:"status"`
 	PaymentMethod string    `json:"payment_method"`
 }
@@ -111,7 +111,7 @@ type AcceptGiveRideRequestResponse struct {
 	EndTime                time.Time         `json:"end_time"`
 	StartAddress           string            `json:"start_address"`
 	EndAddress             string            `json:"end_address"`
-	Fare                   float64           `json:"fare"`
+	Fare                   int64             `json:"fare"`
 	EncodedPolyline        string            `json:"encoded_polyline"`
 	Distance               float64           `json:"distance"`
 	Duration               int               `json:"duration"`
@@ -141,7 +141,7 @@ type AcceptHitchRideRequestRequest struct {
 	// The ID of the vehicle
 	VehicleID uuid.UUID `json:"vehicleID" binding:"required,uuid" validate:"required,uuid"`
 	// Payment method (cash or momo)
-	PaymentMethod string `json:"paymentMethod" binding:"required" validate:"required,oneof=cash momo"`
+	// PaymentMethod string `json:"paymentMethod" binding:"required" validate:"required,oneof=cash momo"`
 }
 
 // Define AcceptHitchRideRequestResponse schema
@@ -155,7 +155,7 @@ type AcceptHitchRideRequestResponse struct {
 	EndTime                time.Time         `json:"end_time"`
 	StartAddress           string            `json:"start_address"`
 	EndAddress             string            `json:"end_address"`
-	Fare                   float64           `json:"fare"`
+	Fare                   int64             `json:"fare"`
 	EncodedPolyline        string            `json:"encoded_polyline"`
 	Distance               float64           `json:"distance"`
 	Duration               int               `json:"duration"`
@@ -229,7 +229,7 @@ type StartRideResponse struct {
 	EndTime                time.Time         `json:"end_time"`
 	StartAddress           string            `json:"start_address"`
 	EndAddress             string            `json:"end_address"`
-	Fare                   float64           `json:"fare"`
+	Fare                   int64             `json:"fare"`
 	EncodedPolyline        string            `json:"encoded_polyline"`
 	Distance               float64           `json:"distance"`
 	Duration               int               `json:"duration"`
@@ -267,7 +267,7 @@ type EndRideResponse struct {
 	EndTime                time.Time         `json:"end_time"`
 	StartAddress           string            `json:"start_address"`
 	EndAddress             string            `json:"end_address"`
-	Fare                   float64           `json:"fare"`
+	Fare                   int64             `json:"fare"`
 	EncodedPolyline        string            `json:"encoded_polyline"`
 	Distance               float64           `json:"distance"`
 	Duration               int               `json:"duration"`
@@ -305,7 +305,7 @@ type UpdateRideLocationResponse struct {
 	EndTime                time.Time         `json:"end_time"`
 	StartAddress           string            `json:"start_address"`
 	EndAddress             string            `json:"end_address"`
-	Fare                   float64           `json:"fare"`
+	Fare                   int64             `json:"fare"`
 	EncodedPolyline        string            `json:"encoded_polyline"`
 	Distance               float64           `json:"distance"`
 	Duration               int               `json:"duration"`
@@ -351,4 +351,96 @@ type GetAllPendingRideResponse struct {
 	PendingRideRequest []RideRequestDetail `json:"pending_ride_request"`
 	// The pending ride offer of the user
 	PendingRideOffer []RideOfferDetail `json:"pending_ride_offer"`
+}
+
+// Define RatingRideHitcherRequest schema
+type RatingRideHitcherRequest struct {
+	// The ID of the ride to rate
+	RideID uuid.UUID `json:"rideID" binding:"required,uuid" validate:"required,uuid"`
+	// The rating of the driver
+	Rating float64 `json:"rating" binding:"required" validate:"required,numeric,min=1,max=5"`
+	// The review of the driver
+	Review string `json:"review,omitempty" binding:"omitempty" validate:"omitempty"`
+	// The receiver id (the hitcher) who received the rating
+	ReceiverID uuid.UUID `json:"receiverID" binding:"required,uuid" validate:"required,uuid"`
+}
+
+// Define RatingRideDriverResponse schema
+type RatingRideDriverRequest struct {
+	// The ID of the ride
+	RideID uuid.UUID `json:"ride_id" binding:"required,uuid" validate:"required,uuid"`
+	// The rating of the driver
+	Rating float64 `json:"rating" binding:"required" validate:"required,numeric,min=1,max=5"`
+	// The review of the driver
+	Review string `json:"review,omitempty" binding:"omitempty" validate:"omitempty"`
+	// The receiver id (the driver) who received the rating
+	ReceiverID uuid.UUID `json:"receiver_id" binding:"required,uuid" validate:"required,uuid"`
+}
+
+// Define CancelAndCompleteRide schema
+// This schema is used to get the cancel and complete ride request and offer of the user
+type RideHistoryDetail struct {
+	ID                     uuid.UUID         `json:"ride_id"`
+	RideOfferID            uuid.UUID         `json:"ride_offer_id"`
+	Driver                 UserInfo          `json:"driver"`
+	Hitcher                UserInfo          `json:"hitcher"`
+	RideRequestID          uuid.UUID         `json:"ride_request_id"`
+	Status                 string            `json:"status"`
+	StartTime              time.Time         `json:"start_time"`
+	EndTime                time.Time         `json:"end_time"`
+	StartAddress           string            `json:"start_address"`
+	EndAddress             string            `json:"end_address"`
+	Fare                   int64             `json:"fare"`
+	EncodedPolyline        string            `json:"encoded_polyline"`
+	Distance               float64           `json:"distance"`
+	Duration               int               `json:"duration"`
+	Transaction            TransactionDetail `json:"transaction"`
+	StartLatitude          float64           `json:"start_latitude"`
+	StartLongitude         float64           `json:"start_longitude"`
+	EndLatitude            float64           `json:"end_latitude"`
+	EndLongitude           float64           `json:"end_longitude"`
+	Vehicle                VehicleDetail     `json:"vehicle"`
+	DriverCurrentLatitude  float64           `json:"driver_current_latitude"`
+	DriverCurrentLongitude float64           `json:"driver_current_longitude"`
+	RiderCurrentLatitude   float64           `json:"rider_current_latitude"`
+	RiderCurrentLongitude  float64           `json:"rider_current_longitude"`
+	Waypoints              []Waypoint        `json:"waypoints"`
+}
+
+// Define GetAllCancelAndCompleteRideResponse schema
+type GetRideHistoryResponse struct {
+	// The cancel ride request of the user
+	RideHistory []RideHistoryDetail `json:"ride_history"`
+}
+
+type ValidRideDetail struct {
+	ID                     uuid.UUID         `json:"ride_id"`
+	RideOfferID            uuid.UUID         `json:"ride_offer_id"`
+	Driver                 UserInfo          `json:"driver"`
+	Hitcher                UserInfo          `json:"hitcher"`
+	RideRequestID          uuid.UUID         `json:"ride_request_id"`
+	Status                 string            `json:"status"`
+	StartTime              time.Time         `json:"start_time"`
+	EndTime                time.Time         `json:"end_time"`
+	StartAddress           string            `json:"start_address"`
+	EndAddress             string            `json:"end_address"`
+	Fare                   int64             `json:"fare"`
+	EncodedPolyline        string            `json:"encoded_polyline"`
+	Distance               float64           `json:"distance"`
+	Duration               int               `json:"duration"`
+	Transaction            TransactionDetail `json:"transaction"`
+	StartLatitude          float64           `json:"start_latitude"`
+	StartLongitude         float64           `json:"start_longitude"`
+	EndLatitude            float64           `json:"end_latitude"`
+	EndLongitude           float64           `json:"end_longitude"`
+	Vehicle                VehicleDetail     `json:"vehicle"`
+	DriverCurrentLatitude  float64           `json:"driver_current_latitude"`
+	DriverCurrentLongitude float64           `json:"driver_current_longitude"`
+	RiderCurrentLatitude   float64           `json:"rider_current_latitude"`
+	RiderCurrentLongitude  float64           `json:"rider_current_longitude"`
+	Waypoints              []Waypoint        `json:"waypoints"`
+}
+
+type GetScheduledAndOngoingRideResponse struct {
+	ValidRide []ValidRideDetail `json:"valid_ride"`
 }

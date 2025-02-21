@@ -3,8 +3,9 @@ package token
 import (
 	"errors"
 	"fmt"
-	"shareway/schemas"
 	"time"
+
+	"shareway/schemas"
 
 	"github.com/google/uuid"
 )

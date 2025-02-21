@@ -79,6 +79,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/get-dashboard-general-data": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the general data of the dashboard",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the general data of the dashboard",
+                "responses": {
+                    "200": {
+                        "description": "Dashboard general data",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.DashboardGeneralDataResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/get-profile": {
             "get": {
                 "security": [
@@ -99,9 +145,841 @@ const docTemplate = `{
                 "summary": "Get the profile of the admin",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Admin profile",
                         "schema": {
-                            "$ref": "#/definitions/schemas.GetAdminProfileResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GetAdminProfileResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/get-report-details": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the ZIP file of the report details, including an Excel report and PDF analysis",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/zip"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the ZIP file of the report details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start date for custom filter (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date for custom filter (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ZIP file containing Excel and PDF reports",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/get-ride-dashboard-data": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the data of the dashboard for the ride",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the data of the dashboard for the ride",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter for the data (all_time, last_week, last_month, last_year, custom)",
+                        "name": "filter",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date for custom filter (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date for custom filter (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ride dashboard data",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.RideDashboardDataResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/get-ride-list": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the list of rides with pagination and filters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the list of rides with pagination and filters",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number for pagination",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit number for pagination (max 100)",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date for custom filter (YYYY-MM-DD)",
+                        "name": "start_date_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date for custom filter (YYYY-MM-DD)",
+                        "name": "end_date_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for driver",
+                        "name": "search_driver",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for hitcher",
+                        "name": "search_hitcher",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for route",
+                        "name": "search_route",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for vehicle",
+                        "name": "search_vehicle",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Optional filter for ride status",
+                        "name": "ride_status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ride list",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.RideListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/get-transaction-dashboard-data": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the data of the dashboard for the transaction",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the data of the dashboard for the transaction",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter for the data (all_time, last_week, last_month, last_year, custom)",
+                        "name": "filter",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date for custom filter (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date for custom filter (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Transaction dashboard data",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.TransactionDashboardDataResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/get-transaction-list": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the list of transactions with pagination and filters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the list of transactions with pagination and filters",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number for pagination",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit number for pagination (max 100)",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date for custom filter (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date for custom filter (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for sender",
+                        "name": "search_sender",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for receiver",
+                        "name": "search_receiver",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Optional filter for payment method",
+                        "name": "payment_method",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Optional filter for payment status",
+                        "name": "payment_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Optional filter for minimum amount",
+                        "name": "min_amount",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Optional filter for maximum amount",
+                        "name": "max_amount",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Transaction list",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.TransactionListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/get-user-dashboard-data": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the data of the dashboard for the user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the data of the dashboard for the user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter for the data (all_time, last_week, last_month, last_year, custom)",
+                        "name": "filter",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date for custom filter (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date for custom filter (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User dashboard data",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.UserDashboardDataResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/get-user-list": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the list of users with pagination and filters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the list of users with pagination and filters",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number for pagination",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit number for pagination (max 100)",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date for custom filter (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date for custom filter (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Optional filter for is_activated",
+                        "name": "is_activated",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Optional filter for is_verified",
+                        "name": "is_verified",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for full name",
+                        "name": "search_full_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User list",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.UserListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/get-vehicle-dashboard-data": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the data of the dashboard for the vehicle",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the data of the dashboard for the vehicle",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter for the data (all_time, last_week, last_month, last_year, custom)",
+                        "name": "filter",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date for custom filter (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date for custom filter (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Vehicle dashboard data",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.VehicleDashboardDataResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/get-vehicle-list": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the list of vehicles with pagination and filters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get the list of vehicles with pagination and filters",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number for pagination",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit number for pagination (max 100)",
+                        "name": "limit",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date for custom filter (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date for custom filter (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for owner",
+                        "name": "search_owner",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for plate",
+                        "name": "search_plate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for vehicle name",
+                        "name": "search_vehicle_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional filter for cavet",
+                        "name": "search_cavet",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Vehicle list",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.VehicleListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Log out the admin user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Log out the admin user",
+                "responses": {
+                    "200": {
+                        "description": "Admin logged out successfully",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
                         }
                     },
                     "500": {
@@ -937,6 +1815,69 @@ const docTemplate = `{
                                     "properties": {
                                         "data": {
                                             "$ref": "#/definitions/schemas.InitiateCallResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/search-users": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Search for users by full name (case-insensitive) that have matched with user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Search for users by full name (case-insensitive) that have matched with user",
+                "parameters": [
+                    {
+                        "description": "Search users request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.SearchUsersRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Users fetched successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.SearchUsersResponse"
                                         }
                                     }
                                 }
@@ -1801,15 +2742,136 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Link momo wallet response",
+                        "description": "Link wallet response",
                         "schema": {
-                            "$ref": "#/definitions/schemas.LinkMomoWalletResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad request",
                         "schema": {
                             "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/refund-ride": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Refund ride with momo wallet",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payment"
+                ],
+                "summary": "Refund ride with momo wallet",
+                "parameters": [
+                    {
+                        "description": "Refund ride request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.RefundMomoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Refund ride response",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/withdraw-momo-wallet": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Withdraw money from our system to user's momo wallet",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payment"
+                ],
+                "summary": "Withdraw money from our system to user's momo wallet",
+                "responses": {
+                    "200": {
+                        "description": "Withdraw momo response",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
@@ -2233,9 +3295,113 @@ const docTemplate = `{
                 "summary": "Get all pending ride",
                 "responses": {
                     "200": {
-                        "description": "Successfully got all pending ride",
+                        "description": "Successfully get all pending ride",
                         "schema": {
-                            "$ref": "#/definitions/schemas.GetAllPendingRideResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GetAllPendingRideResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ride/get-ride-history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get ride history of the user (both as driver and hitcher) included cancelled rides and completed rides",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Get ride history of the user",
+                "responses": {
+                    "200": {
+                        "description": "Successfully got ride history",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GetRideHistoryResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ride/get-scheduled-and-ongoing-ride": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get scheduled and ongoing ride of the user (both as driver and hitcher)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Get scheduled and ongoing ride of the user",
+                "responses": {
+                    "200": {
+                        "description": "Successfully got scheduled and ongoing ride",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GetScheduledAndOngoingRideResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
@@ -2330,6 +3496,108 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "Successfully sent ride request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ride/rating-ride-driver": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Rate the driver after the ride by the hitcher",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Rate the driver after the ride by the hitcher",
+                "parameters": [
+                    {
+                        "description": "Rating ride driver request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.RatingRideDriverRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully rated the driver",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/helper.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ride/rating-ride-hitcher": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Rate the hitcher after the ride by the driver",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ride"
+                ],
+                "summary": "Rate the hitcher after the ride by the driver",
+                "parameters": [
+                    {
+                        "description": "Rating ride hitcher request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.RatingRideHitcherRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully rated the hitcher",
                         "schema": {
                             "$ref": "#/definitions/helper.Response"
                         }
@@ -2495,9 +3763,21 @@ const docTemplate = `{
                 "summary": "Get user profile",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Successfully authenticated",
                         "schema": {
-                            "$ref": "#/definitions/schemas.GetUserProfileResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/helper.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/schemas.GetUserProfileResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "500": {
@@ -2872,21 +4152,12 @@ const docTemplate = `{
         "schemas.AcceptGiveRideRequestRequest": {
             "type": "object",
             "required": [
-                "paymentMethod",
                 "receiverID",
                 "rideOfferID",
                 "rideRequestID",
                 "vehicleID"
             ],
             "properties": {
-                "paymentMethod": {
-                    "description": "Payment method (cash or momo)",
-                    "type": "string",
-                    "enum": [
-                        "cash",
-                        "momo"
-                    ]
-                },
                 "receiverID": {
                     "description": "The ID of the receiver (the user who received the request) aka the hitcher",
                     "type": "string"
@@ -2936,7 +4207,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fare": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "receiver_id": {
                     "type": "string"
@@ -2991,21 +4262,12 @@ const docTemplate = `{
         "schemas.AcceptHitchRideRequestRequest": {
             "type": "object",
             "required": [
-                "paymentMethod",
                 "receiverID",
                 "rideOfferID",
                 "rideRequestID",
                 "vehicleID"
             ],
             "properties": {
-                "paymentMethod": {
-                    "description": "Payment method (cash or momo)",
-                    "type": "string",
-                    "enum": [
-                        "cash",
-                        "momo"
-                    ]
-                },
                 "receiverID": {
                     "description": "The ID of the receiver (the user who received the request) aka the driver",
                     "type": "string"
@@ -3055,7 +4317,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fare": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "receiver_id": {
                     "type": "string"
@@ -3291,6 +4553,35 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.DashboardGeneralDataResponse": {
+            "type": "object",
+            "properties": {
+                "ride_change": {
+                    "type": "number"
+                },
+                "total_rides": {
+                    "type": "integer"
+                },
+                "total_transactions": {
+                    "type": "integer"
+                },
+                "total_users": {
+                    "type": "integer"
+                },
+                "total_vehicles": {
+                    "type": "integer"
+                },
+                "transaction_change": {
+                    "type": "number"
+                },
+                "user_change": {
+                    "type": "number"
+                },
+                "vehicle_change": {
+                    "type": "number"
+                }
+            }
+        },
         "schemas.DeleteUserRequest": {
             "type": "object",
             "required": [
@@ -3357,7 +4648,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fare": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "receiver_id": {
                     "type": "string"
@@ -3544,6 +4835,29 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.GetRideHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "ride_history": {
+                    "description": "The cancel ride request of the user",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.RideHistoryDetail"
+                    }
+                }
+            }
+        },
+        "schemas.GetScheduledAndOngoingRideResponse": {
+            "type": "object",
+            "properties": {
+                "valid_ride": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ValidRideDetail"
+                    }
+                }
+            }
+        },
         "schemas.GetUserProfileResponse": {
             "type": "object",
             "required": [
@@ -3615,7 +4929,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fare": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "ride_offer_id": {
                     "type": "string"
@@ -3841,8 +5155,7 @@ const docTemplate = `{
         "schemas.HitchRideRequest": {
             "type": "object",
             "required": [
-                "place_list",
-                "weight"
+                "place_list"
             ],
             "properties": {
                 "place_list": {
@@ -3855,10 +5168,6 @@ const docTemplate = `{
                 "start_time": {
                     "description": "Start time of the ride (if not provided, the ride is immediate)",
                     "type": "string"
-                },
-                "weight": {
-                    "description": "Weight of the rider to consider",
-                    "type": "integer"
                 }
             }
         },
@@ -3947,15 +5256,6 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 10,
                     "minLength": 10
-                }
-            }
-        },
-        "schemas.LinkMomoWalletResponse": {
-            "type": "object",
-            "properties": {
-                "deeplink": {
-                    "description": "send this to fe flutter app for open momo and perform linked",
-                    "type": "string"
                 }
             }
         },
@@ -4221,6 +5521,62 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.RatingRideDriverRequest": {
+            "type": "object",
+            "required": [
+                "rating",
+                "receiver_id",
+                "ride_id"
+            ],
+            "properties": {
+                "rating": {
+                    "description": "The rating of the driver",
+                    "type": "number",
+                    "maximum": 5,
+                    "minimum": 1
+                },
+                "receiver_id": {
+                    "description": "The receiver id (the driver) who received the rating",
+                    "type": "string"
+                },
+                "review": {
+                    "description": "The review of the driver",
+                    "type": "string"
+                },
+                "ride_id": {
+                    "description": "The ID of the ride",
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.RatingRideHitcherRequest": {
+            "type": "object",
+            "required": [
+                "rating",
+                "receiverID",
+                "rideID"
+            ],
+            "properties": {
+                "rating": {
+                    "description": "The rating of the driver",
+                    "type": "number",
+                    "maximum": 5,
+                    "minimum": 1
+                },
+                "receiverID": {
+                    "description": "The receiver id (the hitcher) who received the rating",
+                    "type": "string"
+                },
+                "review": {
+                    "description": "The review of the driver",
+                    "type": "string"
+                },
+                "rideID": {
+                    "description": "The ID of the ride to rate",
+                    "type": "string"
+                }
+            }
+        },
         "schemas.RefreshTokenResponse": {
             "type": "object",
             "required": [
@@ -4236,6 +5592,22 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.RefundMomoRequest": {
+            "type": "object",
+            "required": [
+                "rideOfferID",
+                "rideRequestID"
+            ],
+            "properties": {
+                "rideOfferID": {
+                    "type": "string"
+                },
+                "rideRequestID": {
+                    "description": "The ID of the ride request (current user is the hitcher)\nThe ride request contains then transaction ID from momo so could use for refund when needed (ride canceled, cannot create ride, etc)",
                     "type": "string"
                 }
             }
@@ -4336,6 +5708,206 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.RideDashboardDataResponse": {
+            "type": "object",
+            "properties": {
+                "ride_stats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.StatPoint"
+                    }
+                }
+            }
+        },
+        "schemas.RideDetail": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "driver": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "encoded_polyline": {
+                    "type": "string"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_latitude": {
+                    "type": "number"
+                },
+                "end_longitude": {
+                    "type": "number"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "fare": {
+                    "type": "integer"
+                },
+                "hitcher": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "ride_id": {
+                    "type": "string"
+                },
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "ride_request_id": {
+                    "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_latitude": {
+                    "type": "number"
+                },
+                "start_longitude": {
+                    "type": "number"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction": {
+                    "$ref": "#/definitions/schemas.TransactionDetail"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
+                }
+            }
+        },
+        "schemas.RideHistoryDetail": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "driver": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "encoded_polyline": {
+                    "type": "string"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_latitude": {
+                    "type": "number"
+                },
+                "end_longitude": {
+                    "type": "number"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "fare": {
+                    "type": "integer"
+                },
+                "hitcher": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "ride_id": {
+                    "type": "string"
+                },
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "ride_request_id": {
+                    "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_latitude": {
+                    "type": "number"
+                },
+                "start_longitude": {
+                    "type": "number"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction": {
+                    "$ref": "#/definitions/schemas.TransactionDetail"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
+                }
+            }
+        },
+        "schemas.RideListResponse": {
+            "type": "object",
+            "properties": {
+                "current_page": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "rides": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.RideDetail"
+                    }
+                },
+                "total_pages": {
+                    "type": "integer"
+                },
+                "total_rides": {
+                    "type": "integer"
+                }
+            }
+        },
         "schemas.RideOfferDetail": {
             "type": "object",
             "properties": {
@@ -4367,7 +5939,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fare": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "ride_offer_id": {
                     "type": "string"
@@ -4451,9 +6023,30 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/schemas.UserInfo"
-                },
-                "weight": {
-                    "type": "integer"
+                }
+            }
+        },
+        "schemas.SearchUsersRequest": {
+            "type": "object",
+            "required": [
+                "search_input"
+            ],
+            "properties": {
+                "search_input": {
+                    "description": "Search input can be username or phonenuber",
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.SearchUsersResponse": {
+            "type": "object",
+            "properties": {
+                "chatRooms": {
+                    "description": "Return chat rooms with the searched user",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.ChatRoomResponse"
+                    }
                 }
             }
         },
@@ -4631,7 +6224,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fare": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "receiver_id": {
                     "type": "string"
@@ -4680,6 +6273,21 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/schemas.Waypoint"
                     }
+                }
+            }
+        },
+        "schemas.StatPoint": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "total": {
+                    "description": "For transaction total amount",
+                    "type": "integer"
                 }
             }
         },
@@ -4751,11 +6359,22 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.TransactionDashboardDataResponse": {
+            "type": "object",
+            "properties": {
+                "transaction_stats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.StatPoint"
+                    }
+                }
+            }
+        },
         "schemas.TransactionDetail": {
             "type": "object",
             "properties": {
                 "amount": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "payment_method": {
                     "type": "string"
@@ -4765,6 +6384,55 @@ const docTemplate = `{
                 },
                 "transaction_id": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.TransactionListDetail": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "payment_method": {
+                    "type": "string"
+                },
+                "payment_status": {
+                    "type": "string"
+                },
+                "receiver": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "sender": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                }
+            }
+        },
+        "schemas.TransactionListResponse": {
+            "type": "object",
+            "properties": {
+                "current_page": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                },
+                "total_transactions": {
+                    "type": "integer"
+                },
+                "transactions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.TransactionListDetail"
+                    }
                 }
             }
         },
@@ -4897,7 +6565,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "fare": {
-                    "type": "number"
+                    "type": "integer"
                 },
                 "receiver_id": {
                     "type": "string"
@@ -4985,11 +6653,99 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.UserDashboardDataResponse": {
+            "type": "object",
+            "properties": {
+                "user_stats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.StatPoint"
+                    }
+                }
+            }
+        },
+        "schemas.UserDetail": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
+                "average_rating": {
+                    "type": "number"
+                },
+                "balance_in_app": {
+                    "type": "integer"
+                },
+                "cccd_number": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_activated": {
+                    "type": "boolean"
+                },
+                "is_momo_linked": {
+                    "type": "boolean"
+                },
+                "is_verified": {
+                    "type": "boolean"
+                },
+                "phone_number": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "total_ratings": {
+                    "type": "integer"
+                },
+                "total_rides": {
+                    "type": "integer"
+                },
+                "total_transactions": {
+                    "type": "integer"
+                },
+                "total_vehicles": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "vehicles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.VehicleDetail"
+                    }
+                }
+            }
+        },
         "schemas.UserInfo": {
             "type": "object",
             "properties": {
                 "avatar_url": {
                     "type": "string"
+                },
+                "average_rating": {
+                    "type": "number"
+                },
+                "balance_in_app": {
+                    "type": "integer"
                 },
                 "full_name": {
                     "type": "string"
@@ -5008,6 +6764,30 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.UserListResponse": {
+            "type": "object",
+            "properties": {
+                "current_page": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                },
+                "total_users": {
+                    "type": "integer"
+                },
+                "users": {
+                    "description": "The detail user response",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.UserDetail"
+                    }
+                }
+            }
+        },
         "schemas.UserResponse": {
             "type": "object",
             "required": [
@@ -5016,6 +6796,12 @@ const docTemplate = `{
             "properties": {
                 "avatar_url": {
                     "type": "string"
+                },
+                "average_rating": {
+                    "type": "number"
+                },
+                "balance_in_app": {
+                    "type": "integer"
                 },
                 "created_at": {
                     "type": "string"
@@ -5052,6 +6838,89 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.ValidRideDetail": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "type": "number"
+                },
+                "driver": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "driver_current_latitude": {
+                    "type": "number"
+                },
+                "driver_current_longitude": {
+                    "type": "number"
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "encoded_polyline": {
+                    "type": "string"
+                },
+                "end_address": {
+                    "type": "string"
+                },
+                "end_latitude": {
+                    "type": "number"
+                },
+                "end_longitude": {
+                    "type": "number"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "fare": {
+                    "type": "integer"
+                },
+                "hitcher": {
+                    "$ref": "#/definitions/schemas.UserInfo"
+                },
+                "ride_id": {
+                    "type": "string"
+                },
+                "ride_offer_id": {
+                    "type": "string"
+                },
+                "ride_request_id": {
+                    "type": "string"
+                },
+                "rider_current_latitude": {
+                    "type": "number"
+                },
+                "rider_current_longitude": {
+                    "type": "number"
+                },
+                "start_address": {
+                    "type": "string"
+                },
+                "start_latitude": {
+                    "type": "number"
+                },
+                "start_longitude": {
+                    "type": "number"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction": {
+                    "$ref": "#/definitions/schemas.TransactionDetail"
+                },
+                "vehicle": {
+                    "$ref": "#/definitions/schemas.VehicleDetail"
+                },
+                "waypoints": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.Waypoint"
+                    }
+                }
+            }
+        },
         "schemas.Vehicle": {
             "type": "object",
             "required": [
@@ -5066,6 +6935,17 @@ const docTemplate = `{
                 },
                 "vehicle_id": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.VehicleDashboardDataResponse": {
+            "type": "object",
+            "properties": {
+                "vehicle_stats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.StatPoint"
+                    }
                 }
             }
         },
@@ -5086,6 +6966,65 @@ const docTemplate = `{
                 },
                 "vehicle_id": {
                     "type": "string"
+                }
+            }
+        },
+        "schemas.VehicleListDetail": {
+            "type": "object",
+            "properties": {
+                "cavet": {
+                    "description": "Certificate of vehicle registration each vehicle has a unique number",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "fuel_consumed": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "license_plate": {
+                    "type": "string"
+                },
+                "owner": {
+                    "description": "Owner info of the vehicle",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/schemas.UserInfo"
+                        }
+                    ]
+                },
+                "total_rides": {
+                    "description": "Total rides of the vehicle that have been taken",
+                    "type": "integer"
+                },
+                "vehicle_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "schemas.VehicleListResponse": {
+            "type": "object",
+            "properties": {
+                "current_page": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                },
+                "total_vehicles": {
+                    "type": "integer"
+                },
+                "vehicles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.VehicleListDetail"
+                    }
                 }
             }
         },

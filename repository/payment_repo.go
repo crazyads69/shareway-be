@@ -24,6 +24,7 @@ type IPaymentRepository interface {
 	StoreRequestID(requestID string, userID uuid.UUID, walletPhoneNumber string) error
 	GetUserByID(userID uuid.UUID) (migration.User, error)
 	GetRideOfferByID(rideOfferID uuid.UUID) (migration.RideOffer, error)
+	GetRideRequestByID(rideRequestID uuid.UUID) (migration.RideRequest, error)
 }
 
 func (p *PaymentRepository) StoreRequestID(requestID string, userID uuid.UUID, walletPhoneNumber string) error {
@@ -59,4 +60,13 @@ func (p *PaymentRepository) GetRideOfferByID(rideOfferID uuid.UUID) (migration.R
 	}
 
 	return rideOffer, nil
+}
+
+func (p *PaymentRepository) GetRideRequestByID(rideRequestID uuid.UUID) (migration.RideRequest, error) {
+	var rideRequest migration.RideRequest
+	if err := p.db.Where("id = ?", rideRequestID).First(&rideRequest).Error; err != nil {
+		return rideRequest, err
+	}
+
+	return rideRequest, nil
 }
